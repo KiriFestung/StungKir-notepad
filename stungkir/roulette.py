@@ -7,7 +7,7 @@
 import math
 import random
 
-from PySide6.QtCore import QEasingCurve, QPointF, QRectF, Qt, QVariantAnimation
+from PySide6.QtCore import QEasingCurve, QElapsedTimer, QPointF, QRectF, Qt, QTimer, QVariantAnimation
 from PySide6.QtGui import QColor, QPainter, QPen, QRadialGradient
 from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, QWidget
 
@@ -234,6 +234,40 @@ class Revolver(QWidget):
         self.load_anim.valueChanged.connect(self._load_step)
         self._load_done = None
         self.load_anim.finished.connect(self._load_finished)
+        # нарисованные кадры: «бах» (art/anim/bang) и пыль из гнезда при щелчке (art/anim/dust)
+        self.effect = None                         # (имя, кадров, номер кадра)
+        self.effect_clock = QElapsedTimer()
+        self.effect_timer = QTimer(self, interval=16)
+        self.effect_timer.timeout.connect(self._effect_step)
+
+    EFFECT_FPS = 30
+    EFFECTS = {"bang": 16, "dust": 8}
+
+    def play_effect(self, name):
+        """Проиграть кадры поверх барабана. Нет кадров - False (тогда рисуется простая вспышка)."""
+        from .artwork import pixmap
+        if pixmap(f"anim/{name}/{name}_00").isNull():
+            return False
+        self.effect = (name, self.EFFECTS[name], 0)
+        self.effect_clock.start()
+        self.effect_timer.start()
+        self.update()
+        return True
+
+    def _effect_step(self):
+        if self.effect is None:
+            self.effect_timer.stop()
+            return
+        name, count, _frame = self.effect
+        frame = int(self.effect_clock.elapsed() / 1000 * self.EFFECT_FPS)
+        self.effect = None if frame >= count else (name, count, frame)
+        if self.effect is None:
+            self.effect_timer.stop()
+        self.update()
+
+    def puff(self):
+        """Щёлк вхолостую: облачко пыли из гнезда под курком."""
+        self.play_effect("dust")
 
     def _turn(self, value):
         self.angle = float(value)
@@ -322,8 +356,9 @@ class Revolver(QWidget):
     def boom(self, chambers, strength=1.0):
         """Бах: показать, что было в барабане (после патрона - всё; после холостого - только его гильзу)."""
         self.shown = list(chambers)
-        self.flash_anim.setStartValue(float(strength))
-        self.flash_anim.start()
+        if not self.play_effect("bang"):                # нет нарисованных кадров - простая вспышка
+            self.flash_anim.setStartValue(float(strength))
+            self.flash_anim.start()
 
     def mark(self, index, kind):
         self.shown[index] = kind
@@ -457,6 +492,17 @@ class Revolver(QWidget):
         p.setBrush(QColor("#d4a02e"))
         size = radius * 0.12
         p.drawPolygon([tip + QPointF(0, size), tip + QPointF(-size, -size), tip + QPointF(size, -size)])
+        if self.effect is not None:
+            name, _count, frame = self.effect
+            if name == "bang":                           # «бах» - на весь барабан
+                spot, extent = center, radius + 6
+            else:                                        # пыль - из гнезда под курком
+                spot, extent = center - QPointF(0, radius * 0.59), radius * 0.62
+            picture = scaled(f"anim/{name}/{name}_{frame:02d}", 2 * extent, self.devicePixelRatioF())
+            if not picture.isNull():
+                p.setRenderHint(QPainter.SmoothPixmapTransform)
+                p.drawPixmap(QRectF(spot.x() - extent, spot.y() - extent, 2 * extent, 2 * extent), picture,
+                             QRectF(picture.rect()))
         p.end()
 
 

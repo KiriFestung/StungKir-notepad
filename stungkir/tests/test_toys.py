@@ -66,6 +66,29 @@ class RouletteLogicTest(unittest.TestCase):
 
 
 class RouletteDialogTest(WindowCase):
+    def test_drawn_bang_and_dust_frames_play_and_end(self):
+        from stungkir.artwork import pixmap
+        from stungkir.roulette import Revolver
+        for name, count in Revolver.EFFECTS.items():
+            for k in range(count):
+                self.assertFalse(pixmap(f"anim/{name}/{name}_{k:02d}").isNull(), f"{name} {k}")
+        revolver = Revolver()
+        revolver.resize(260, 260)
+        revolver.show()
+        revolver.boom(["live", "empty", "empty", "empty", "empty", "empty"])
+        self.assertEqual(revolver.effect[0], "bang")
+        wait(0.2)
+        self.assertGreater(revolver.effect[2], 0)                    # кадры идут
+        revolver.grab()
+        for _ in range(40):
+            wait(0.05)
+            if revolver.effect is None:
+                break
+        self.assertIsNone(revolver.effect)                           # и кончаются (полсекунды)
+        revolver.puff()
+        self.assertEqual(revolver.effect[0], "dust")
+        revolver.grab()
+
     def _dialog(self):
         from stungkir.dice import RandomDialog
         results = []

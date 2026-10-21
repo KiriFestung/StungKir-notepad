@@ -18,6 +18,8 @@ datas = [
     (str(ROOT / "stungkir" / "art" / "dice" / "metal" / "*.png"), "stungkir/art/dice/metal"),
     (str(ROOT / "stungkir" / "art" / "dice" / "oak" / "*.png"), "stungkir/art/dice/oak"),
     (str(ROOT / "stungkir" / "art" / "dice" / "resin" / "*.png"), "stungkir/art/dice/resin"),
+    (str(ROOT / "stungkir" / "art" / "anim" / "bang" / "*.png"), "stungkir/art/anim/bang"),
+    (str(ROOT / "stungkir" / "art" / "anim" / "dust" / "*.png"), "stungkir/art/anim/dust"),
     (str(PACKAGING / "dictionaries" / "ru_RU.dic"), "stungkir/dictionaries"),
     (str(PACKAGING / "dictionaries" / "ru_RU.aff"), "stungkir/dictionaries"),
     (str(PACKAGING / "dictionaries" / "LICENSE-ru_RU.txt"), "stungkir/dictionaries"),

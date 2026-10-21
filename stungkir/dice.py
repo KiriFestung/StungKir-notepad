@@ -1019,6 +1019,7 @@ class RandomDialog(Sheet):
             QTimer.singleShot(0, self, self.adjustSize)      # вызов в две строки - окно подрастает
             return
         self._sound("trigger_click")
+        self.revolver.puff()
         self.shuffle.setText("")
         self.note.setText(f"Щёлк. Пронесло. Дальше: {self.roulette.chance_text()}")
         self.revolver.turn_to(self.roulette.current, duration=260)
