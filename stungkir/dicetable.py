@@ -30,6 +30,8 @@ MATERIALS = {
     "bone": ("Кость", "#e6dbc0", "#8a7a5a", "#fbf6e8", "#3a2a18", "bone_hit", "bone_settle"),
     "metal": ("Металл", "#8a929d", "#2f343c", "#c9d0d8", "#14181d", "die_hit", "die_settle"),
     "oak": ("Дуб", "#9c6a3a", "#4a2e14", "#c99560", "#24130a", "oak_hit", "oak_settle"),
+    # тёмно-фиолетовая смола с золотыми цифрами - как классические кости для настолок
+    "resin": ("Смола", "#2c1478", "#0c0424", "#6b52d8", "#e8a93a", "bone_hit", "bone_settle"),
 }
 FELT, FELT_DARK, RIM = QColor("#23265a"), QColor("#13153a"), QColor("#6b4524")
 STEP = 1 / 60                        # шаг расчёта: один и тот же и в подборе броска, и на экране
@@ -399,6 +401,8 @@ class DiceTable(QWidget):
                 color = C.mix(C.mix(dark, base, min(1.0, 0.25 + lit)), bright, max(0.0, lit - 0.55) * 1.6)
                 if body.material == "metal":                       # блик металла - резкий
                     color = C.mix(color, "#ffffff", 0.45 * lit ** 30)
+                elif body.material == "resin":                     # смола блестит, как лак
+                    color = C.mix(color, "#d9ccff", 0.55 * lit ** 18)
                 p.setPen(QPen(C.mix(dark, "#000000", 0.35), 1.3, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
             p.setBrush(color)
             p.drawPolygon(polygon)
@@ -459,6 +463,19 @@ class DiceTable(QWidget):
             p.setBrush(QColor(110, 85, 55, int(70 * alpha)))
             for _ in range(14):
                 p.drawEllipse(QPointF(rnd.uniform(-100, 100), rnd.uniform(-100, 100)), 1.6, 1.6)
+        elif body.material == "resin":
+            # внутри смолы - светлые разводы и блёстки, как у литых костей
+            for _ in range(3):
+                path = QPainterPath(QPointF(rnd.uniform(-130, -70), rnd.uniform(-80, 80)))
+                path.cubicTo(QPointF(rnd.uniform(-50, 10), rnd.uniform(-110, 110)),
+                             QPointF(rnd.uniform(-10, 50), rnd.uniform(-110, 110)),
+                             QPointF(rnd.uniform(70, 130), rnd.uniform(-80, 80)))
+                p.setPen(QPen(QColor(150, 120, 255, int(38 * alpha)), rnd.uniform(6, 14), Qt.SolidLine, Qt.RoundCap))
+                p.drawPath(path)
+            p.setPen(Qt.NoPen)
+            for _ in range(22):
+                p.setBrush(QColor(255, 225, 160, int(rnd.uniform(60, 150) * alpha)))
+                p.drawEllipse(QPointF(rnd.uniform(-100, 100), rnd.uniform(-100, 100)), 1.1, 1.1)
         else:
             for k in range(-30, 31):
                 p.setPen(QPen(QColor(255, 255, 255, int(rnd.uniform(8, 26) * alpha)), 0.8))
@@ -484,6 +501,9 @@ class DiceTable(QWidget):
         font.setWeight(QFont.Black)
         p.setFont(font)
         box = QRectF(-150, -size * 0.75, 300, size * 1.5)
+        if body.material == "resin":                       # золото в углублении: тёмная тень сверху
+            p.setPen(QColor(0, 0, 0, int(150 * alpha)))
+            p.drawText(box.translated(0, -size * 0.04), Qt.AlignCenter, text)
         if body.material == "metal":                       # гравировка: светлый край снизу
             edge = QColor(255, 255, 255, int(120 * alpha))
             p.setPen(edge)
