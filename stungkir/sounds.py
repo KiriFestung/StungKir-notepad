@@ -92,7 +92,11 @@ class Sounds:
             if sys.platform.startswith("win"):
                 self._player = "winsound"
             else:
-                self._player = next((p for p in PLAYERS if shutil.which(p)), "")
+                # во Flatpak открыт только звук PulseAudio (--socket=pulseaudio): pw-play там есть,
+                # но до PipeWire не достаёт и молчит - поэтому сначала paplay
+                order = ("paplay",) + tuple(p for p in PLAYERS if p != "paplay") if os.environ.get("FLATPAK_ID") \
+                    else PLAYERS
+                self._player = next((p for p in order if shutil.which(p)), "")
                 if not self._player and qt_audio_available():
                     self._player = "qt"
         return self._player

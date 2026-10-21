@@ -267,6 +267,23 @@ class SoundTest(unittest.TestCase):
         die.finish()
         self.assertEqual(heard, ["coin_flick", "coin_land", "coin_land"])
 
+    def test_flatpak_prefers_paplay(self):
+        """Во Flatpak pw-play есть, но без доступа к PipeWire молчит - берём paplay."""
+        import os
+        import shutil
+        import sys
+        from unittest import mock
+        from stungkir import sounds
+        if sys.platform.startswith("win"):
+            self.skipTest("на Windows - winsound")
+        found = {"pw-play": "/usr/bin/pw-play", "paplay": "/usr/bin/paplay"}
+        with mock.patch.object(shutil, "which", lambda name: found.get(name)):
+            with mock.patch.dict(os.environ, {"FLATPAK_ID": "page.codeberg.kirifestung.StungKir"}):
+                self.assertEqual(sounds.Sounds().player(), "paplay")
+            env = {k: v for k, v in os.environ.items() if k != "FLATPAK_ID"}
+            with mock.patch.dict(os.environ, env, clear=True):
+                self.assertEqual(sounds.Sounds().player(), "pw-play")
+
     def test_qt_plays_when_system_has_no_player(self):
         """Во Flatpak нет pw-play, paplay и aplay - тогда звук играет сам Qt."""
         import shutil
