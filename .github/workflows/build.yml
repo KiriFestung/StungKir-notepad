@@ -38,11 +38,13 @@ jobs:
       - name: Звук внутри песочницы
         shell: bash
         run: |
-          # чем блокнот сможет играть звуки во Flatpak: системные проигрыватели или Qt
-          players=$(flatpak build build-dir sh -c 'for p in pw-play paplay aplay; do command -v $p; done' 2>/dev/null | tr '\n' ' ')
-          if flatpak build build-dir python3 -c "from PySide6.QtMultimedia import QSoundEffect" 2>/dev/null; then qt=есть; else qt=нет; fi
+          # чем блокнот сможет играть звуки во Flatpak: системные проигрыватели или Qt (помощник soundhelper.py)
+          flatpak install --user -y --noninteractive StungKir.flatpak || true
+          app=page.codeberg.kirifestung.StungKir
+          players=$(flatpak run --command=sh $app -c 'for p in pw-play paplay aplay; do command -v $p; done' 2>/dev/null | tr '\n' ' ' || true)
+          if flatpak run --command=python3 $app -c "from PySide6.QtMultimedia import QSoundEffect" 2>/dev/null; then qt=есть; else qt=нет; fi
           echo "::notice title=Звук во Flatpak::проигрыватели: ${players:-нет}; QtMultimedia: $qt"
-          [ "$qt" = есть ] || [ -n "$players" ] || { echo "::error title=Звук во Flatpak::нечем играть звуки"; exit 1; }
+          if [ "$qt" != есть ] && [ -z "$players" ]; then echo "::error title=Звук во Flatpak::нечем играть звуки"; exit 1; fi
       - name: Ошибки - в заметки запуска
         if: failure()
         shell: bash
