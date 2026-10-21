@@ -26,7 +26,8 @@ DEFAULT_VOLUME = "Обычно"
 HITS = ["die_hit_1", "die_hit_2", "die_hit_3", "die_hit_4"]
 # имя без номера - каждый раз случайный из нескольких похожих, чтобы стук не был одинаковым
 VARIANTS = {"die_hit": HITS, "bone_hit": ["bone_hit_1", "bone_hit_2", "bone_hit_3"],
-            "oak_hit": ["oak_hit_1", "oak_hit_2", "oak_hit_3"]}
+            "oak_hit": ["oak_hit_1", "oak_hit_2", "oak_hit_3"],
+            "water_skip": ["water_skip_1", "water_skip_2", "water_skip_3"]}
 PLAYERS = ("pw-play", "paplay", "aplay")
 HELPER = Path(__file__).resolve().parent / "soundhelper.py"
 HELPER_RESTARTS = 3               # помощник упал столько раз - звук сломан, больше не запускаем

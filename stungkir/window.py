@@ -368,7 +368,15 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
 
     def apply_backdrop(self):
         dim = int(self.settings.value("backdrop_dim", 55) or 55)
-        self.editor.set_backdrop(self.backdrop_file() if C.TEXTURE == "picture" else None, dim / 100)
+        shown = self.editor.set_backdrop(self.backdrop_file() if C.TEXTURE == "picture" else None, dim / 100)
+        layer = getattr(self, "backdrop_layer", None)
+        if shown and layer is None:
+            from .editor import BackdropLayer
+            layer = self.backdrop_layer = BackdropLayer(self.centralWidget(), self.editor)
+        if layer is not None:
+            layer.setVisible(shown)
+            layer.lower()
+            layer.update()
 
     def choose_backdrop(self, path=None):
         """Своя картинка под текстом: копия кладётся к настройкам (сам файл можно потом удалить)."""
@@ -380,7 +388,8 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
             if not path:
                 return False
         path = Path(path)
-        if QImage(str(path)).isNull():
+        image = QImage(str(path))
+        if image.isNull():
             show_warning(self, "Картинка под текстом", "Эту картинку не получилось открыть. "
                                                        "Подойдут JPG, PNG, WebP, BMP.")
             return False
@@ -393,8 +402,24 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
             show_error(self, "Картинка под текстом", f"Не получилось сохранить картинку: {error}")
             return False
         self.set_texture("picture")
-        self.toast.show_message("Картинка под текстом. Насколько её притемнить - «Фон под текстом → Затемнение»")
+        need = self.backdrop_need()
+        if image.width() < need[0] * 0.8 or image.height() < need[1] * 0.8:
+            show_warning(self, "Картинка под текстом",
+                         f"Картинка маленькая: {image.width()}×{image.height()}, а окно на твоём экране - "
+                         f"{need[0]}×{need[1]} точек. Её придётся растянуть, и она будет мыльной.\n\n"
+                         f"Для чёткой картинки нужна от {need[0]}×{need[1]} и больше. Блокнот хранит её "
+                         f"без пережатия и рисует в настоящих точках экрана - качество теряется только "
+                         f"при растягивании.")
+        else:
+            self.toast.show_message("Картинка под текстом. Насколько её притемнить - «Фон под текстом → Затемнение»")
         return True
+
+    def backdrop_need(self):
+        """Сколько настоящих точек экрана занимает окно развёрнутым: такой должна быть картинка."""
+        screen = self.screen() or QApplication.primaryScreen()
+        ratio = screen.devicePixelRatio() if screen else 1.0
+        size = screen.availableGeometry().size() if screen else self.size()
+        return int(size.width() * ratio), int(size.height() * ratio)
 
     def set_backdrop_dim(self, percent):
         self.settings.setValue("backdrop_dim", percent)

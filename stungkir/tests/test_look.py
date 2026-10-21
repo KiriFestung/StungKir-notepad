@@ -269,8 +269,20 @@ class CoverAndBackdropTest(WindowCase):
         w = self.window()
         w.resize(900, 600)
         w.show()
+        warned = []
+        self.patch("show_warning", lambda *a, **k: warned.append(a[-1]))
+        w.backdrop_need = lambda: (1920, 1080)
         self.assertTrue(w.choose_backdrop(self._picture("#d4a02e", (800, 500))))
         self.assertEqual(C.TEXTURE, "picture")
+        self.assertTrue(warned and "800×500" in warned[0])                 # маленькая - предупредили
+        w.backdrop_need = lambda: (700, 400)
+        warned.clear()
+        self.assertTrue(w.choose_backdrop(self._picture("#d4a02e", (800, 500))))
+        self.assertEqual(warned, [])
+        # картинка - под всем окном, и у левого края тоже
+        central = w.centralWidget().grab().toImage()
+        edge = central.pixelColor(3, central.height() // 2)
+        self.assertGreater(edge.red(), edge.blue())
         self.assertIsNotNone(w.editor.backdrop)
         w.set_backdrop_dim(82)
         self.assertAlmostEqual(w.editor.backdrop_dim, 0.82)

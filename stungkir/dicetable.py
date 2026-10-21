@@ -356,14 +356,14 @@ class DiceTable(QWidget):
         p.setBrush(wood)
         p.drawRoundedRect(rect, 14, 14)
         felt_rect = rect.adjusted(10, 10, -10, -10)
-        from .artwork import scaled
-        cloth = scaled("texture-felt", 256, self.devicePixelRatioF())
-        if not cloth.isNull():                     # сукно - нарисованное, края стола чуть темнее
+        cloth = self._cloth()
+        if not cloth.isNull():                     # сукно - нарисованное, цветом темы, края чуть темнее
             p.setBrush(QBrush(cloth))
             p.drawRoundedRect(felt_rect, 9, 9)
             felt = QRadialGradient(felt_rect.center(), max(felt_rect.width(), felt_rect.height()) * 0.7)
             felt.setColorAt(0, QColor(0, 0, 0, 0))
-            felt.setColorAt(1, QColor(FELT_DARK.red(), FELT_DARK.green(), FELT_DARK.blue(), 190))
+            edge = C.mix(self._felt_color(), "#000000", 0.65)
+            felt.setColorAt(1, QColor(edge.red(), edge.green(), edge.blue(), 190))
         else:
             felt = QRadialGradient(felt_rect.center(), max(felt_rect.width(), felt_rect.height()) * 0.7)
             felt.setColorAt(0, FELT.lighter(118))
@@ -377,6 +377,48 @@ class DiceTable(QWidget):
         for _ in range(int(felt_rect.width() * felt_rect.height() / 260)):
             p.drawEllipse(QPointF(rnd.uniform(felt_rect.left(), felt_rect.right()),
                                   rnd.uniform(felt_rect.top(), felt_rect.bottom())), 0.8, 0.8)
+
+    @staticmethod
+    def _felt_color():
+        colors = C.toy_colors()
+        if colors["dark"]:
+            return C.mix(colors["body"], colors["bg"], 0.2)
+        return C.mix(colors["body"], "#3a4a3a", 0.35)            # на светлой теме - приглушённое сукно
+
+    def _cloth(self):
+        """Плитка сукна цвета темы: рисунок ворса из art/texture-felt.png, перекрашенный
+        (яркость каждой точки сохраняется, цвет - от темы). Считается один раз на цвет."""
+        from PySide6.QtGui import QImage, QPixmap
+        from .artwork import scaled
+        ratio = self.devicePixelRatioF()
+        felt = self._felt_color()
+        key = (felt.name(), round(ratio, 2))
+        cache = self.__dict__.setdefault("_cloth_cache", {})
+        if key in cache:
+            return cache[key]
+        source = scaled("texture-felt", 256, ratio)
+        if source.isNull():
+            cache[key] = source
+            return source
+        gray = source.toImage().convertToFormat(QImage.Format_Grayscale8)
+        width, height = gray.width(), gray.height()
+        stride = gray.bytesPerLine()
+        data = bytes(gray.constBits())[:stride * height]
+        values = [data[y * stride + x] for y in range(height) for x in range(width)]
+        mean = max(1.0, sum(values) / len(values))
+        r, g, b = felt.red(), felt.green(), felt.blue()
+        out = bytearray(width * height * 4)
+        for i, v in enumerate(values):
+            k = v / mean
+            out[i * 4] = min(255, int(b * k))
+            out[i * 4 + 1] = min(255, int(g * k))
+            out[i * 4 + 2] = min(255, int(r * k))
+            out[i * 4 + 3] = 255
+        image = QImage(bytes(out), width, height, width * 4, QImage.Format_ARGB32).copy()
+        pixmap = QPixmap.fromImage(image)
+        pixmap.setDevicePixelRatio(ratio)
+        cache[key] = pixmap
+        return pixmap
 
     def _paint_body(self, p, body, cx, cy, radius):
         points, faces = shape(body.kind)

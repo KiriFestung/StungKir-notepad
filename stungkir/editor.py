@@ -555,21 +555,33 @@ class Editor(QTextEdit):
             margin.update()
         return self.backdrop is not None
 
+    def backdrop_canvas(self):
+        """Где лежит картинка целиком: всё окно (под полем, полями заметок, краями и строкой внизу)."""
+        window = self.window()
+        central = window.centralWidget() if hasattr(window, "centralWidget") else None
+        return central if central is not None else self
+
     def paint_backdrop(self, painter, widget):
-        """Нарисовать свою картинку на widget (поле текста или поля для заметок): картинка растянута
-        на всё поле целиком, каждый кусок рисует свою часть - получается одна картинка без стыков."""
+        """Нарисовать свою картинку на widget: картинка растянута на всё окно, каждый кусок
+        рисует свою часть - получается одна картинка без стыков. Масштаб - в настоящих точках
+        экрана (на экранах с увеличением картинка не мылится)."""
         backdrop = getattr(self, "backdrop", None)
         if backdrop is None:
             return
-        size = self.size()
+        canvas = self.backdrop_canvas()
+        size = canvas.size()
+        ratio = max(1.0, widget.devicePixelRatioF())
         cached = getattr(self, "_backdrop_scaled", None)
-        if cached is None or cached[0] != size:
-            scaled = backdrop.scaled(size, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
-            cached = self._backdrop_scaled = (size, scaled)
+        if cached is None or cached[0] != (size, ratio):
+            scaled = backdrop.scaled(size * ratio, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+            scaled.setDevicePixelRatio(ratio)
+            cached = self._backdrop_scaled = ((size, ratio), scaled)
         scaled = cached[1]
-        offset = widget.mapTo(self, QPoint(0, 0))
-        painter.drawPixmap((size.width() - scaled.width()) // 2 - offset.x(),
-                           (size.height() - scaled.height()) // 2 - offset.y(), scaled)
+        width, height = scaled.width() / ratio, scaled.height() / ratio
+        offset = widget.mapTo(canvas, QPoint(0, 0)) if widget is not canvas else QPoint(0, 0)
+        painter.setRenderHint(QPainter.SmoothPixmapTransform)
+        painter.drawPixmap(QPointF((size.width() - width) / 2 - offset.x(), (size.height() - height) / 2 - offset.y()),
+                           scaled)
         veil = QColor(C.BG)
         veil.setAlphaF(self.backdrop_dim)
         painter.fillRect(widget.rect(), veil)
@@ -1198,3 +1210,27 @@ class SidePane(QFrame):
 
     def rehighlight(self):
         self.rehighlighter.run()
+
+
+class BackdropLayer(QWidget):
+    """Своя картинка под всем окном: лежит в самом низу центральной части окна, тянется за ней
+    и рисует ту же картинку, что поле текста, - края окна и строка внизу тоже с картинкой."""
+
+    def __init__(self, parent, editor):
+        super().__init__(parent)
+        self.editor = editor
+        self.setAttribute(Qt.WA_TransparentForMouseEvents)
+        parent.installEventFilter(self)
+        self.setGeometry(parent.rect())
+        self.lower()
+
+    def eventFilter(self, watched, event):
+        if watched is self.parent() and event.type() == QEvent.Resize:
+            self.setGeometry(self.parent().rect())
+            self.lower()
+        return False
+
+    def paintEvent(self, _event):
+        painter = QPainter(self)
+        self.editor.paint_backdrop(painter, self)
+        painter.end()

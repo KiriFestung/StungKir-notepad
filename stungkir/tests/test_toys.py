@@ -232,6 +232,84 @@ class AntistressTest(WindowCase):
         panel.grab()
         dialog.close()
 
+    def test_toggle_puzzles_are_solvable_and_levels_go_on(self):
+        from stungkir.antistress import PUZZLES, StressDialog, make_puzzle, puzzle_flip
+        for kind, (_t, cols, rows, pattern, _r) in PUZZLES.items():
+            for level in (1, 2, 17, 250):
+                state, solution = make_puzzle(kind, level)
+                self.assertEqual((len(state), len(state[0])), (rows, cols))
+                self.assertFalse(all(all(r) for r in state))               # не решена с порога
+                self.assertEqual(make_puzzle(kind, level), (state, solution))   # уровень всегда тот же
+                for x, y in solution:
+                    puzzle_flip(state, x, y, pattern)
+                self.assertTrue(all(all(r) for r in state), f"{kind} {level}")
+        dialog = StressDialog(None)
+        dialog.show()
+        dialog._show_page(4)
+        dialog.toggle_mode.setCurrentIndex(dialog.toggle_mode.findData("medium"))
+        panel = dialog.toggles
+        self.assertEqual((panel.cols, panel.rows, panel.level), (4, 4, 1))
+        self.assertFalse(dialog.next_button.isEnabled())
+        panel.show_hint()
+        self.assertIn(panel.hint, panel.solution)
+        wrong = next((x, y) for y in range(4) for x in range(4) if (x, y) not in panel.solution)
+        panel.toggle(*wrong)                                               # лишний ход - и его надо отменить
+        self.assertIn(wrong, panel.solution)
+        for cell in sorted(panel.solution):
+            panel.toggle(*cell)
+        self.assertTrue(panel.solved)
+        self.assertIn("решено", dialog.count.text())
+        self.assertTrue(dialog.next_button.isEnabled())
+        panel.grab()
+        dialog._next_level()
+        self.assertEqual(panel.level, 2)
+        self.assertFalse(panel.solved)
+        again = StressDialog(None)                                         # уровень и режим запомнились
+        self.assertEqual((again.toggles.puzzle, again.toggles.level), ("medium", 2))
+        again.toggle_mode.setCurrentIndex(0)                               # просто щёлкать
+        self.assertEqual((again.toggles.cols, again.toggles.rows), (5, 3))
+        dialog.close()
+        again.close()
+
+    def test_stone_skipping(self):
+        import random
+        from stungkir.antistress import StoneSkip, StressDialog
+        self.assertEqual(StoneSkip.skip_chance(0.9, 20), 0.0)              # отвесно - бульк
+        self.assertEqual(StoneSkip.skip_chance(0.2, 2), 0.0)               # медленно - бульк
+        self.assertGreater(StoneSkip.skip_chance(0.2, 20), 0.9)
+        heard = []
+        dialog = StressDialog(None)
+        dialog.resize(860, 600)
+        dialog.show()
+        dialog._show_page(5)
+        skip = dialog.skip
+        skip.on_sound = lambda name, strength: heard.append(name)
+        random.seed(2)
+        skip.throw(1.0, 0, 40)                                             # круто вверх - ни одного блинчика
+        skip.finish()
+        self.assertEqual(skip.skips, 0)
+        self.assertEqual(heard[-1], "water_plunk")
+        best = []
+        for seed in range(6):
+            random.seed(seed)
+            skip.throw(0.9, 0, 10)
+            skip.finish()
+            best.append(skip.skips)
+        self.assertGreater(max(best), 2)
+        self.assertIn("water_skip", heard)
+        self.assertEqual(skip.best, max(best))
+        self.assertIn("Блинчиков", dialog.count.text())
+        self.assertEqual(int(dialog.settings.value("skip_best")), max(best))
+        # бросок мышью: зажал, оттянул вниз, отпустил
+        start = QPoint(skip.width() // 2, skip.height() // 2)
+        QTest.mousePress(skip, Qt.LeftButton, Qt.NoModifier, start)
+        QTest.mouseMove(skip, start + QPoint(-30, 160))
+        QTest.mouseRelease(skip, Qt.LeftButton, Qt.NoModifier, start + QPoint(-30, 160))
+        self.assertIsNotNone(skip.stone)
+        skip.grab()
+        skip.finish()
+        dialog.close()
+
     def test_f12_opens_it(self):
         w = self.window()
         seen = []

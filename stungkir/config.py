@@ -608,3 +608,11 @@ for _name, _colors in THEMES.items():
         _colors.setdefault(_key, _value)
     for _key, _value in bar_defaults(_colors).items():
         _colors.setdefault(_key, _value)
+
+
+def toy_colors():
+    """Цвета игрушек и стола для бросков под текущую тему: «тело» (сукно, пульт, спиннер)
+    и «огонёк» (лампочки, клавиши, ободки). Тёмные темы - тёплый цвет реплик, светлые - важный."""
+    dark = QColor(BG).lightness() < 128
+    return {"body": QColor(ACCENT), "glow": QColor(DIALOGUE if dark else IMPORTANT), "dark": dark,
+            "bg": QColor(BG)}

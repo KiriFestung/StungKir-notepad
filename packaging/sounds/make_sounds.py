@@ -264,6 +264,27 @@ def guard_open():
     return finish(click + 0.5 * knock, 0.4)
 
 
+def water_skip(f0=900):
+    """Камень шлёпнул по воде и отскочил: короткий шлепок с булькающим «плип» вверх."""
+    t = t_axis(0.16)
+    slap = lowpass(rng.standard_normal(len(t)), 2500) * np.exp(-t / 0.012)
+    plip = np.sin(2 * np.pi * (f0 + 2400 * t) * t) * np.exp(-t / 0.035)
+    return finish(0.8 * slap + 0.5 * plip, 0.45)
+
+
+def water_plunk():
+    """Камень ушёл под воду: глухой «бульк» с пузырями."""
+    t = t_axis(0.5)
+    gloop = np.sin(2 * np.pi * (180 + 520 * np.exp(-t / 0.05)) * t) * np.exp(-t / 0.12)
+    splash = lowpass(rng.standard_normal(len(t)), 1800) * np.exp(-t / 0.05)
+    track = np.zeros(len(t))
+    place(track, 0.9 * gloop + 0.6 * splash, 0.0)
+    for at in (0.12, 0.19, 0.27):
+        tb = t_axis(0.05)
+        place(track, 0.25 * np.sin(2 * np.pi * rng.uniform(700, 1100) * tb) * np.exp(-tb / 0.012), at)
+    return finish(track, 0.5)
+
+
 if __name__ == "__main__":
     for i, f0 in enumerate((2750, 3080, 3420, 2900), 1):
         save(f"die_hit_{i}.wav", die_hit(f0))
@@ -292,4 +313,7 @@ if __name__ == "__main__":
     save("toggle_up.wav", toggle(True))
     save("toggle_down.wav", toggle(False))
     save("guard_open.wav", guard_open())
+    for i, f0 in enumerate((850, 1000, 1150), 1):
+        save(f"water_skip_{i}.wav", water_skip(f0))
+    save("water_plunk.wav", water_plunk())
     print("готово:", ", ".join(sorted(p.name for p in OUT.glob("*.wav"))))

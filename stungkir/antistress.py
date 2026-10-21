@@ -7,14 +7,21 @@ import math
 import random
 
 from PySide6.QtCore import QEasingCurve, QElapsedTimer, QPointF, QRectF, Qt, QTimer, QVariantAnimation
-from PySide6.QtGui import QColor, QFont, QImage, QPainter, QPainterPath, QPen, QRadialGradient
+from PySide6.QtGui import QColor, QFont, QImage, QLinearGradient, QPainter, QPainterPath, QPen, QRadialGradient
 from PySide6.QtWidgets import QButtonGroup, QHBoxLayout, QLabel, QPushButton, QStackedWidget, QWidget
 
 from . import config as C
 from .dialogs import Sheet
 
 COLUMNS, ROWS = 9, 6
-INDIGO, OCHRE = QColor("#2e2a6e"), QColor("#d4a02e")
+def _body():
+    """Цвет «тела» игрушек - из темы (у основной - индиго)."""
+    return C.toy_colors()["body"]
+
+
+def _glow():
+    """Цвет огонька - из темы (у основной - охра)."""
+    return C.toy_colors()["glow"]
 
 
 class BubbleWrap(QWidget):
@@ -448,22 +455,22 @@ class Spinner(QWidget):
                 body.addEllipse(lobe, size * 0.36, size * 0.36)
             body.addEllipse(QPointF(), size * 0.5, size * 0.5)
             body = body.simplified()
-            p.setPen(QPen(OCHRE, 2.4))
-            p.setBrush(INDIGO)
+            p.setPen(QPen(_glow(), 2.4))
+            p.setBrush(_body())
             p.drawPath(body)
             for k in range(3):
                 a = math.radians(k * 120 - 90)
                 lobe = QPointF(math.cos(a), math.sin(a)) * size * 0.62
-                p.setBrush(QColor("#1b1840"))
-                p.setPen(QPen(OCHRE, 2))
+                p.setBrush(_body().darker(220))
+                p.setPen(QPen(_glow(), 2))
                 p.drawEllipse(lobe, size * 0.22, size * 0.22)
-                p.setBrush(OCHRE.lighter(115))
+                p.setBrush(_glow().lighter(115))
                 p.setPen(Qt.NoPen)
                 p.drawEllipse(lobe, size * 0.08, size * 0.08)
             p.restore()
         p.setOpacity(1.0)
-        p.setBrush(OCHRE)
-        p.setPen(QPen(INDIGO.darker(130), 2))
+        p.setBrush(_glow())
+        p.setPen(QPen(_body().darker(130), 2))
         p.drawEllipse(QPointF(), size * 0.17, size * 0.17)          # центр под пальцем не крутится
         p.end()
 
@@ -682,6 +689,321 @@ class ZenSand(QWidget):
         p.end()
 
 
+class StoneSkip(QWidget):
+    """Блинчики: камень по воде. Зажми мышь у берега, оттяни вниз (сила) и вбок (куда), отпусти.
+    Колесо мыши - угол броска: чем площе, тем больше отскоков, но слишком низко - сразу «бульк».
+    Вид из-за спины: озеро уходит к горизонту, на воде остаются круги."""
+
+    GRAVITY = 9.8
+    CAMERA_BACK, CAMERA_HEIGHT, HAND = 3.0, 1.7, 1.1
+    MAX_SPEED = 30.0
+
+    def __init__(self, on_sound=None, on_result=None):
+        super().__init__()
+        self.on_sound = on_sound
+        self.on_result = on_result
+        self.setMinimumSize(COLUMNS * 52, ROWS * 52)
+        self.setCursor(Qt.OpenHandCursor)
+        self.angle = 12.0                       # градусы над водой
+        self.stone = None                       # [x вбок, высота, дальность, vx, vy, vz] в метрах
+        self.skips = 0
+        self.distance = 0.0
+        self.best = 0
+        self.best_distance = 0.0
+        self.ripples = []                       # (вбок, дальность, время рождения)
+        self.drops = []                         # брызги: [x, y, z, vx, vy, vz, время]
+        self.pull = None                        # (откуда тянем, где сейчас)
+        self.t = 0.0
+        self.clock = QElapsedTimer()
+        self.clock.start()
+        self._last = 0.0
+        self.timer = QTimer(self, interval=16)
+        self.timer.timeout.connect(self._frame)
+
+    # ---- перевод метров в точки экрана: вид из-за спины ----
+    def _horizon(self):
+        return self.height() * 0.36
+
+    def project(self, lateral, height, ahead):
+        z = ahead + self.CAMERA_BACK
+        f = self.height() * 0.95
+        return QPointF(self.width() / 2 + f * lateral / z, self._horizon() + f * (self.CAMERA_HEIGHT - height) / z), f / z
+
+    # ---- бросок ----
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton and self.stone is None:
+            self.pull = (event.position(), event.position())
+            self.setCursor(Qt.ClosedHandCursor)
+            self.update()
+
+    def mouseMoveEvent(self, event):
+        if self.pull is not None:
+            self.pull = (self.pull[0], event.position())
+            self.update()
+
+    def mouseReleaseEvent(self, _event):
+        if self.pull is None:
+            return
+        start, end = self.pull
+        self.pull = None
+        self.setCursor(Qt.OpenHandCursor)
+        dy = end.y() - start.y()                      # тянем вниз - бросок вперёд
+        dx = start.x() - end.x()                      # оттянул влево - полетит правее
+        if dy < 8:
+            self.update()
+            return
+        power = min(1.0, math.hypot(dx, dy) / (self.height() * 0.45))
+        self.throw(power, math.degrees(math.atan2(dx, dy)) * 0.5)
+
+    def wheelEvent(self, event):
+        step = 1.0 if event.angleDelta().y() > 0 else -1.0
+        self.angle = max(0.0, min(45.0, self.angle + step))
+        self.update()
+
+    def throw(self, power, aim=0.0, angle=None):
+        """Бросить: power 0..1 - сила, aim - градусы вбок, angle - над водой (по умолчанию свой)."""
+        angle = self.angle if angle is None else angle
+        speed = 4 + power * (self.MAX_SPEED - 4)
+        up = math.radians(angle)
+        side = math.radians(max(-25.0, min(25.0, aim)))
+        flat = speed * math.cos(up)
+        self.stone = [0.0, self.HAND, 0.4, flat * math.sin(side), speed * math.sin(up), flat * math.cos(side)]
+        self.skips, self.distance = 0, 0.0
+        self._last = self.clock.elapsed() / 1000
+        self.timer.start()
+
+    def _step(self, dt):
+        s = self.stone
+        s[4] -= self.GRAVITY * dt
+        s[0] += s[3] * dt
+        s[1] += s[4] * dt
+        s[2] += s[5] * dt
+        if s[1] > 0:
+            return
+        s[1] = 0.0
+        forward = math.hypot(s[3], s[5])
+        steep = -s[4] / max(forward, 0.01)            # насколько отвесно вошёл в воду
+        self.ripples.append((s[0], s[2], self.t))
+        if random.random() < self.skip_chance(steep, forward):
+            # отскок; каждый шлепок съедает скорость, и камень чуть уводит в сторону
+            self.skips += 1
+            s[4] = -s[4] * 0.55 + random.uniform(-0.1, 0.2)
+            s[3] = s[3] * 0.86 + random.uniform(-0.25, 0.25)
+            s[5] *= 0.86
+            self._sound("water_skip", min(1.0, 0.35 + forward / 25))
+            return
+        self._sound("water_plunk", min(1.0, 0.4 + forward / 30))
+        for _ in range(14):                             # брызги
+            self.drops.append([s[0], 0.0, s[2], random.uniform(-1.2, 1.2), random.uniform(1.5, 3.8),
+                               random.uniform(-1.0, 1.0), self.t])
+        self.distance = s[2]
+        self.stone = None
+        new_record = self.skips > self.best or (self.skips == self.best and self.distance > self.best_distance)
+        if self.skips > self.best:
+            self.best = self.skips
+        self.best_distance = max(self.best_distance, self.distance)
+        if self.on_result:
+            self.on_result(self.skips, self.distance, new_record and self.skips > 0)
+
+    @staticmethod
+    def skip_chance(steep, forward):
+        """Отскочит ли: лучше всего вход под 6-18 градусов; слишком отвесно - бульк, слишком плоско -
+        камень цепляет воду краем. Медленный камень тонет."""
+        if forward < 3.0 or steep > 0.5:
+            return 0.0
+        if steep < 0.1:
+            base = 0.6 + 3.5 * steep
+        elif steep <= 0.32:
+            base = 0.95
+        else:
+            base = 0.95 * (0.5 - steep) / 0.18
+        return base * min(1.0, (forward - 3.0) / 6.0)
+
+    def _sound(self, name, strength):
+        if self.on_sound:
+            self.on_sound(name, strength)
+
+    def finish(self):
+        """Долететь сразу (для проверок): шаги физики без экрана."""
+        while self.stone is not None:
+            self.t += 1 / 120
+            self._step(1 / 120)
+        self.timer.stop()
+
+    def _frame(self):
+        now = self.clock.elapsed() / 1000
+        dt = min(0.05, max(0.0, now - self._last))
+        self._last = now
+        for _ in range(4):
+            self.t += dt / 4
+            if self.stone is not None:
+                self._step(dt / 4)
+        for drop in self.drops:
+            drop[4] -= self.GRAVITY * dt
+            drop[0] += drop[3] * dt
+            drop[1] += drop[4] * dt
+            drop[2] += drop[5] * dt
+        self.drops = [d for d in self.drops if d[1] > -0.05]
+        self.ripples = [r for r in self.ripples if self.t - r[2] < 3.0]
+        if self.stone is None and not self.drops and not self.ripples:
+            self.timer.stop()
+        self.update()
+
+    # ---- рисование ----
+    def paintEvent(self, _event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        w, h, horizon = self.width(), self.height(), self._horizon()
+        clip = QPainterPath()
+        clip.addRoundedRect(QRectF(self.rect()).adjusted(2, 2, -2, -2), 12, 12)
+        p.setClipPath(clip)
+        colors = C.toy_colors()                         # небо и вода - в цветах темы
+        body, light, base = colors["body"], colors["glow"], colors["bg"]
+        sky = QLinearGradient(0, 0, 0, horizon)
+        sky.setColorAt(0, C.mix(base, "#000000", 0.1) if colors["dark"] else C.mix(body, "#ffffff", 0.5))
+        sky.setColorAt(0.65, C.mix(body, base, 0.2))
+        sky.setColorAt(1, C.mix(light, "#c98a4a", 0.4))
+        p.fillRect(QRectF(0, 0, w, horizon + 1), sky)
+        sun = QPointF(w * 0.68, horizon - h * 0.02)
+        glow = QRadialGradient(sun, h * 0.28)
+        glow.setColorAt(0, QColor(255, 210, 140, 200))
+        glow.setColorAt(1, QColor(255, 210, 140, 0))
+        p.setPen(Qt.NoPen)
+        p.setBrush(glow)
+        p.drawEllipse(sun, h * 0.28, h * 0.28)
+        p.setBrush(QColor("#ffe1a8"))
+        p.drawEllipse(sun, h * 0.035, h * 0.035)
+        # дальний берег: холмы и ели
+        rnd = random.Random(5)
+        hills = QPainterPath(QPointF(0, horizon))
+        for k in range(13):
+            hills.lineTo(QPointF(w * k / 12, horizon - h * rnd.uniform(0.02, 0.06)))
+        hills.lineTo(QPointF(w, horizon))
+        p.setBrush(C.mix(body, "#000000", 0.6))
+        p.drawPath(hills)
+        for _ in range(40):
+            x = rnd.uniform(0, w)
+            top = horizon - h * rnd.uniform(0.04, 0.09)
+            tree = QPainterPath(QPointF(x, top))
+            tree.lineTo(QPointF(x - h * 0.012, horizon))
+            tree.lineTo(QPointF(x + h * 0.012, horizon))
+            p.drawPath(tree)
+        # вода
+        water = QLinearGradient(0, horizon, 0, h)
+        water.setColorAt(0, C.mix(light, body, 0.5))
+        water.setColorAt(0.08, C.mix(body, base, 0.25))
+        water.setColorAt(1, C.mix(base, "#000000", 0.35 if colors["dark"] else 0.15))
+        p.fillRect(QRectF(0, horizon, w, h - horizon), water)
+        p.setBrush(QColor(255, 210, 150, 60))                  # дорожка солнца
+        for k in range(28):
+            y = horizon + (h - horizon) * (k / 28) ** 1.6
+            half = w * 0.01 + w * 0.05 * (k / 28)
+            wobble = math.sin(self.t * 2 + k) * half * 0.3
+            p.drawRect(QRectF(sun.x() - half + wobble, y, half * 2 * rnd.uniform(0.3, 1.0), 1.5 + k * 0.08))
+        p.setPen(QPen(QColor(255, 255, 255, 16), 1))           # мелкая рябь
+        for k in range(1, 40):
+            ahead = 60 / k
+            point, _scale = self.project(0, 0, ahead)
+            shift = math.sin(self.t * 1.3 + k * 0.7) * 20
+            p.drawLine(QPointF(shift, point.y()), QPointF(w + shift, point.y()))
+        # круги на воде
+        for lateral, ahead, born in self.ripples:
+            age = self.t - born
+            center, scale = self.project(lateral, 0, ahead)
+            radius = (0.5 + age * 2.4) * scale
+            alpha = int(170 * max(0.0, 1 - age / 3))
+            p.setPen(QPen(QColor(220, 225, 255, alpha), max(1.0, scale * 0.05)))
+            p.setBrush(Qt.NoBrush)
+            p.drawEllipse(center, radius, radius * 0.28)
+            p.drawEllipse(center, radius * 0.6, radius * 0.6 * 0.28)
+        # брызги
+        p.setPen(Qt.NoPen)
+        for x, y, z, *_rest in self.drops:
+            point, scale = self.project(x, max(0.0, y), z)
+            p.setBrush(QColor(220, 230, 255, 200))
+            p.drawEllipse(point, max(1.0, scale * 0.04), max(1.0, scale * 0.04))
+        # камень и его тень на воде
+        if self.stone is not None:
+            x, y, z = self.stone[0], self.stone[1], self.stone[2]
+            shadow, scale = self.project(x, 0, z)
+            p.setBrush(QColor(0, 0, 0, 70))
+            p.drawEllipse(shadow, max(3.0, scale * 0.2), max(1.0, scale * 0.05))
+            point, scale = self.project(x, y, z)
+            rx, ry = max(3.0, scale * 0.17), max(1.8, scale * 0.08)        # камень нарочно крупнее - чтобы видно
+            stone = QRadialGradient(point - QPointF(rx * 0.35, ry * 0.4), rx * 1.4)
+            stone.setColorAt(0, QColor("#d9d6e4"))
+            stone.setColorAt(1, QColor("#4a4858"))
+            p.setBrush(stone)
+            p.drawEllipse(point, rx, ry)
+        # ближний берег и рука с камнем
+        shore = QPainterPath(QPointF(0, h))
+        shore.lineTo(QPointF(0, h * 0.9))
+        shore.cubicTo(QPointF(w * 0.3, h * 0.86), QPointF(w * 0.7, h * 0.93), QPointF(w, h * 0.88))
+        shore.lineTo(QPointF(w, h))
+        p.setBrush(C.mix(base, "#000000", 0.3) if colors["dark"] else C.mix(body, "#000000", 0.35))
+        p.drawPath(shore)
+        p.setBrush(QColor(110, 100, 130, 90))
+        for _ in range(60):
+            p.drawEllipse(QPointF(rnd.uniform(0, w), rnd.uniform(h * 0.92, h)), rnd.uniform(1, 3), rnd.uniform(0.8, 2))
+        if self.pull is not None:
+            start, end = self.pull
+            power = min(1.0, math.hypot(end.x() - start.x(), end.y() - start.y()) / (h * 0.45))
+            p.setPen(QPen(QColor(232, 169, 58, 200), 3, Qt.DashLine, Qt.RoundCap))
+            p.drawLine(start, end)
+            p.setPen(Qt.NoPen)
+            p.setBrush(QColor(232, 169, 58, 230))
+            bar = QRectF(16, h - 26, (w - 32) * power, 8)
+            p.drawRoundedRect(bar, 4, 4)
+        # угол броска - дуга в углу
+        corner = QPointF(w - 70, h - 30)
+        p.setPen(QPen(QColor(255, 255, 255, 60), 2))
+        p.drawLine(corner, corner + QPointF(50, 0))
+        p.setPen(QPen(QColor(232, 169, 58, 220), 3, Qt.SolidLine, Qt.RoundCap))
+        up = math.radians(self.angle)
+        p.drawLine(corner, corner + QPointF(50 * math.cos(up), -50 * math.sin(up)))
+        p.setPen(QColor(230, 230, 245))
+        p.drawText(QRectF(corner.x() - 60, corner.y() - 24, 56, 20), Qt.AlignRight | Qt.AlignVCenter,
+                   f"{self.angle:.0f}°")
+        p.end()
+
+
+# ---------------- головоломка «Свет на пульте» ----------------
+# Щелчок переключает тумблер и соседей по узору; цель - зажечь все лампочки. Задачи делаются из
+# собранного пульта случайными щелчками (номер уровня - зерно), поэтому каждая решаема, а уровней
+# сколько угодно. Решение - те же щелчки: каждый можно отменить повтором, порядок не важен.
+PUZZLES = {
+    # ключ: (название, столбцы, строки, узор соседей, сколько щелчков на запутывание (от, до))
+    "easy": ("Лёгкая", 3, 3, ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)), (2, 3)),
+    "medium": ("Средняя", 4, 4, ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)), (4, 6)),
+    "hard": ("Трудная", 5, 5, ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)), (7, 10)),
+    "tricky": ("Хитрая", 5, 4, ((0, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)), (5, 8)),
+}
+
+
+def puzzle_flip(state, col, row, pattern):
+    """Щёлкнуть (col, row): переключить его и соседей по узору (за краем - ничего)."""
+    rows, cols = len(state), len(state[0])
+    for dx, dy in pattern:
+        x, y = col + dx, row + dy
+        if 0 <= x < cols and 0 <= y < rows:
+            state[y][x] = not state[y][x]
+
+
+def make_puzzle(kind, level):
+    """(состояние, решение) уровня: решение - множество тумблеров, которые надо щёлкнуть."""
+    _title, cols, rows, pattern, (low, high) = PUZZLES[kind]
+    rnd = random.Random(f"{kind}-{level}")
+    cells = [(x, y) for y in range(rows) for x in range(cols)]
+    for _ in range(50):
+        presses = set(rnd.sample(cells, rnd.randint(low, high)))
+        state = [[True] * cols for _ in range(rows)]
+        for x, y in presses:
+            puzzle_flip(state, x, y, pattern)
+        if not all(all(r) for r in state):
+            return state, presses
+    return state, presses
+
+
 class Toggles(QWidget):
     """Пульт тумблеров: щёлк вверх, щёлк вниз, лампочка горит. Под крышкой справа внизу -
     красный «Не трогать»: откинь крышку и щёлкни - пульт устроит переполох огоньками."""
@@ -692,13 +1014,21 @@ class Toggles(QWidget):
               "Чай", "Редактор", "Свет", "Сон", "НЕ ТРОГАТЬ")
     SPECIAL = (4, 2)
 
-    def __init__(self, on_sound=None):
+    def __init__(self, on_sound=None, on_change=None):
         super().__init__()
         self.on_sound = on_sound
+        self.on_change = on_change              # ход в головоломке, решено, новый уровень
         self.setMinimumSize(COLUMNS * 52, ROWS * 52)
         self.setCursor(Qt.PointingHandCursor)
+        self.cols, self.rows = self.COLS, self.ROWS_
         self.state = [[False] * self.COLS for _ in range(self.ROWS_)]
         self.flips = 0
+        self.puzzle = None                      # None - просто щёлкать; иначе ключ из PUZZLES
+        self.level = 1
+        self.moves = 0
+        self.solution = set()
+        self.hint = None
+        self.solved = False
         self.anim = {}
         self.guard_open = False
         self.guard_t = 0.0
@@ -712,8 +1042,40 @@ class Toggles(QWidget):
 
     def cell_rect(self, col, row):
         inner = QRectF(self.rect()).adjusted(14, 14, -14, -14)
-        w, h = inner.width() / self.COLS, inner.height() / self.ROWS_
+        w, h = inner.width() / self.cols, inner.height() / self.rows
+        if self.puzzle is not None:                       # головоломка - квадратные клетки по центру
+            side = min(w, h)
+            left = inner.left() + (inner.width() - side * self.cols) / 2
+            top = inner.top() + (inner.height() - side * self.rows) / 2
+            return QRectF(left + col * side, top + row * side, side, side)
         return QRectF(inner.left() + col * w, inner.top() + row * h, w, h)
+
+    # ---- головоломка ----
+    def start_puzzle(self, kind, level):
+        """kind None - просто щёлкать (пульт с надписями); иначе уровень головоломки."""
+        self.puzzle, self.level, self.moves, self.hint, self.solved = kind, level, 0, None, False
+        self.anim = {}
+        self._party.stop()
+        self.party = 0.0
+        if kind is None:
+            self.cols, self.rows = self.COLS, self.ROWS_
+            self.state = [[False] * self.cols for _ in range(self.rows)]
+            self.solution = set()
+        else:
+            _title, self.cols, self.rows, _pattern, _r = PUZZLES[kind]
+            self.state, self.solution = make_puzzle(kind, level)
+        self.guard_open, self.guard_t = False, 0.0
+        self._changed()
+        self.update()
+
+    def show_hint(self):
+        if self.puzzle is not None and self.solution and not self.solved:
+            self.hint = sorted(self.solution)[0]
+            self.update()
+
+    def _changed(self):
+        if self.on_change:
+            self.on_change()
 
     def _sound(self, name):
         if self.on_sound:
@@ -729,6 +1091,8 @@ class Toggles(QWidget):
         animation.start(QVariantAnimation.DeleteWhenStopped)
 
     def toggle(self, col, row):
+        if self.puzzle is not None:
+            return self._puzzle_click(col, row)
         if (col, row) == self.SPECIAL and not self.guard_open:
             self.guard_open = True
             self._sound("guard_open")
@@ -748,9 +1112,33 @@ class Toggles(QWidget):
             self._animate("guard", 1.0, 0.0, 180, lambda v: setattr(self, "guard_t", v))
         self.update()
 
+    def _puzzle_click(self, col, row):
+        if self.solved:
+            return
+        before = [r[:] for r in self.state]
+        puzzle_flip(self.state, col, row, PUZZLES[self.puzzle][3])
+        self.solution ^= {(col, row)}
+        self.moves += 1
+        self.flips += 1
+        self.hint = None
+        for y in range(self.rows):
+            for x in range(self.cols):
+                if before[y][x] != self.state[y][x]:
+                    on = self.state[y][x]
+                    self._animate((x, y), 0.0 if on else 1.0, 1.0 if on else 0.0, 150,
+                                  lambda v, k=(x, y): self.anim.__setitem__(k, v))
+        self._sound("toggle_up" if self.state[row][col] else "toggle_down")
+        if all(all(r) for r in self.state):
+            self.solved = True
+            self._party.stop()
+            self._party.start()
+            self._sound("chime")
+        self._changed()
+        self.update()
+
     def mousePressEvent(self, event):
-        for row in range(self.ROWS_):
-            for col in range(self.COLS):
+        for row in range(self.rows):
+            for col in range(self.cols):
                 if self.cell_rect(col, row).contains(event.position()):
                     self.toggle(col, row)
                     return
@@ -767,8 +1155,9 @@ class Toggles(QWidget):
         p.setRenderHint(QPainter.Antialiasing)
         panel = QRectF(self.rect()).adjusted(2, 2, -2, -2)
         metal = QRadialGradient(panel.topLeft() + QPointF(panel.width() * 0.3, panel.height() * 0.2), panel.width())
-        metal.setColorAt(0, QColor("#3b3f63"))
-        metal.setColorAt(1, QColor("#1b1d36"))
+        body = _body()
+        metal.setColorAt(0, C.mix(body, "#9aa0b8", 0.3))
+        metal.setColorAt(1, C.mix(body, "#000000", 0.5))
         p.setPen(QPen(QColor("#0e0f22"), 1.5))
         p.setBrush(metal)
         p.drawRoundedRect(panel, 12, 12)
@@ -788,8 +1177,8 @@ class Toggles(QWidget):
             p.setPen(QPen(QColor("#33354d"), 1.2))
             p.drawLine(corner - QPointF(2.6, 0), corner + QPointF(2.6, 0))
         font = p.font()
-        for row in range(self.ROWS_):
-            for col in range(self.COLS):
+        for row in range(self.rows):
+            for col in range(self.cols):
                 self._paint_switch(p, col, row, font)
         p.end()
 
@@ -797,6 +1186,8 @@ class Toggles(QWidget):
         rect = self.cell_rect(col, row)
         c = rect.center()
         unit = min(rect.width(), rect.height())
+        if self.puzzle is not None:
+            return self._paint_puzzle_switch(p, col, row, rect, unit)
         special = (col, row) == self.SPECIAL
         label = self.LABELS[row * self.COLS + col]
         # табличка с надписью
@@ -816,7 +1207,7 @@ class Toggles(QWidget):
         pivot = QPointF(c.x(), rect.top() + unit * 0.64)
         lamp = QPointF(c.x() + min(rect.width() * 0.3, unit * 0.42), pivot.y() - unit * 0.12)
         lamp_r = unit * 0.07
-        color = QColor("#ff5a4a") if special else OCHRE.lighter(120)
+        color = QColor("#ff5a4a") if special else _glow().lighter(120)
         if lit:
             glow = QRadialGradient(lamp, lamp_r * 3.2)
             glow.setColorAt(0, QColor(color.red(), color.green(), color.blue(), 150))
@@ -883,12 +1274,82 @@ class Toggles(QWidget):
                 p.drawRoundedRect(up, 3, 3)
 
 
-PAGES = ("Пупырка", "Мячик", "Спиннер", "Песок", "Тумблеры")
+    def _paint_puzzle_switch(self, p, col, row, rect, unit):
+        """Клетка головоломки - клавиша с подсветкой: горит охрой, погасшая - тёмное стекло."""
+        on = self.state[row][col]
+        t = self.anim.get((col, row), 1.0 if on else 0.0)
+        if self.party > 0:
+            t = 1.0 if self._lit(col, row) else 0.35
+        t = max(0.0, min(1.0, t))
+        key = rect.adjusted(rect.width() * 0.1, rect.height() * 0.1, -rect.width() * 0.1, -rect.height() * 0.1)
+        radius = key.width() * 0.16
+        p.setPen(Qt.NoPen)
+        p.setBrush(QColor(0, 0, 0, 90))                                   # тень клавиши
+        p.drawRoundedRect(key.translated(2, 4), radius, radius)
+        if t > 0.05:
+            glow = QRadialGradient(key.center(), key.width() * 0.9)
+            light = _glow()
+            glow.setColorAt(0, QColor(light.red(), light.green(), light.blue(), int(110 * t)))
+            glow.setColorAt(1, QColor(light.red(), light.green(), light.blue(), 0))
+            p.setBrush(glow)
+            p.drawEllipse(key.center(), key.width() * 0.9, key.height() * 0.9)
+        body, light = _body(), _glow()
+        off_top, off_bottom = C.mix(body, "#ffffff", 0.12), C.mix(body, "#000000", 0.55)
+        on_top, on_bottom = C.mix(light, "#ffffff", 0.45), C.mix(light, "#000000", 0.08)
+        face = QLinearGradient(key.topLeft(), key.bottomLeft())
+        face.setColorAt(0, C.mix(off_top, on_top, t))
+        face.setColorAt(1, C.mix(off_bottom, on_bottom, t))
+        p.setPen(QPen(QColor("#0b0b1c"), 1.5))
+        p.setBrush(face)
+        p.drawRoundedRect(key, radius, radius)
+        p.setPen(Qt.NoPen)                                                # блик сверху
+        p.setBrush(QColor(255, 255, 255, int(30 + 50 * t)))
+        shine = QRectF(key.left() + key.width() * 0.12, key.top() + key.height() * 0.07,
+                       key.width() * 0.76, key.height() * 0.22)
+        p.drawRoundedRect(shine, shine.height() / 2, shine.height() / 2)
+        if self.hint == (col, row):                                      # подсказка - пунктир вокруг
+            p.setPen(QPen(QColor(255, 240, 200, 220), max(2.0, unit * 0.03), Qt.DashLine))
+            p.setBrush(Qt.NoBrush)
+            p.drawRoundedRect(key.adjusted(-6, -6, 6, 6), radius + 4, radius + 4)
+
+    def _paint_lever(self, p, pivot, unit, t, special=False):
+        """Гайка и рычаг тумблера: t=1 - вверх (вкл), 0 - вниз."""
+        nut = QPainterPath()
+        nut_r = unit * 0.13
+        for k in range(6):
+            angle = math.pi / 6 + k * math.pi / 3
+            q = pivot + QPointF(math.cos(angle) * nut_r, math.sin(angle) * nut_r)
+            nut.moveTo(q) if k == 0 else nut.lineTo(q)
+        nut.closeSubpath()
+        steel = QRadialGradient(pivot - QPointF(nut_r * 0.4, nut_r * 0.5), nut_r * 1.6)
+        steel.setColorAt(0, QColor("#eef0f6"))
+        steel.setColorAt(1, QColor("#6b6f86"))
+        p.setPen(QPen(QColor("#22243a"), 1))
+        p.setBrush(steel)
+        p.drawPath(nut)
+        p.setBrush(QColor("#2a2c40"))
+        p.drawEllipse(pivot, nut_r * 0.45, nut_r * 0.45)
+        reach = unit * 0.25 * (2 * t - 1)
+        tip = pivot + QPointF(0, -reach)
+        p.setPen(QPen(QColor(0, 0, 0, 70), unit * 0.08, Qt.SolidLine, Qt.RoundCap))
+        p.drawLine(pivot + QPointF(2, 3), tip + QPointF(3, 4))
+        p.setPen(QPen(QColor("#d7d9e3"), unit * 0.07, Qt.SolidLine, Qt.RoundCap))
+        p.drawLine(pivot, tip)
+        knob = QRadialGradient(tip - QPointF(unit * 0.02, unit * 0.025), unit * 0.07)
+        knob.setColorAt(0, QColor("#ffffff"))
+        knob.setColorAt(1, QColor("#b02a22") if special else QColor("#8d90a6"))
+        p.setPen(QPen(QColor("#2a2c40"), 1))
+        p.setBrush(knob)
+        p.drawEllipse(tip, unit * 0.055, unit * 0.055)
+
+
+PAGES = ("Пупырка", "Мячик", "Спиннер", "Песок", "Тумблеры", "Блинчики")
 HINTS = {
     1: "Зажми мячик и подержи - сожмётся. Схвати и брось - отскочит",
     2: "Раскрути спиннер мышью",
     3: "Веди мышью с зажатой кнопкой - грабли оставят бороздки",
     4: "Щёлк. А красный - под крышкой: откинь и попробуй",
+    5: "Зажми мышь, оттяни вниз и отпусти. Колесо - угол: чем площе, тем больше блинчиков",
 }
 
 
@@ -904,9 +1365,13 @@ class StressDialog(Sheet):
         self.ball = SquishBall(on_bounce=lambda strength: self._play("ball_bounce", strength))
         self.spinner = Spinner(on_whirr=lambda strength: self._play("spinner", strength))
         self.sand = ZenSand(on_rake=lambda strength: self._play("sand_rake", strength))
-        self.toggles = Toggles(on_sound=lambda name: self._play(name, 0.8))
+        self.toggles = Toggles(on_sound=lambda name: self._play(name, 0.8), on_change=self._update_count)
+        toggles_page = self._toggles_page()
+        self.skip = StoneSkip(on_sound=lambda name, strength: self._play(name, strength), on_result=self._skipped)
+        self.skip.best = int(self.settings.value("skip_best", 0) or 0)
+        self.skip.best_distance = float(self.settings.value("skip_best_distance", 0) or 0)
         for index, (title, page) in enumerate(zip(PAGES, (self.wrap, self.ball, self.spinner, self.sand,
-                                                          self.toggles))):
+                                                          toggles_page, self.skip))):
             button = QPushButton(title)
             button.setCheckable(True)
             button.setAutoDefault(False)                 # иначе первая вкладка выглядит нажатой всегда
@@ -936,6 +1401,79 @@ class StressDialog(Sheet):
         self.content.addLayout(row)
         self._update_count()
 
+    def _toggles_page(self):
+        """Тумблеры: сверху - режим (просто щёлкать или головоломка), подсказка, заново, дальше."""
+        from PySide6.QtCore import QSettings
+        from PySide6.QtWidgets import QComboBox, QVBoxLayout
+        self.settings = QSettings(C.APP_ID, C.APP_ID)
+        page = QWidget()
+        column = QVBoxLayout(page)
+        column.setContentsMargins(0, 0, 0, 0)
+        bar = QHBoxLayout()
+        self.toggle_mode = QComboBox()
+        self.toggle_mode.addItem("Просто щёлкать", "")
+        for key, (title, cols, rows, _pattern, _range) in PUZZLES.items():
+            self.toggle_mode.addItem(f"Головоломка: {title.lower()} ({cols}×{rows})", key)
+        bar.addWidget(self.toggle_mode)
+        bar.addStretch()
+        self.hint_button = QPushButton("Подсказка")
+        self.restart_button = QPushButton("Заново")
+        self.next_button = QPushButton("Дальше")
+        for button, action in ((self.hint_button, self.toggles.show_hint), (self.restart_button, self._restart_level),
+                               (self.next_button, self._next_level)):
+            button.setAutoDefault(False)
+            button.clicked.connect(action)
+            bar.addWidget(button)
+        column.addLayout(bar)
+        column.addWidget(self.toggles, 1)
+        self.toggle_mode.currentIndexChanged.connect(lambda _i: self._start_toggles())
+        saved = self.settings.value("toggles_mode", "") or ""
+        self.toggle_mode.setCurrentIndex(max(0, self.toggle_mode.findData(saved)))
+        self._start_toggles()
+        return page
+
+    def _skipped(self, skips, distance, record):
+        self.settings.setValue("skip_best", self.skip.best)
+        self.settings.setValue("skip_best_distance", round(self.skip.best_distance, 1))
+        if skips == 0:
+            text = f"Бульк на {distance:.0f} м - сразу ко дну. Площе!"
+        else:
+            text = f"Блинчиков: {skips}, улетел на {distance:.0f} м"
+        if record:
+            text += " - новый рекорд!"
+        else:
+            text += f" · рекорд {self.skip.best}"
+        self.count.setText(text)
+
+    def _toggle_level(self, kind):
+        return max(1, int(self.settings.value(f"toggles_level_{kind}", 1) or 1))
+
+    def _start_toggles(self):
+        kind = self.toggle_mode.currentData() or None
+        self.settings.setValue("toggles_mode", kind or "")
+        self.toggles.start_puzzle(kind, self._toggle_level(kind) if kind else 1)
+        self._update_toggle_buttons()
+
+    def _restart_level(self):
+        self.toggles.start_puzzle(self.toggles.puzzle, self.toggles.level)
+        self._update_toggle_buttons()
+
+    def _next_level(self):
+        kind = self.toggles.puzzle
+        if kind is None:
+            return
+        level = self.toggles.level + 1
+        self.settings.setValue(f"toggles_level_{kind}", level)
+        self.toggles.start_puzzle(kind, level)
+        self._update_toggle_buttons()
+
+    def _update_toggle_buttons(self):
+        puzzle = self.toggles.puzzle is not None
+        for button in (self.hint_button, self.restart_button, self.next_button):
+            button.setVisible(puzzle)
+        self.next_button.setEnabled(puzzle and self.toggles.solved)
+        self.hint_button.setEnabled(puzzle and not self.toggles.solved)
+
     def _show_page(self, index):
         self.pages.setCurrentIndex(index)
         self.group.buttons()[index].setChecked(True)
@@ -957,7 +1495,19 @@ class StressDialog(Sheet):
         self._update_count()
 
     def _update_count(self):
+        if not hasattr(self, "count"):
+            return                                       # окно ещё собирается
         index = self.pages.currentIndex()
+        if index == 4 and self.toggles.puzzle is not None:
+            t = self.toggles
+            title = PUZZLES[t.puzzle][0]
+            if t.solved:
+                self.count.setText(f"{title}, уровень {t.level}: решено за {t.moves}! Жми «Дальше»")
+            else:
+                self.count.setText(f"{title}, уровень {t.level} · ходов {t.moves} · зажги все клавиши. "
+                                   "Клавиша переключает и соседей")
+            self._update_toggle_buttons()
+            return
         if index:
             self.count.setText(HINTS[index])
             return
