@@ -35,6 +35,14 @@ jobs:
           flatpak-builder --user --install-deps-from=flathub --force-clean --repo=repo build-dir \
             packaging/flatpak/page.codeberg.kirifestung.StungKir.yml 2>&1 | tee fp.log
           flatpak build-bundle repo StungKir.flatpak page.codeberg.kirifestung.StungKir
+      - name: Звук внутри песочницы
+        shell: bash
+        run: |
+          # чем блокнот сможет играть звуки во Flatpak: системные проигрыватели или Qt
+          players=$(flatpak build build-dir sh -c 'for p in pw-play paplay aplay; do command -v $p; done' 2>/dev/null | tr '\n' ' ')
+          if flatpak build build-dir python3 -c "from PySide6.QtMultimedia import QSoundEffect" 2>/dev/null; then qt=есть; else qt=нет; fi
+          echo "::notice title=Звук во Flatpak::проигрыватели: ${players:-нет}; QtMultimedia: $qt"
+          [ "$qt" = есть ] || [ -n "$players" ] || { echo "::error title=Звук во Flatpak::нечем играть звуки"; exit 1; }
       - name: Ошибки - в заметки запуска
         if: failure()
         shell: bash

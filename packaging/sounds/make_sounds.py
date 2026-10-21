@@ -235,6 +235,35 @@ def round_in():
     return finish(slide + snap, 0.45)
 
 
+def sand_rake():
+    """Грабли по песку: шуршание с крупинками, нарастает и стихает."""
+    t = t_axis(0.42)
+    hiss = lowpass(highpass(rng.standard_normal(len(t)), 700), 4200)
+    grains = (rng.random(len(t)) < 0.012) * rng.standard_normal(len(t))
+    grains = highpass(grains, 2500) * 2.5
+    envelope = np.sin(np.pi * t / t[-1]) ** 1.5
+    return finish((0.8 * hiss + grains) * envelope, 0.32)
+
+
+def toggle(up=True):
+    """Тумблер: пружина перескакивает - звонкий металлический щелчок с глухим упором."""
+    t = t_axis(0.12)
+    snap = metal(0.12, 4300 if up else 3700, [1.0, 1.9, 3.1], [1.0, 0.5, 0.25], [0.008, 0.005, 0.003])
+    thud = np.sin(2 * np.pi * (330 if up else 260) * t) * np.exp(-t / 0.012)
+    track = np.zeros(len(t) + int(0.02 * RATE))
+    place(track, 0.35 * highpass(rng.standard_normal(len(t)), 2000) * np.exp(-t / 0.003), 0.0)   # сдвинул рычаг
+    place(track, snap + 0.6 * thud, 0.012)
+    return finish(track, 0.55)
+
+
+def guard_open():
+    """Откинул защитную крышку: лёгкий пластиковый щелчок петли."""
+    t = t_axis(0.1)
+    click = highpass(rng.standard_normal(len(t)), 1500) * np.exp(-t / 0.006)
+    knock = np.sin(2 * np.pi * 520 * t) * np.exp(-t / 0.02)
+    return finish(click + 0.5 * knock, 0.4)
+
+
 if __name__ == "__main__":
     for i, f0 in enumerate((2750, 3080, 3420, 2900), 1):
         save(f"die_hit_{i}.wav", die_hit(f0))
@@ -259,4 +288,8 @@ if __name__ == "__main__":
     save("bone_settle.wav", rattle(lambda: bone_hit(1850, 0.12)))
     save("oak_settle.wav", rattle(lambda: oak_hit(230, 0.14)))
     save("round_in.wav", round_in())
+    save("sand_rake.wav", sand_rake())
+    save("toggle_up.wav", toggle(True))
+    save("toggle_down.wav", toggle(False))
+    save("guard_open.wav", guard_open())
     print("готово:", ", ".join(sorted(p.name for p in OUT.glob("*.wav"))))

@@ -181,6 +181,57 @@ class AntistressTest(WindowCase):
         self.assertFalse(dialog.refill.isVisible())
         dialog.close()
 
+    def test_sand_rake_goes_around_stones(self):
+        from PySide6.QtCore import QPointF
+        from stungkir.antistress import StressDialog
+        heard = []
+        dialog = StressDialog(None)
+        dialog.resize(760, 560)
+        dialog.show()
+        dialog._show_page(3)
+        sand = dialog.sand
+        sand.on_rake = heard.append
+        wait(0.05)
+        self.assertIn(len(sand.stones), (2, 3))
+        x, y, _r = sand.stones[0]
+        w, h = sand.width(), sand.height()
+        a, b = QPointF(0.02 * w, y * h), QPointF(0.98 * w, y * h)          # прямо через камень
+        runs = sand._tine_paths([a + (b - a) * (k / 60) for k in range(61)])
+        self.assertGreater(len(runs), sand.TINES)                          # зубья над камнем прервались
+        QTest.mousePress(sand, Qt.LeftButton, Qt.NoModifier, QPoint(20, 20))
+        for k in range(1, 12):
+            QTest.mouseMove(sand, QPoint(20 + k * 25, 20 + k * 6))
+            wait(0.02)
+        QTest.mouseRelease(sand, Qt.LeftButton, Qt.NoModifier, QPoint(300, 86))
+        self.assertEqual(sand.strokes, 1)
+        sand.grab()
+        dialog._refill()                                                   # «Разровнять»
+        self.assertEqual((sand.strokes, sand.lines), (0, []))
+        dialog.close()
+
+    def test_toggles_click_and_guarded_switch(self):
+        from stungkir.antistress import StressDialog, Toggles
+        heard = []
+        dialog = StressDialog(None)
+        dialog.show()
+        dialog._show_page(4)
+        panel = dialog.toggles
+        panel.on_sound = heard.append
+        panel.toggle(0, 0)
+        panel.toggle(0, 0)
+        self.assertEqual(heard, ["toggle_up", "toggle_down"])
+        col, row = Toggles.SPECIAL
+        panel.toggle(col, row)                                   # сначала откидывается крышка
+        self.assertFalse(panel.state[row][col])
+        self.assertTrue(panel.guard_open)
+        panel.toggle(col, row)
+        self.assertTrue(panel.state[row][col])
+        self.assertEqual(heard[-2:], ["guard_open", "toggle_up"])
+        wait(0.3)
+        self.assertGreater(panel.party, 0)                      # огоньки гуляют
+        panel.grab()
+        dialog.close()
+
     def test_f12_opens_it(self):
         w = self.window()
         seen = []

@@ -5,7 +5,8 @@
 
 Играет их отдельная маленькая программа системы (pw-play, paplay или aplay; на Windows - winsound),
 а не сам блокнот: если со звуком в системе что-то не так, падает она, а не окно с текстом.
-Нет ни одной - блокнот просто молчит."""
+Нет ни одной (так во Flatpak: в песочнице этих программ нет) - играет soundhelper.py, тоже
+отдельной программой, через Qt; нет и Qt-звука - блокнот просто молчит."""
 
 import array
 import os
@@ -27,6 +28,16 @@ HITS = ["die_hit_1", "die_hit_2", "die_hit_3", "die_hit_4"]
 VARIANTS = {"die_hit": HITS, "bone_hit": ["bone_hit_1", "bone_hit_2", "bone_hit_3"],
             "oak_hit": ["oak_hit_1", "oak_hit_2", "oak_hit_3"]}
 PLAYERS = ("pw-play", "paplay", "aplay")
+HELPER = Path(__file__).resolve().parent / "soundhelper.py"
+HELPER_RESTARTS = 3               # помощник упал столько раз - звук сломан, больше не запускаем
+
+
+def qt_audio_available():
+    try:
+        from PySide6.QtMultimedia import QSoundEffect  # noqa: F401
+        return True
+    except ImportError:
+        return False
 
 
 def cache_folder():
@@ -69,6 +80,8 @@ class Sounds:
         self.played = []                                         # что звучало - для проверок
         self.quiet = bool(os.environ.get("STUNGKIR_TEST_HOME"))  # проверки не шумят
         self._player = None
+        self._helper = None
+        self._helper_starts = 0
 
     def set_volume(self, name):
         self.volume = VOLUMES.get(name, VOLUMES[DEFAULT_VOLUME])
@@ -79,6 +92,8 @@ class Sounds:
                 self._player = "winsound"
             else:
                 self._player = next((p for p in PLAYERS if shutil.which(p)), "")
+                if not self._player and qt_audio_available():
+                    self._player = "qt"
         return self._player
 
     def play(self, name, strength=1.0, volume=None):
@@ -99,5 +114,28 @@ class Sounds:
             except (ImportError, RuntimeError):
                 pass
             return
+        if self._player == "qt":
+            self._play_qt(path)
+            return
         args = [str(path)] if self._player != "aplay" else ["-q", str(path)]
         QProcess.startDetached(self._player, args)
+
+    def _play_qt(self, path):
+        """Путь к звуку - строкой помощнику; не запущен или упал - запустить заново (не без конца)."""
+        from PySide6.QtCore import QProcess as Process
+        helper = self._helper
+        if helper is None or helper.state() == Process.NotRunning:
+            if self._helper_starts >= HELPER_RESTARTS or getattr(sys, "frozen", False):
+                return
+            self._helper_starts += 1
+            helper = Process()
+            helper.setProcessChannelMode(Process.ForwardedErrorChannel)
+            helper.start(sys.executable, [str(HELPER)])
+            self._helper = helper
+        helper.write((str(path) + "\n").encode("utf-8"))
+
+    def close(self):
+        if self._helper is not None:
+            self._helper.closeWriteChannel()
+            self._helper.waitForFinished(500)
+            self._helper = None

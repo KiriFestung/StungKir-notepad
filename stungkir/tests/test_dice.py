@@ -267,6 +267,33 @@ class SoundTest(unittest.TestCase):
         die.finish()
         self.assertEqual(heard, ["coin_flick", "coin_land", "coin_land"])
 
+    def test_qt_plays_when_system_has_no_player(self):
+        """Во Flatpak нет pw-play, paplay и aplay - тогда звук играет сам Qt."""
+        import shutil
+        import sys
+        from unittest import mock
+        from stungkir import sounds
+        app()
+        if sys.platform.startswith("win") or not sounds.qt_audio_available():
+            self.skipTest("на Windows - winsound; без QtMultimedia - тишина")
+        box = sounds.Sounds()
+        with mock.patch.object(shutil, "which", lambda name: None):
+            self.assertEqual(box.player(), "qt")
+        box.quiet = False
+        played = []
+        with mock.patch.object(box, "_play_qt", lambda path: played.append(path)):
+            box.play("bone_settle", 1.0)
+        self.assertEqual(len(played), 1)
+        self.assertTrue(str(played[0]).endswith(".wav"))
+        # помощник - отдельная программа: даже если звук в системе сломан и он падает, блокнот жив
+        box._play_qt = sounds.Sounds._play_qt.__get__(box)
+        for _ in range(sounds.HELPER_RESTARTS + 3):
+            box._play_qt(played[0])
+            if box._helper is not None:
+                box._helper.waitForFinished(1500)
+        self.assertLessEqual(box._helper_starts, sounds.HELPER_RESTARTS)
+        box.close()
+
     def test_volume_is_baked_into_file(self):
         import os
         import tempfile

@@ -247,6 +247,7 @@ class FreeBoard(QGraphicsView):
         self.items_by_id = {}
         self.links = []                  # [LinkItem]
         self.linking = None              # карточка, от которой тянем нитку
+        self._linking_id = None
         self._z = 1.0
         self._loading = False
         self._moved = False
@@ -324,11 +325,17 @@ class FreeBoard(QGraphicsView):
     # ---- нитки ----
     def start_link(self, item):
         self.linking = item
+        self._linking_id = card_id(item.card)
         self.viewport().setCursor(Qt.CrossCursor)
 
     def finish_link(self, item):
         first, self.linking = self.linking, None
         self.viewport().unsetCursor()
+        if first is not None:
+            # доску могли перечитать (сохранение, изменение снаружи), пока тянули нитку:
+            # старая карточка уже удалена - берём ту же карточку с новой доски
+            from shiboken6 import isValid
+            first = self.items_by_id.get(self._linking_id) if not isValid(first) else first
         if first is None or first is item:
             return
         for link in self.links:
