@@ -1,0 +1,89 @@
+# Проверка и сборка на настоящих машинах GitHub при каждом изменении (и по кнопке «Run workflow»).
+# Linux: все проверки. Windows: проверки, сборка программы, проверка готовой сборки и установщик.
+# Готовый установщик - во вкладке Actions → нужный запуск → Artifacts → «StungKir-Windows».
+name: Проверка и сборка
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    name: Linux - проверки
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Библиотеки системы для Qt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libxkbcommon0 libxcb-cursor0 libgl1 libenchant-2-2 hunspell-ru libfontconfig1 libdbus-1-3
+      - name: Python-пакеты
+        run: pip install "PySide6>=6.8,<7" "cryptography>=42" "python-docx>=1.1" "spylls>=0.1.7" "pyenchant>=3.2"
+      - name: Проверки
+        env:
+          QT_QPA_PLATFORM: offscreen
+          FUZZ_STEPS: "800"
+        run: python -m stungkir --test
+
+  windows:
+    name: Windows - проверки и установщик
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Inno Setup (для установщика)
+        run: choco install innosetup -y --no-progress
+      - name: Сборка, проверка готовой сборки, установщик
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File packaging\windows\build-windows.ps1 *>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        # (вывод сборки дублируется в build.log - для заметки об ошибке ниже)
+      - name: Отчёт проверок
+        if: always()
+        shell: pwsh
+        run: Get-Content (Join-Path $env:TEMP "stungkir-test-report.txt") -ErrorAction SilentlyContinue
+      - name: Ошибки - в заметки запуска
+        if: failure()
+        shell: pwsh
+        run: |
+          # главное из отчёта и журнала - заметкой на странице запуска (видно без скачивания журнала)
+          $lines = @()
+          $report = Join-Path $env:TEMP "stungkir-test-report.txt"
+          if (Test-Path $report) {
+            $lines += Select-String -Path $report -Pattern "^(FAIL|ERROR)|Error|Traceback|assert|File " | Select-Object -First 50 | ForEach-Object { $_.Line }
+            $lines += Get-Content $report -Tail 15
+          }
+          if (Test-Path build.log) { $lines += Get-Content build.log -Tail 40 }
+          $msg = ($lines -join "%0A") -replace "`r", ""
+          Write-Output "::error title=Windows::$msg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StungKir-Windows
+          path: dist/StungKir-Setup-*.exe
+          retention-days: 30
+      - name: Переносная версия для флешки
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force portable | Out-Null
+          Copy-Item -Recurse dist\StungKir portable\StungKir
+          Copy-Item packaging\windows\portable.txt portable\StungKir\portable.txt
+          Compress-Archive -Path portable\StungKir -DestinationPath dist\StungKir-Windows-portable.zip
+      - name: Выложить установщик в «Релизы»
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete windows-latest --yes --cleanup-tag || true
+          gh release create windows-latest dist/StungKir-Setup-*.exe dist/StungKir-Windows-portable.zip --prerelease \
+            --target "${{ github.sha }}" --title "StungKir для Windows - свежая сборка" \
+            --notes "StungKir-Setup - установщик. StungKir-Windows-portable.zip - переносная версия для флешки: распакуй и запускай StungKir.exe, тексты и настройки хранятся рядом с ней. Обе проверены тестами на Windows."

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=StungKir
+Comment=Writing notepad
+Comment[ru]=Блокнот для писательства
+Exec=stungkir
+Icon=page.codeberg.kirifestung.StungKir
+Terminal=false
+Categories=Office;WordProcessor;
+Keywords=writing;novel;notepad;писатель;блокнот;роман;
+StartupNotify=true
+StartupWMClass=stungkir

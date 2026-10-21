@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>page.codeberg.kirifestung.StungKir</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>StungKir</name>
+  <summary>Writing notepad for novels and worldbuilding</summary>
+  <summary xml:lang="ru">Писательский блокнот для романов и мира</summary>
+  <developer id="page.codeberg.kirifestung">
+    <name>KiriFesTung</name>
+  </developer>
+  <description>
+    <p xml:lang="ru">Тёмный и спокойный блокнот для писателя: главы по категориям, справочник мира с подсказками
+      прямо в тексте, заметки на полях, версии и снимки книги, сборка в PDF, Word и EPUB, дневная тема по расписанию.</p>
+    <p>A calm notepad for writers: chapters in categories, a world reference with hints right in the text,
+      margin notes, versions and project snapshots, export to PDF, Word and EPUB, a scheduled daytime theme.</p>
+  </description>
+  <launchable type="desktop-id">page.codeberg.kirifestung.StungKir.desktop</launchable>
+  <url type="homepage">https://codeberg.org/KiriFesTung/StungKir</url>
+  <url type="bugtracker">https://codeberg.org/KiriFesTung/StungKir/issues</url>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="1.0.0" date="2026-10-14"/>
+  </releases>
+</component>

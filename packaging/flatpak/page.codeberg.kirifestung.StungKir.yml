@@ -1,0 +1,41 @@
+# Сборка Flatpak:  flatpak-builder --user --install --force-clean build-dir packaging/flatpak/page.codeberg.kirifestung.StungKir.yml
+# (из корня проекта; нужны flatpak-builder и репозиторий flathub)
+id: page.codeberg.kirifestung.StungKir
+runtime: org.kde.Platform
+runtime-version: '6.8'
+sdk: org.kde.Sdk
+base: io.qt.PySide.BaseApp
+base-version: '6.8'
+command: stungkir
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # тексты лежат в ~/StungKir, книгу собирают и файлы добавляют откуда угодно из дома
+  - --filesystem=home
+  # чтение вслух: голос speech-dispatcher снаружи песочницы
+  - --filesystem=xdg-run/speech-dispatcher:ro
+  # стук кубиков и звон монетки
+  - --socket=pulseaudio
+cleanup-commands:
+  - /app/cleanup-BaseApp.sh
+modules:
+  - python3-deps.json
+  - name: stungkir
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/lib/stungkir-app
+      - cp -r stungkir /app/lib/stungkir-app/
+      - rm -rf /app/lib/stungkir-app/stungkir/__pycache__ /app/lib/stungkir-app/stungkir/tests/__pycache__
+      - install -Dm755 packaging/flatpak/stungkir.sh /app/bin/stungkir
+      # русский словарь для проверки орфографии (через spylls) и шрифты DejaVu
+      - install -Dm644 packaging/dictionaries/ru_RU.dic /app/share/hunspell/ru_RU.dic
+      - install -Dm644 packaging/dictionaries/ru_RU.aff /app/share/hunspell/ru_RU.aff
+      - install -Dm644 -t /app/share/fonts/dejavu packaging/fonts/*.ttf
+      - install -Dm644 packaging/flatpak/page.codeberg.kirifestung.StungKir.desktop /app/share/applications/page.codeberg.kirifestung.StungKir.desktop
+      - install -Dm644 packaging/flatpak/page.codeberg.kirifestung.StungKir.svg /app/share/icons/hicolor/scalable/apps/page.codeberg.kirifestung.StungKir.svg
+      - install -Dm644 packaging/flatpak/page.codeberg.kirifestung.StungKir.metainfo.xml /app/share/metainfo/page.codeberg.kirifestung.StungKir.metainfo.xml
+    sources:
+      - type: dir
+        path: ../..

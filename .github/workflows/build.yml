@@ -1,0 +1,50 @@
+# Пакет Flatpak для Linux - только по кнопке «Run workflow» (вкладка Actions).
+# Проверки и сборка для Windows - в check.yml, приложение для телефона - в android.yml.
+name: Flatpak
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+
+jobs:
+  flatpak:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Место на диске (KDE SDK и PySide большие)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune -af || true
+          df -h /
+      - uses: actions/checkout@v4
+      - name: flatpak-builder
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q flatpak flatpak-builder
+      - name: Сборка
+        shell: bash
+        run: |
+          set -o pipefail
+          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak-builder --user --install-deps-from=flathub --force-clean --repo=repo build-dir \
+            packaging/flatpak/page.codeberg.kirifestung.StungKir.yml 2>&1 | tee fp.log
+          flatpak build-bundle repo StungKir.flatpak page.codeberg.kirifestung.StungKir
+      - name: Ошибки - в заметки запуска
+        if: failure()
+        shell: bash
+        run: |
+          grep -iE "error|fail|traceback|not found|no such|cannot|unable" fp.log | grep -v "^ *$" | tail -40 > errors.txt || true
+          tail -30 fp.log >> errors.txt
+          msg=$(sed -e 's/%/%25/g' errors.txt | awk '{printf "%s%%0A", $0}')
+          echo "::error title=Flatpak::${msg}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StungKir-Flatpak
+          path: StungKir.flatpak
+      - name: Выложить в «Релизы»
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete linux-latest --yes --cleanup-tag || true
+          gh release create linux-latest StungKir.flatpak --prerelease \
+            --target "${{ github.sha }}" --title "StungKir для Linux (Flatpak) - свежая сборка" \
+            --notes "Поставить: flatpak install --user StungKir.flatpak (нужен flathub: flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo). Запуск: flatpak run page.codeberg.kirifestung.StungKir"

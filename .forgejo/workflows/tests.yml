@@ -1,0 +1,22 @@
+# Автопроверка на Codeberg (Forgejo Actions): при каждом изменении прогоняются все тесты.
+# Включается в настройках репозитория: Settings -> Units -> Actions.
+name: tests
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: codeberg-tiny
+    container:
+      image: python:3.12-bookworm
+    steps:
+      - uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Системные библиотеки для Qt и словаря
+        run: |
+          apt-get update -q
+          apt-get install -y -q libgl1 libegl1 libxkbcommon0 libfontconfig1 libdbus-1-3 \
+            hunspell-ru libenchant-2-2 fonts-dejavu-core
+      - name: Библиотеки Python
+        run: pip install "PySide6>=6.8,<7" pyenchant cryptography python-docx spylls
+      - name: Тесты
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m stungkir --test

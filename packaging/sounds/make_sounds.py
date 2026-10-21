@@ -1,0 +1,262 @@
+# StungKir - писательский блокнот. Copyright (C) 2026 KiriFesTung
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Звуки кубиков, монетки, рулетки и пупырки - синтез, без чужих записей. Запуск из корня проекта:
+    python3 packaging/sounds/make_sounds.py
+Пишет stungkir/sounds/*.wav (моно, 44,1 кГц, 16 бит). Нужен numpy - только здесь, не в самом блокноте."""
+
+import wave
+from pathlib import Path
+
+import numpy as np
+
+RATE = 44100
+OUT = Path(__file__).resolve().parents[2] / "stungkir" / "sounds"
+rng = np.random.default_rng(20261015)
+
+
+def t_axis(seconds):
+    return np.arange(int(seconds * RATE)) / RATE
+
+
+def lowpass(x, cutoff):
+    a = np.exp(-2 * np.pi * cutoff / RATE)
+    y = np.empty_like(x)
+    acc = 0.0
+    for i, v in enumerate(x):
+        acc = (1 - a) * v + a * acc
+        y[i] = acc
+    return y
+
+
+def highpass(x, cutoff):
+    return x - lowpass(x, cutoff)
+
+
+def wood(seconds, strength=1.0):
+    """Глухой удар по деревянному столу."""
+    t = t_axis(seconds)
+    noise = lowpass(lowpass(rng.standard_normal(len(t)), 900), 900)
+    body = noise / (np.abs(noise).max() + 1e-9) * np.exp(-t / 0.016)
+    knock = np.sin(2 * np.pi * 165 * t) * np.exp(-t / 0.028) + 0.5 * np.sin(2 * np.pi * 310 * t) * np.exp(-t / 0.018)
+    return strength * (0.75 * body + 0.6 * knock)
+
+
+def metal(seconds, f0, ratios, amps, decays, wobble=0.0):
+    """Звон металла: неровный ряд призвуков, каждый гаснет со своей скоростью."""
+    t = t_axis(seconds)
+    out = np.zeros_like(t)
+    for ratio, amp, decay in zip(ratios, amps, decays):
+        f = f0 * ratio * (1 + rng.uniform(-0.004, 0.004))
+        phase = rng.uniform(0, 2 * np.pi)
+        tone = np.sin(2 * np.pi * f * t + phase)
+        if wobble:
+            tone *= 1 - wobble * (0.5 + 0.5 * np.sin(2 * np.pi * (7 + 20 * t) * t))   # монетка «дребезжит»
+        out += amp * tone * np.exp(-t / decay)
+    click = highpass(rng.standard_normal(len(t)), 3000) * np.exp(-t / 0.0012)
+    return out + 0.35 * click
+
+
+def place(track, sound, at):
+    start = int(at * RATE)
+    end = min(len(track), start + len(sound))
+    track[start:end] += sound[:end - start]
+
+
+def finish(x, peak=0.7):
+    x = x - x.mean()
+    fade = min(len(x), int(0.02 * RATE))
+    x[-fade:] *= np.linspace(1, 0, fade)
+    attack = int(0.0008 * RATE)
+    x[:attack] *= np.linspace(0, 1, attack)
+    return x / (np.abs(x).max() + 1e-9) * peak
+
+
+def save(name, x):
+    OUT.mkdir(parents=True, exist_ok=True)
+    data = (np.clip(x, -1, 1) * 32767).astype("<i2").tobytes()
+    with wave.open(str(OUT / name), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(RATE)
+        w.writeframes(data)
+
+
+def die_hit(f0, length=0.42):
+    """Металлический кубик стукнулся о стол."""
+    ratios = [1.0, 1.53, 2.27, 2.94, 3.71, 4.62]
+    amps = [1.0, 0.7, 0.5, 0.33, 0.22, 0.12]
+    decays = [0.11, 0.085, 0.065, 0.05, 0.038, 0.03]
+    ring = metal(length, f0, ratios, amps, decays)
+    return finish(0.9 * wood(length) + 0.28 * ring)
+
+
+def die_settle():
+    """Докатился: два-три коротких перестука на ребре."""
+    track = np.zeros(int(0.36 * RATE))
+    for at, strength, f0 in ((0.0, 1.0, 3050), (0.045, 0.55, 3320), (0.078, 0.3, 2980)):
+        place(track, strength * die_hit(f0, 0.22), at)
+    return finish(track, 0.55)
+
+
+def coin_flick():
+    """Щелчок пальцем по монетке - тонкий высокий звон."""
+    ring = metal(0.7, 4350, [1.0, 2.41, 3.92], [1.0, 0.25, 0.1], [0.42, 0.16, 0.08])
+    return finish(ring, 0.45)
+
+
+def coin_land():
+    """Монетка упала на стол, звенит и дребезжит, пока не ляжет."""
+    ring = metal(1.1, 3150, [1.0, 1.006, 2.33, 3.81, 5.42], [1.0, 0.8, 0.45, 0.25, 0.12],
+                 [0.55, 0.5, 0.3, 0.16, 0.09], wobble=0.55)
+    track = 0.55 * wood(1.1) + 0.35 * ring
+    return finish(track, 0.6)
+
+
+def drum_spin():
+    """Барабан револьвера крутится: трещотка щелчков, всё реже, как он тормозит."""
+    track = np.zeros(int(1.35 * RATE))
+    at, gap = 0.0, 0.028
+    while at < 1.2:
+        tick = metal(0.05, 5200 + rng.uniform(-200, 200), [1.0, 1.9], [1.0, 0.4], [0.008, 0.005])
+        place(track, (0.5 + 0.5 * (1 - at / 1.2)) * tick, at)
+        at += gap
+        gap *= 1.09
+    return finish(track, 0.4)
+
+
+def trigger_click():
+    """Курок щёлкнул по пустому гнезду: сухой короткий металл."""
+    hit = metal(0.12, 2600, [1.0, 2.7, 4.1], [1.0, 0.5, 0.3], [0.018, 0.012, 0.008])
+    return finish(0.6 * hit + 0.4 * wood(0.12, 0.6), 0.55)
+
+
+def bang():
+    """«Выстрел» - глухой мультяшный хлопок, не оглушает."""
+    t = t_axis(0.6)
+    noise = lowpass(rng.standard_normal(len(t)), 1800) * np.exp(-t / 0.07)
+    thump = np.sin(2 * np.pi * (70 + 60 * np.exp(-t / 0.05)) * t) * np.exp(-t / 0.16)
+    return finish(0.8 * noise / (np.abs(noise).max() + 1e-9) + 0.9 * thump, 0.6)
+
+
+def pop():
+    """Лопнул пузырёк пупырки: короткий сухой щелчок с крошечным «чпок» вниз."""
+    t = t_axis(0.09)
+    burst = highpass(rng.standard_normal(len(t)), 1500) * np.exp(-t / 0.006)
+    tone = np.sin(2 * np.pi * (900 * np.exp(-t / 0.02) + 300) * t) * np.exp(-t / 0.018)
+    return finish(0.7 * burst + 0.5 * tone, 0.5)
+
+
+def ball_bounce():
+    """Резиновый мячик ударился: мягкий упругий «бум» с коротким призвуком резины."""
+    t = t_axis(0.22)
+    body = np.sin(2 * np.pi * (110 + 140 * np.exp(-t / 0.012)) * t) * np.exp(-t / 0.045)
+    rubber = np.sin(2 * np.pi * 420 * t) * np.exp(-t / 0.012)
+    slap = lowpass(rng.standard_normal(len(t)), 2500) * np.exp(-t / 0.004)
+    return finish(body + 0.35 * rubber + 0.25 * slap / (np.abs(slap).max() + 1e-9), 0.6)
+
+
+def type_key(f0):
+    """Клавиша печатной машинки: удар литеры по валику - щелчок, металл и глухой стук."""
+    t = t_axis(0.11)
+    strike = highpass(rng.standard_normal(len(t)), 2000) * np.exp(-t / 0.0025)
+    slug = metal(0.11, f0, [1.0, 2.3, 3.7], [1.0, 0.4, 0.2], [0.012, 0.008, 0.005])
+    thud = np.sin(2 * np.pi * 180 * t) * np.exp(-t / 0.015)
+    return finish(0.8 * strike + 0.35 * slug + 0.6 * thud, 0.5)
+
+
+def type_space():
+    """Пробел: широкая планка - стук глуше, без звона литеры."""
+    t = t_axis(0.12)
+    thud = np.sin(2 * np.pi * 140 * t) * np.exp(-t / 0.02)
+    clack = lowpass(rng.standard_normal(len(t)), 1800) * np.exp(-t / 0.006)
+    return finish(0.9 * thud + 0.6 * clack / (np.abs(clack).max() + 1e-9), 0.45)
+
+
+def type_return():
+    """Новая строка: звоночек каретки и протяжка валика."""
+    track = np.zeros(int(0.7 * RATE))
+    bell = metal(0.6, 2350, [1.0, 2.76, 5.4], [1.0, 0.3, 0.1], [0.35, 0.12, 0.05])
+    place(track, 0.7 * bell, 0.0)
+    t = t_axis(0.28)
+    ratchet = np.zeros_like(t)
+    for at in np.arange(0.0, 0.26, 0.022):
+        start = int(at * RATE)
+        n = min(len(t) - start, int(0.01 * RATE))
+        ratchet[start:start + n] += highpass(rng.standard_normal(n), 2500) * np.exp(-np.arange(n) / RATE / 0.002)
+    place(track, 0.5 * ratchet, 0.18)
+    return finish(track, 0.5)
+
+
+def chime():
+    """Мягкий звоночек «пора отдохнуть глазам»: два тихих тона."""
+    track = np.zeros(int(1.6 * RATE))
+    place(track, metal(1.2, 880, [1.0, 2.0, 3.01], [1.0, 0.25, 0.08], [0.6, 0.3, 0.15]), 0.0)
+    place(track, metal(1.2, 1318.5, [1.0, 2.0, 3.01], [1.0, 0.25, 0.08], [0.6, 0.3, 0.15]), 0.28)
+    return finish(track, 0.4)
+
+
+def spinner():
+    """Спиннер: тихий подшипниковый шорох с ритмичным посвистом."""
+    t = t_axis(0.5)
+    hiss = highpass(lowpass(rng.standard_normal(len(t)), 5000), 900)
+    hum = 0.5 + 0.5 * np.sin(2 * np.pi * 24 * t)
+    env = np.minimum(1, t / 0.05) * np.exp(-t / 0.35)
+    return finish(hiss * hum * env, 0.3)
+
+
+def bone_hit(f0, length=0.2):
+    """Костяной кубик о стол: сухой высокий «ток», почти без звона."""
+    t = t_axis(length)
+    tok = np.sin(2 * np.pi * f0 * t) * np.exp(-t / 0.009) + 0.5 * np.sin(2 * np.pi * f0 * 1.7 * t) * np.exp(-t / 0.006)
+    click = highpass(rng.standard_normal(len(t)), 2500) * np.exp(-t / 0.0015)
+    return finish(0.6 * wood(length, 0.7) + 0.55 * tok + 0.4 * click, 0.6)
+
+
+def oak_hit(f0, length=0.26):
+    """Дубовый кубик о стол: глухой тёплый стук, ниже и мягче кости."""
+    t = t_axis(length)
+    body = np.sin(2 * np.pi * f0 * t) * np.exp(-t / 0.03) + 0.4 * np.sin(2 * np.pi * f0 * 2.3 * t) * np.exp(-t / 0.012)
+    return finish(wood(length, 1.0) + 0.6 * body, 0.6)
+
+
+def rattle(hit, gaps=((0.0, 1.0), (0.05, 0.5), (0.085, 0.28))):
+    """Докатился: два-три коротких перестука."""
+    track = np.zeros(int(0.36 * RATE))
+    for at, strength in gaps:
+        place(track, strength * hit(), at)
+    return finish(track, 0.5)
+
+
+def round_in():
+    """Патрон входит в гнездо барабана: короткий металлический щелчок с притиром."""
+    t = t_axis(0.09)
+    slide = highpass(rng.standard_normal(len(t)), 3500) * np.exp(-t / 0.02) * 0.25
+    snap = metal(0.09, 3900, [1.0, 2.2], [1.0, 0.4], [0.01, 0.006])
+    return finish(slide + snap, 0.45)
+
+
+if __name__ == "__main__":
+    for i, f0 in enumerate((2750, 3080, 3420, 2900), 1):
+        save(f"die_hit_{i}.wav", die_hit(f0))
+    save("die_settle.wav", die_settle())
+    save("coin_flick.wav", coin_flick())
+    save("coin_land.wav", coin_land())
+    save("drum_spin.wav", drum_spin())        # новые - после старых, чтобы старые звучали как раньше
+    save("trigger_click.wav", trigger_click())
+    save("bang.wav", bang())
+    save("pop.wav", pop())
+    save("ball_bounce.wav", ball_bounce())
+    for i, f0 in enumerate((3100, 3350, 2950), 1):
+        save(f"type_{i}.wav", type_key(f0))
+    save("type_space.wav", type_space())
+    save("type_return.wav", type_return())
+    save("chime.wav", chime())
+    save("spinner.wav", spinner())
+    for i, f0 in enumerate((1750, 1980, 1620), 1):
+        save(f"bone_hit_{i}.wav", bone_hit(f0))
+    for i, f0 in enumerate((210, 245, 190), 1):
+        save(f"oak_hit_{i}.wav", oak_hit(f0))
+    save("bone_settle.wav", rattle(lambda: bone_hit(1850, 0.12)))
+    save("oak_settle.wav", rattle(lambda: oak_hit(230, 0.14)))
+    save("round_in.wav", round_in())
+    print("готово:", ", ".join(sorted(p.name for p in OUT.glob("*.wav"))))

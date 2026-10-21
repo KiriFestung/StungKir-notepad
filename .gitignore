@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv*/
+build/
+dist/
+build-dir/
+.flatpak-builder/
+*.part
+*.egg-info/
+.ruff_cache/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+.kotlin/

@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stungkir"
+version = "1.0.0"
+description = "Писательский блокнот: главы, справочник мира, заметки на полях, сборка книги, дневная и ночная темы"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [{ name = "KiriFesTung" }]
+requires-python = ">=3.10"
+keywords = ["writing", "editor", "notepad", "novel", "писатель", "блокнот"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Natural Language :: Russian",
+    "Topic :: Text Editors :: Word Processors",
+    "Environment :: X11 Applications :: Qt",
+]
+dependencies = [
+    "PySide6>=6.8,<7",
+    "cryptography>=42",
+    "python-docx>=1.1",
+    "spylls>=0.1.7",                                   # проверка орфографии, если нет системного Hunspell
+    "pyenchant>=3.2; platform_system == 'Linux'",     # системный Hunspell на Linux
+]
+
+[project.gui-scripts]
+stungkir = "stungkir.app:run"
+
+[project.urls]
+Homepage = "https://codeberg.org/KiriFesTung/StungKir"
+Issues = "https://codeberg.org/KiriFesTung/StungKir/issues"
+
+[tool.setuptools]
+packages = ["stungkir", "stungkir.tests"]
+
+[tool.setuptools.package-data]
+stungkir = ["fonts/*.ttf", "fonts/*.txt", "sounds/*.wav", "art/*.png", "art/icons/*.png"]   # шрифты (OFL), звуки, рисунки
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+# ошибки, которые почти всегда - настоящие баги: неопределённые и неиспользуемые имена, синтаксис
+select = ["F", "E9", "B006", "B007", "B023"]
