@@ -141,6 +141,23 @@ class RandomWindowTest(WindowCase):
         self.assertRegex(self.entries[-1], r"^Число 5–9: [5-9]$")
         self.assertEqual(int(d.settings.value("random_high")), 5)
 
+    def test_dice_pictures_follow_material(self):
+        from stungkir import config as C
+        from stungkir.artwork import pixmap
+        from stungkir.dicetable import MATERIALS
+        for material in MATERIALS:
+            for sides in C.DICE:
+                self.assertFalse(pixmap(f"dice/{material}/d{sides}").isNull(), f"{material} d{sides}")
+        d = self.dialog()
+        d.set_mode("dice")
+        before = d.dice_group.buttons()[0].icon().cacheKey()
+        d.material_group.button(list(MATERIALS).index("resin")).click()
+        self.assertEqual(d.material.currentData(), "resin")
+        self.assertTrue(d.material_group.button(list(MATERIALS).index("resin")).isChecked())
+        self.assertNotEqual(d.dice_group.buttons()[0].icon().cacheKey(), before)
+        d.material.setCurrentIndex(d.material.findData("oak"))
+        self.assertTrue(d.material_group.button(list(MATERIALS).index("oak")).isChecked())
+
     def test_dice_and_coin_on_the_table(self):
         d = self.dialog()
         d.show()

@@ -14,6 +14,10 @@ datas = [
     (str(ROOT / "stungkir" / "sounds" / "*.wav"), "stungkir/sounds"),          # стук кубиков и звон монетки
     (str(ROOT / "stungkir" / "art" / "*.png"), "stungkir/art"),                # ласка, стороны монетки
     (str(ROOT / "stungkir" / "art" / "icons" / "*.png"), "stungkir/art/icons"),  # нарисованные значки
+    (str(ROOT / "stungkir" / "art" / "dice" / "bone" / "*.png"), "stungkir/art/dice/bone"),
+    (str(ROOT / "stungkir" / "art" / "dice" / "metal" / "*.png"), "stungkir/art/dice/metal"),
+    (str(ROOT / "stungkir" / "art" / "dice" / "oak" / "*.png"), "stungkir/art/dice/oak"),
+    (str(ROOT / "stungkir" / "art" / "dice" / "resin" / "*.png"), "stungkir/art/dice/resin"),
     (str(PACKAGING / "dictionaries" / "ru_RU.dic"), "stungkir/dictionaries"),
     (str(PACKAGING / "dictionaries" / "ru_RU.aff"), "stungkir/dictionaries"),
     (str(PACKAGING / "dictionaries" / "LICENSE-ru_RU.txt"), "stungkir/dictionaries"),

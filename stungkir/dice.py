@@ -13,7 +13,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF, QRadialGradi
 from PySide6.QtWidgets import (
     QButtonGroup, QCheckBox, QComboBox, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, QSizePolicy, QSpinBox,
     QStackedWidget,
-    QVBoxLayout, QWidget,
+    QToolButton, QVBoxLayout, QWidget,
 )
 
 from . import config as C
@@ -637,6 +637,14 @@ class Shuffle(QLabel):
         self.timer.start(int(30 + self.steps ** 2 * 2.2))         # всё медленнее, как барабан
 
 
+def dice_icon(material, sides):
+    """Картинка кубика (art/dice/<материал>/d<грани>.png) для кнопок; нет файла - пустой значок."""
+    from PySide6.QtGui import QIcon
+    from .artwork import pixmap
+    picture = pixmap(f"dice/{material}/d{sides}")
+    return QIcon(picture) if not picture.isNull() else QIcon()
+
+
 class RandomDialog(Sheet):
     """Рандомайзеры: кубики и монетка на столе, число от-до, строка из списка, персонаж или термин мира,
     рулетка. Всё выпавшее попадает и в историю бросков."""
@@ -668,26 +676,59 @@ class RandomDialog(Sheet):
         # кубики на столе
         from .dicetable import MATERIALS, DiceTable
         page = QWidget()
-        row = QHBoxLayout(page)
-        row.setContentsMargins(0, 0, 0, 0)
+        column = QVBoxLayout(page)
+        column.setContentsMargins(0, 0, 0, 0)
+        column.setSpacing(6)
+        tile = (f"QToolButton {{ border-radius: 10px; padding: 4px 6px; background: transparent; }}"
+                f"QToolButton:hover {{ background: {C.HOVER}; }}"
+                f"QToolButton:checked {{ background: {C.SELECT}; }}")
+        row = QHBoxLayout()
+        row.setSpacing(4)
         self.dice_group = QButtonGroup(self)
         chosen = int(settings.value("table_dice", 20) or 20)
         for sides in C.DICE:
-            button = QPushButton(f"d{sides}")
+            button = QToolButton()
+            button.setText(f"d{sides}")
             button.setCheckable(True)
             button.setProperty("noIcon", True)
             button.setProperty("sides", sides)
-            button.setStyleSheet(f"QPushButton:checked {{ background: {C.SELECT}; }}")
+            button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+            button.setIconSize(QSize(54, 54))
+            button.setCursor(Qt.PointingHandCursor)
+            button.setStyleSheet(tile)
             button.setChecked(sides == chosen)
             self.dice_group.addButton(button)
             row.addWidget(button)
         row.addStretch()
+        column.addLayout(row)
+        # из чего: плитки с кубиком d20 каждого материала (список - внутри, для истории и настроек)
+        row = QHBoxLayout()
+        row.setSpacing(4)
         row.addWidget(QLabel("Из чего:"))
         self.material = QComboBox()
         for key, (title, *_rest) in MATERIALS.items():
             self.material.addItem(title, key)
         self.material.setCurrentIndex(max(0, self.material.findData(settings.value("dice_material", "bone"))))
-        row.addWidget(self.material)
+        self.material.hide()
+        self.material_group = QButtonGroup(self)
+        for index, (key, (title, *_rest)) in enumerate(MATERIALS.items()):
+            button = QToolButton()
+            button.setText(title)
+            button.setIcon(dice_icon(key, 20))
+            button.setIconSize(QSize(30, 30))
+            button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+            button.setCheckable(True)
+            button.setProperty("noIcon", True)
+            button.setCursor(Qt.PointingHandCursor)
+            button.setStyleSheet(tile)
+            button.setChecked(index == self.material.currentIndex())
+            button.clicked.connect(lambda _c=False, i=index: self.material.setCurrentIndex(i))
+            self.material_group.addButton(button, index)
+            row.addWidget(button)
+        self.material.currentIndexChanged.connect(self._material_changed)
+        row.addStretch()
+        column.addLayout(row)
+        self._dice_icons()
         self.pages.addWidget(page)
         # монетка на столе
         coin = QLabel("Ворон или ласка - поровну, и раз из ста монетка встаёт на ребро. "
@@ -817,6 +858,18 @@ class RandomDialog(Sheet):
         buttons.addWidget(self.go)
         self.content.addLayout(buttons)
         self.set_mode(settings.value("random_mode", "dice") or "dice")
+
+    def _material_changed(self, index):
+        button = self.material_group.button(index)
+        if button is not None:
+            button.setChecked(True)
+        self._dice_icons()
+
+    def _dice_icons(self):
+        """На кнопках d4…d100 - кубики того материала, что выбран."""
+        material = self.material.currentData() or "bone"
+        for button in self.dice_group.buttons():
+            button.setIcon(dice_icon(material, int(button.property("sides"))))
 
     def set_mode(self, mode):
         keys = [k for k, _t in MODES]

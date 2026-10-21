@@ -39,7 +39,7 @@ Issues = "https://codeberg.org/KiriFesTung/StungKir/issues"
 packages = ["stungkir", "stungkir.tests"]
 
 [tool.setuptools.package-data]
-stungkir = ["fonts/*.ttf", "fonts/*.txt", "sounds/*.wav", "art/*.png", "art/icons/*.png"]   # шрифты (OFL), звуки, рисунки
+stungkir = ["fonts/*.ttf", "fonts/*.txt", "sounds/*.wav", "art/*.png", "art/icons/*.png", "art/dice/*/*.png"]   # шрифты (OFL), звуки, рисунки
 
 [tool.ruff]
 line-length = 120

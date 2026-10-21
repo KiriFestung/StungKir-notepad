@@ -27,11 +27,11 @@ from .dice import (
 
 # материал: (основа, тёмная, светлая, цвет чисел, звук удара, звук «докатился»)
 MATERIALS = {
-    "bone": ("Кость", "#e6dbc0", "#8a7a5a", "#fbf6e8", "#3a2a18", "bone_hit", "bone_settle"),
-    "metal": ("Металл", "#8a929d", "#2f343c", "#c9d0d8", "#14181d", "die_hit", "die_settle"),
+    "bone": ("Кость", "#e9e2cf", "#8a7f62", "#fbf8ee", "#2a2680", "bone_hit", "bone_settle"),
+    "metal": ("Металл", "#9aa0ad", "#2f343c", "#dfe3ec", "#2a2680", "die_hit", "die_settle"),
     "oak": ("Дуб", "#9c6a3a", "#4a2e14", "#c99560", "#24130a", "oak_hit", "oak_settle"),
-    # тёмно-фиолетовая смола с золотыми цифрами - как классические кости для настолок
-    "resin": ("Смола", "#2c1478", "#0c0424", "#6b52d8", "#e8a93a", "bone_hit", "bone_settle"),
+    # смола цвета индиго с золотыми цифрами - как классические кости для настолок и как тема блокнота
+    "resin": ("Индиго", "#2a2696", "#07073a", "#5652d8", "#e8a93a", "bone_hit", "bone_settle"),
 }
 FELT, FELT_DARK, RIM = QColor("#23265a"), QColor("#13153a"), QColor("#6b4524")
 STEP = 1 / 60                        # шаг расчёта: один и тот же и в подборе броска, и на экране
@@ -402,7 +402,7 @@ class DiceTable(QWidget):
                 if body.material == "metal":                       # блик металла - резкий
                     color = C.mix(color, "#ffffff", 0.45 * lit ** 30)
                 elif body.material == "resin":                     # смола блестит, как лак
-                    color = C.mix(color, "#d9ccff", 0.55 * lit ** 18)
+                    color = C.mix(color, "#cfd2ff", 0.55 * lit ** 18)
                 p.setPen(QPen(C.mix(dark, "#000000", 0.35), 1.3, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
             p.setBrush(color)
             p.drawPolygon(polygon)
@@ -470,7 +470,7 @@ class DiceTable(QWidget):
                 path.cubicTo(QPointF(rnd.uniform(-50, 10), rnd.uniform(-110, 110)),
                              QPointF(rnd.uniform(-10, 50), rnd.uniform(-110, 110)),
                              QPointF(rnd.uniform(70, 130), rnd.uniform(-80, 80)))
-                p.setPen(QPen(QColor(150, 120, 255, int(38 * alpha)), rnd.uniform(6, 14), Qt.SolidLine, Qt.RoundCap))
+                p.setPen(QPen(QColor(130, 135, 255, int(38 * alpha)), rnd.uniform(6, 14), Qt.SolidLine, Qt.RoundCap))
                 p.drawPath(path)
             p.setPen(Qt.NoPen)
             for _ in range(22):
