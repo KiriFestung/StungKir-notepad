@@ -871,15 +871,19 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         shot.show()
         shot.raise_()
         self._dissolve_label = shot
-        change()
-        self.veil.raise_()
-        shot.raise_()
 
         def done():
             shot.deleteLater()
             if getattr(self, "_dissolve_label", None) is shot:
                 self._dissolve_label = None
-        fade(shot, 1.0, 0.0, 650, done)
+        try:
+            change()
+        finally:
+            # что бы ни случилось при перекраске - снимок старого вида обязан растаять, иначе окно
+            # выглядит зависшим
+            self.veil.raise_()
+            shot.raise_()
+            fade(shot, 1.0, 0.0, 650, done)
 
     def apply_palette(self, colors, full=True):
         """Перекрашивает окно без перезапуска."""
@@ -899,7 +903,9 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         decorate(self)                                   # значки по надписям - цветом новой темы
         self.board_view.refresh_colors()                 # пробка темнеет и светлеет вместе с темой
         for widget in self.findChildren(QWidget):
-            widget.update()
+            # QWidget.update явно: у списков и таблиц в PySide 6.8 widget.update() - это update(index),
+            # и без аргумента он падал, оставляя снимок старой темы поверх окна («зависло»)
+            QWidget.update(widget)
 
     def _visible_blocks(self):
         return visible_blocks(self.editor)

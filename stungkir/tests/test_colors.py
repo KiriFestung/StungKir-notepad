@@ -178,6 +178,21 @@ class LiveApplyTest(WindowCase):
         self.assertIn(C.THEMES["Сирень"]["BG"], self.app_style())
         self.assertEqual(w.highlighter.dialogue.name(), C.THEMES["Сирень"]["DIALOGUE"])
 
+    def test_theme_change_on_screen_does_not_freeze(self):
+        """Смена темы в открытом окне: снимок старого вида тает, окно живое (во Flatpak на PySide 6.8
+        перекраска падала на списках, и снимок навсегда закрывал окно - «зависло»)."""
+        w = self.window()
+        w.show()
+        wait(0.3)
+        w.choose_theme("Сепия")
+        wait(1.2)
+        self.assertEqual(C.BG, C.THEMES["Сепия"]["BG"])
+        self.assertIsNone(getattr(w, "_dissolve_label", None))
+        w.choose_theme("Индиго и охра")
+        wait(1.2)
+        self.assertEqual(C.BG, C.THEMES["Индиго и охра"]["BG"])
+        self.assertIsNone(getattr(w, "_dissolve_label", None))
+
     def test_choose_theme_and_settings_keep_colors(self):
         w = self.window()
         C.save_config({"theme": "Мох", "custom_themes": {"Моя": {"BG": "#101010"}}})

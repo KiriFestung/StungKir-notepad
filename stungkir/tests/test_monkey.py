@@ -231,6 +231,9 @@ class Monkey:
         if not actions:
             return                               # передумала и щёлкнула мимо
         action = self.rng.choice(actions)
+        from shiboken6 import isValid
+        if not isValid(action):
+            return                               # меню, закрываясь, само убрало свои пункты (PySide 6.8)
         self.clicked["меню: " + action.text()] += 1
         if os.environ.get("FUZZ_TRACE"):
             print("     меню:", action.text(), flush=True)

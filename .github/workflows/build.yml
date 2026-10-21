@@ -1,7 +1,14 @@
-# Пакет Flatpak для Linux - только по кнопке «Run workflow» (вкладка Actions).
+# Пакет Flatpak для Linux: сам - когда меняется программа, и по кнопке «Run workflow» (вкладка Actions).
 # Проверки и сборка для Windows - в check.yml, приложение для телефона - в android.yml.
 name: Flatpak
 on:
+  push:
+    branches: [main]
+    paths:
+      - "stungkir/**"
+      - "packaging/flatpak/**"
+      - "packaging/dictionaries/**"
+      - "packaging/fonts/**"
   workflow_dispatch:
 permissions:
   contents: write
