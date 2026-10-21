@@ -19,7 +19,7 @@ android {
     // Ключ подписи лежит здесь же, но сам зашифрован паролем, а пароль - только в секретах GitHub
     // (ANDROID_KEYSTORE_PASSWORD). Без пароля релиз подписывается отладочным ключом - годится
     // для своих проверок, но поверх версии из «Релизов» такая сборка не встанет.
-    val keyPassword: String? = System.getenv("ANDROID_KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
+    val keyPassword: String? = System.getenv("ANDROID_KEYSTORE_PASSWORD")?.trim()?.takeIf { it.isNotBlank() }
     signingConfigs {
         if (keyPassword != null) {
             create("release") {

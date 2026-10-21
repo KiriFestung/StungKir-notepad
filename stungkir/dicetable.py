@@ -15,6 +15,7 @@ import random
 
 from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QTimer
 from PySide6.QtGui import (
+    QBrush,
     QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPen, QPolygonF, QRadialGradient, QTransform,
 )
 from PySide6.QtWidgets import QSizePolicy, QWidget
@@ -355,11 +356,22 @@ class DiceTable(QWidget):
         p.setBrush(wood)
         p.drawRoundedRect(rect, 14, 14)
         felt_rect = rect.adjusted(10, 10, -10, -10)
-        felt = QRadialGradient(felt_rect.center(), max(felt_rect.width(), felt_rect.height()) * 0.7)
-        felt.setColorAt(0, FELT.lighter(118))
-        felt.setColorAt(1, FELT_DARK)
+        from .artwork import scaled
+        cloth = scaled("texture-felt", 256, self.devicePixelRatioF())
+        if not cloth.isNull():                     # сукно - нарисованное, края стола чуть темнее
+            p.setBrush(QBrush(cloth))
+            p.drawRoundedRect(felt_rect, 9, 9)
+            felt = QRadialGradient(felt_rect.center(), max(felt_rect.width(), felt_rect.height()) * 0.7)
+            felt.setColorAt(0, QColor(0, 0, 0, 0))
+            felt.setColorAt(1, QColor(FELT_DARK.red(), FELT_DARK.green(), FELT_DARK.blue(), 190))
+        else:
+            felt = QRadialGradient(felt_rect.center(), max(felt_rect.width(), felt_rect.height()) * 0.7)
+            felt.setColorAt(0, FELT.lighter(118))
+            felt.setColorAt(1, FELT_DARK)
         p.setBrush(felt)
         p.drawRoundedRect(felt_rect, 9, 9)
+        if not cloth.isNull():
+            return
         rnd = random.Random(11)                        # ворс сукна - один и тот же узор
         p.setBrush(QColor(255, 255, 255, 10))
         for _ in range(int(felt_rect.width() * felt_rect.height() / 260)):

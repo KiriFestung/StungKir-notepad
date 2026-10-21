@@ -1,9 +1,9 @@
 <p align="center"><img src="docs/banner.png" alt="StungKir - писательский блокнот для длинных текстов"></p>
 
 <p align="center">
-<a href="https://github.com/KiriFestung/StungKir/releases/tag/windows-latest"><b>Windows</b></a> ·
-<a href="https://github.com/KiriFestung/StungKir/releases/tag/linux-latest"><b>Linux (Flatpak)</b></a> ·
-<a href="https://github.com/KiriFestung/StungKir/releases/tag/android-latest"><b>Android</b></a> ·
+<a href="https://github.com/KiriFestung/StungKir-notepad/releases/tag/windows-latest"><b>Windows</b></a> ·
+<a href="https://github.com/KiriFestung/StungKir-notepad/releases/tag/linux-latest"><b>Linux (Flatpak)</b></a> ·
+<a href="https://github.com/KiriFestung/StungKir-notepad/releases/tag/android-latest"><b>Android</b></a> ·
 <a href="docs/РУКОВОДСТВО.md">Руководство</a> ·
 <a href="CHANGELOG.md">Что нового</a>
 </p>
@@ -16,10 +16,10 @@
 
 | Где | Что скачать | |
 |---|---|---|
-| **Windows 10 и 11** | [StungKir-Setup-1.0.0.exe](https://github.com/KiriFestung/StungKir/releases/download/windows-latest/StungKir-Setup-1.0.0.exe) | установщик |
-| **Windows, с флешки** | [StungKir-Windows-portable.zip](https://github.com/KiriFestung/StungKir/releases/download/windows-latest/StungKir-Windows-portable.zip) | без установки и без прав администратора, тексты - на флешке |
-| **Linux** | [StungKir.flatpak](https://github.com/KiriFestung/StungKir/releases/download/linux-latest/StungKir.flatpak) | любой дистрибутив; для Debian и Ubuntu есть ещё `install.sh` (ниже) |
-| **Android** | [StungKir-Android.apk](https://github.com/KiriFestung/StungKir/releases/download/android-latest/StungKir-Android.apk) | пишет в ту же папку, что и компьютер; [как связать](docs/ТЕЛЕФОН.md) |
+| **Windows 10 и 11** | [StungKir-Setup-1.0.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.0.0.exe) | установщик |
+| **Windows, с флешки** | [StungKir-Windows-portable.zip](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Windows-portable.zip) | без установки и без прав администратора, тексты - на флешке |
+| **Linux** | [StungKir.flatpak](https://github.com/KiriFestung/StungKir-notepad/releases/download/linux-latest/StungKir.flatpak) | любой дистрибутив; для Debian и Ubuntu есть ещё `install.sh` (ниже) |
+| **Android** | [StungKir-Android.apk](https://github.com/KiriFestung/StungKir-notepad/releases/download/android-latest/StungKir-Android.apk) | пишет в ту же папку, что и компьютер; [как связать](docs/ТЕЛЕФОН.md) |
 
 Сборки обновляются сами после каждого изменения и перед выкладкой проходят больше трёхсот проверок - и на Linux, и на Windows.
 
@@ -87,7 +87,7 @@ bash install.sh
 
 ### Flatpak (любой Linux)
 
-Готовый `.flatpak` лежит в [релизах](https://github.com/KiriFestung/StungKir/releases/tag/linux-latest):
+Готовый `.flatpak` лежит в [релизах](https://github.com/KiriFestung/StungKir-notepad/releases/tag/linux-latest):
 
 ```bash
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
@@ -99,7 +99,7 @@ flatpak run page.codeberg.kirifestung.StungKir
 
 ### Windows 10 и 11
 
-Скачать `StungKir-Setup-1.0.0.exe` из [релизов](https://github.com/KiriFestung/StungKir/releases/tag/windows-latest) и запустить. Словарь и шрифты уже внутри. Windows может предупредить «неизвестный издатель» — программа не подписана платным сертификатом; «Подробнее → Выполнить в любом случае».
+Скачать `StungKir-Setup-1.0.0.exe` из [релизов](https://github.com/KiriFestung/StungKir-notepad/releases/tag/windows-latest) и запустить. Словарь и шрифты уже внутри. Windows может предупредить «неизвестный издатель» — программа не подписана платным сертификатом; «Подробнее → Выполнить в любом случае».
 
 Переносная версия для флешки (без установки и без прав администратора): `StungKir-Windows-portable.zip` - распаковать на флешку и запускать `StungKir.exe`. Пока рядом с ним лежит `portable.txt`, тексты, копии и настройки хранятся там же, на флешке, а на чужом компьютере ничего не остаётся.
 
@@ -108,7 +108,7 @@ flatpak run page.codeberg.kirifestung.StungKir
 ### Через pip
 
 ```bash
-pipx install git+https://github.com/KiriFestung/StungKir.git
+pipx install git+https://github.com/KiriFestung/StungKir-notepad.git
 ```
 
 macOS официально не поддерживается.
