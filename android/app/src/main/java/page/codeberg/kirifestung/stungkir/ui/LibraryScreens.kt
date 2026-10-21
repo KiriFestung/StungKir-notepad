@@ -1,6 +1,7 @@
 // StungKir для Android. Copyright (C) 2026 KiriFesTung, GPL-3.0-or-later
 package page.codeberg.kirifestung.stungkir.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import page.codeberg.kirifestung.stungkir.R
 import page.codeberg.kirifestung.stungkir.logic.Book
 import page.codeberg.kirifestung.stungkir.logic.TextRules
 import java.io.File
@@ -155,6 +158,7 @@ fun LibraryScreen(state: AppState) {
                     }
                 }
                 if (categories.isEmpty()) {
+                    item { EmptyPicture() }
                     item {
                         Text(
                             "Здесь пока пусто. Если на компьютере уже есть книги - проверь, что Syncthing закончил синхронизацию папки. Или создай категорию кнопкой «+».",
@@ -225,6 +229,7 @@ fun CategoryScreen(state: AppState, folder: File) {
         Box(Modifier.weight(1f)) {
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
                 if (entries.isEmpty()) {
+                    item { EmptyPicture() }
                     item { Text("Глав пока нет. Новая - кнопкой «+».", color = c.onSurfaceVariant, modifier = Modifier.padding(20.dp)) }
                 }
                 items(entries, key = { it.file.absolutePath }) { e ->
@@ -278,4 +283,14 @@ fun CategoryScreen(state: AppState, folder: File) {
             }
         }
     }
+}
+
+/** Картинка «здесь пока пусто»: лист и ласка. */
+@Composable
+fun EmptyPicture() {
+    Image(
+        painter = painterResource(R.drawable.empty_state),
+        contentDescription = null,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp, vertical = 12.dp),
+    )
 }

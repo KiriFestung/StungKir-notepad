@@ -310,6 +310,38 @@ class AntistressTest(WindowCase):
         skip.finish()
         dialog.close()
 
+    def test_spinner_follows_hand_and_spins_long(self):
+        import math
+        from stungkir.antistress import StressDialog
+        dialog = StressDialog(None)
+        dialog.resize(760, 520)
+        dialog.show()
+        dialog._show_page(2)
+        spinner = dialog.spinner
+        wait(0.05)
+        c = QPoint(spinner.width() // 2, spinner.height() // 2)
+        r = min(spinner.width(), spinner.height()) // 3
+
+        def at(deg):
+            a = math.radians(deg)
+            return c + QPoint(int(r * math.cos(a)), int(r * math.sin(a)))
+        QTest.mousePress(spinner, Qt.LeftButton, Qt.NoModifier, at(0))
+        start = spinner.angle
+        for k in range(1, 9):                                    # тянем по кругу по часовой
+            QTest.mouseMove(spinner, at(k * 20))
+            wait(0.015)
+        self.assertAlmostEqual((spinner.angle - start) % 360, 160, delta=6)   # шёл ровно за рукой
+        self.assertEqual(spinner.speed, 0.0)                     # пока держат - сам не крутится
+        QTest.mouseRelease(spinner, Qt.LeftButton, Qt.NoModifier, at(160))
+        self.assertGreater(spinner.speed, 300)                   # толкнули по часовой
+        spinner.flick(1800)
+        wait(1.0)
+        self.assertGreater(spinner.speed, 1300)                  # тормозит плавно, а не сразу
+        QTest.mousePress(spinner, Qt.LeftButton, Qt.NoModifier, at(0))
+        self.assertEqual(spinner.speed, 0.0)                     # схватил - остановил
+        QTest.mouseRelease(spinner, Qt.LeftButton, Qt.NoModifier, at(0))
+        dialog.close()
+
     def test_f12_opens_it(self):
         w = self.window()
         seen = []

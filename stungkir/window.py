@@ -8,7 +8,7 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 from PySide6.QtCore import (
-    QElapsedTimer, QEvent, QFileSystemWatcher, QProcess, QSettings, Qt, QTimer,
+    QElapsedTimer, QEvent, QFileSystemWatcher, QPoint, QProcess, QSettings, Qt, QTimer,
 )
 from PySide6.QtGui import QColor, QCursor, QFont, QKeySequence, QShortcut, QTextBlockFormat, QTextCursor
 from PySide6.QtWidgets import (
@@ -158,6 +158,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         self.side_compare_timer = QTimer(self, singleShot=True, interval=1200)   # сравнение - после паузы
         self.side_compare_timer.timeout.connect(lambda: self.side.refresh_version(keep_place=True))
         self.split = QSplitter(Qt.Horizontal)
+        self.split.splitterMoved.connect(lambda *_a: self.place_overlays())   # часы - вслед за панелью «рядом»
         self.split.setChildrenCollapsible(False)
         self.split.setHandleWidth(6)
         # самая широкая страница (доска с колонками) иначе не даёт панели рядом стать шире узкой полоски
@@ -497,6 +498,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         for panel in (self.left, self.right):
             panel.set_tabs(self.screen_shown("tabs"))
         self.update_status()                     # и полоски, и части строки внизу
+        self.place_overlays()                    # часы прячутся, если их угол занят панелью «рядом»
         self.place_overlays()                    # часы в нижнем углу встают над строкой или ниже
 
     def set_goal_style(self, name):
@@ -512,6 +514,15 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         if hasattr(self, "corner_clock"):
             corner = self.place("clock")
             x = 18 if corner.endswith("l") else central.width() - self.corner_clock.width() - 18
+            side = getattr(self, "side", None)
+            covered = False
+            if side is not None and side.isVisible():
+                # панель «рядом» в том же углу: часы закрыли бы и её, и край текста - прячем, пока она открыта
+                left = side.mapTo(central, QPoint(0, 0)).x()
+                side_on_left = left < central.width() / 2
+                covered = corner.endswith("l") == side_on_left
+            zen = getattr(self, "zen", False)
+            self.corner_clock.setVisible(not covered and not zen and self.screen_shown("clock"))
             y = 12
             if corner.startswith("b"):
                 y = central.height() - self.corner_clock.height() - 12

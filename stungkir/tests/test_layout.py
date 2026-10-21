@@ -155,6 +155,18 @@ class SidePaneTest(WindowCase):
         self.assertEqual(self.w.path, self.second)
         self.assertEqual(self.w.side.path, self.first)
 
+    def test_clock_does_not_cover_side_pane(self):
+        w = self.window()
+        w.resize(1200, 700)
+        w.show()
+        wait(0.1)
+        self.assertTrue(w.corner_clock.isVisible())              # часы в правом углу
+        w.open_beside(self.second)                                 # панель «рядом» - справа
+        wait(0.1)
+        self.assertFalse(w.corner_clock.isVisible())
+        w.close_side()
+        self.assertTrue(w.corner_clock.isVisible())
+
     def test_side_follows_save_and_rename(self):
         self.w.open_beside(self.first)
         self.w.editor.setPlainText("Новый текст.")

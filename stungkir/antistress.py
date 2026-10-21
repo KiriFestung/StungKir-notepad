@@ -366,9 +366,12 @@ class SquishBall(QWidget):
 
 
 class Spinner(QWidget):
-    """Спиннер: раскрути мышью - крутится долго и тихо шуршит, понемногу тормозя."""
+    """Спиннер: возьми мышью и толкни - крутится долго, плавно тормозит и тихо шуршит.
+    Схватил на ходу - остановил: пока держишь, он идёт ровно за рукой."""
 
-    FRICTION = 0.35            # на сколько оборотов в секунду замедляется за секунду (плюс сопротивление)
+    FRICTION = 22.0            # градусов в секунду за секунду - сухое трение подшипника
+    DRAG = 0.018               # и сопротивление воздуха: доля скорости в секунду
+    MAX_SPEED = 3200.0         # градусов в секунду (около 530 оборотов в минуту)
 
     def __init__(self, on_whirr=None):
         super().__init__()
@@ -378,8 +381,10 @@ class Spinner(QWidget):
         self.angle = 0.0
         self.speed = 0.0                       # градусов в секунду
         self.top_rpm = 0
-        self.last = None
+        self.last = None                       # держат: (угол руки, когда)
+        self.samples = []                      # последние положения руки: (секунды, угол без скачков)
         self.clock = QElapsedTimer()
+        self.hand = QElapsedTimer()
         self.since_sound = 0.0
         self.timer = QTimer(self, interval=16)
         self.timer.timeout.connect(self._step)
@@ -392,29 +397,39 @@ class Spinner(QWidget):
         return math.degrees(math.atan2(point.y() - c.y(), point.x() - c.x()))
 
     def mousePressEvent(self, event):
-        self.last = (self._polar(event.position()), QElapsedTimer())
-        self.last[1].start()
+        self.hand.start()
+        self.last = self._polar(event.position())
+        self.samples = [(0.0, self.angle)]
+        self.speed = 0.0                                   # схватил - остановил
         self.setCursor(Qt.ClosedHandCursor)
+        self.update()
 
     def mouseMoveEvent(self, event):
         if not (event.buttons() & Qt.LeftButton) or self.last is None:
             return
-        angle, clock = self.last
         now = self._polar(event.position())
-        delta = (now - angle + 180) % 360 - 180
-        seconds = max(0.008, clock.restart() / 1000)
-        push = delta / seconds
-        self.speed = max(-4000.0, min(4000.0, self.speed * 0.6 + push * 0.6))
-        self.angle += delta
-        self.last = (now, clock)
-        self.spin()
+        delta = (now - self.last + 180) % 360 - 180
+        self.last = now
+        self.angle += delta                                # спиннер идёт ровно за рукой
+        t = self.hand.elapsed() / 1000
+        self.samples.append((t, self.samples[-1][1] + delta))
+        self.samples = [sample for sample in self.samples if t - sample[0] <= 0.12]
+        self.update()
 
     def mouseReleaseEvent(self, _event):
+        if self.last is None:
+            return
         self.last = None
         self.setCursor(Qt.OpenHandCursor)
+        t = self.hand.elapsed() / 1000
+        recent = [sample for sample in self.samples if t - sample[0] <= 0.12]
+        if len(recent) >= 2 and recent[-1][0] - recent[0][0] > 0.005 and t - recent[-1][0] < 0.08:
+            # скорость - по последней десятой секунды движения руки (резкий рывок в конце не обманет)
+            speed = (recent[-1][1] - recent[0][1]) / (recent[-1][0] - recent[0][0])
+            self.flick(speed)
 
     def flick(self, speed):
-        self.speed = speed
+        self.speed = max(-self.MAX_SPEED, min(self.MAX_SPEED, speed))
         self.spin()
 
     def spin(self):
@@ -425,14 +440,16 @@ class Spinner(QWidget):
 
     def _step(self):
         dt = min(0.05, self.clock.restart() / 1000) if self.clock.isValid() else 0.016
+        if self.last is not None:                          # держат рукой - не крутим сами
+            return
         sign = 1 if self.speed > 0 else -1
-        slow = (self.FRICTION * 360 + abs(self.speed) * 0.05) * dt
+        slow = (self.FRICTION + abs(self.speed) * self.DRAG) * dt
         self.speed = sign * max(0.0, abs(self.speed) - slow)
         self.angle = (self.angle + self.speed * dt) % 360
         self.since_sound += dt
-        if self.on_whirr and self.rpm() > 60 and self.since_sound > 0.45:
+        if self.on_whirr and self.rpm() > 40 and self.since_sound > 0.45:
             self.since_sound = 0.0
-            self.on_whirr(min(1.0, self.rpm() / 500))
+            self.on_whirr(min(1.0, self.rpm() / 450))
         if self.speed == 0.0:
             self.timer.stop()
         self.update()

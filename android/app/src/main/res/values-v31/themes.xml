@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12 и новее: заставка при запуске - ласка на фоне темы «Индиго и охра» -->
+    <style name="Theme.StungKir" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/start_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowSplashScreenBackground">@color/start_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+    </style>
+</resources>

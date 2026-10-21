@@ -222,6 +222,7 @@ class WorldMixin:
             self.split.setSizes([left, right])
         self.settings.setValue("side_file", str(path))
         self.settings.setValue("side_open", "true")
+        self.place_overlays()
 
     def compare_with_version(self, index=None):
         """«Сравнить с версией»: прошлое сохранение главы - в панели рядом с текстом (по умолчанию
@@ -278,6 +279,7 @@ class WorldMixin:
             self.settings.setValue("side_sizes", self.split.sizes())
             self.side.hide()
         self.settings.setValue("side_open", "false")
+        self.place_overlays()
         self.editor.setFocus()
 
     def toggle_side(self):
