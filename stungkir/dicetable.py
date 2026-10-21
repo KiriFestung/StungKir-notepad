@@ -208,7 +208,9 @@ class DiceTable(QWidget):
                 body.vz = 0.0
         body.x += body.vx * dt
         body.y += body.vy * dt
-        for axis, low, high in (("x", r, w - r), ("y", r, h - r)):
+        # борт: деревянная рамка (10 точек) плюс сама кость - в перспективе углы выходят за radius
+        edge = 12 + r * (1.0 if coin else 1.3)
+        for axis, low, high in (("x", edge, w - edge), ("y", edge, h - edge)):
             value, speed = getattr(body, axis), getattr(body, "v" + axis)
             if (value < low and speed < 0) or (value > high and speed > 0):
                 setattr(body, axis, low if value < low else high)
