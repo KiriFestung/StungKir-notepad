@@ -5,6 +5,7 @@ import unittest
 import xml.etree.ElementTree as ET
 import zipfile
 
+from stungkir import config as C
 from stungkir import export as E
 from stungkir.tests.helpers import Sandbox, WindowCase, app
 
@@ -34,6 +35,70 @@ class EpubTest(Sandbox):
             self.assertIn("<em>курсивом</em>", chapter)
             self.assertIn("&lt;туман&gt; &amp;", chapter)
             self.assertNotIn("\x0b", chapter)
+
+
+class PicturesTest(WindowCase):
+    """Картинка в тексте: «[картинка: файл]» - в книге картинка, без файла - строки нет, пометкой не считается."""
+
+    def _picture(self, folder, name="карта.png"):
+        from PySide6.QtGui import QColor, QImage
+        image = QImage(300, 200, QImage.Format_RGB32)
+        image.fill(QColor("#2a2696"))
+        folder.mkdir(parents=True, exist_ok=True)
+        image.save(str(folder / name))
+        return folder / name
+
+    def test_paragraphs_and_all_formats(self):
+        app()
+        folder = C.ROOT / "Книга"
+        self._picture(folder / "картинки")
+        text = "До.\n[картинка: карта.png]\n[картинка: нет-такой.png]\n[пометка]\nПосле."
+        self.assertEqual(E.marker_lines(text), ["[пометка]"])           # картинка - не пометка
+        paragraphs = E.book_paragraphs(text, True, folder=folder)
+        self.assertEqual(len(paragraphs), 3)
+        self.assertEqual(E.image_of(paragraphs[1]), folder / "картинки" / "карта.png")
+        self.assertEqual(E.book_paragraphs(text, True), ["До.", "После."])   # без папки - просто без картинки
+        chapters = [("Глава", paragraphs)]
+        E.export_epub(self.tmp / "b.epub", "Книга", "Кира", chapters, OPTIONS)
+        with zipfile.ZipFile(self.tmp / "b.epub") as book:
+            self.assertIn("OEBPS/img-001.png", book.namelist())
+            self.assertIn('media-type="image/png"', book.read("OEBPS/content.opf").decode())
+            self.assertIn('<img src="img-001.png"', book.read("OEBPS/chapter-001.xhtml").decode())
+            for name in book.namelist():
+                if name.endswith((".xhtml", ".opf")):
+                    ET.fromstring(book.read(name))
+        E.export_fb2(self.tmp / "b.fb2", "Книга", "Кира", chapters, OPTIONS)
+        fb2 = (self.tmp / "b.fb2").read_text(encoding="utf-8")
+        ET.fromstring(fb2)
+        self.assertIn('<image l:href="#img1.png"/>', fb2)
+        self.assertIn('<binary id="img1.png"', fb2)
+        E.export_txt(self.tmp / "b.txt", "Книга", "", chapters, OPTIONS)
+        self.assertNotIn("img", (self.tmp / "b.txt").read_text(encoding="utf-8"))
+        E.export_pdf(self.tmp / "b.pdf", "Книга", "Кира", chapters, OPTIONS)
+        self.assertGreater((self.tmp / "b.pdf").stat().st_size, 2000)
+        if E.docx_available():
+            E.export_docx(self.tmp / "b.docx", "Книга", "Кира", chapters, OPTIONS)
+            with zipfile.ZipFile(self.tmp / "b.docx") as doc:
+                self.assertTrue(any(n.startswith("word/media/") for n in doc.namelist()))
+
+    def test_insert_from_window_and_preview(self):
+        from stungkir import dialogs
+        w = self.window()
+        path = self.chapter("Книга", "Глава", "Первый абзац.")
+        w.open_path(path)
+        outside = self._picture(self.tmp / "где-то", "рисунок.png")
+        cursor = w.editor.textCursor()
+        cursor.movePosition(cursor.MoveOperation.End)
+        w.editor.setTextCursor(cursor)
+        self.assertEqual(w.insert_picture(outside), "рисунок.png")
+        self.assertTrue((path.parent / "картинки" / "рисунок.png").exists())     # скопирована к главе
+        self.assertIn("\n[картинка: рисунок.png]", w.editor.toPlainText())
+        self.assertIsNone(w.insert_picture(self.tmp / "нет.txt"))
+        self.addCleanup(setattr, dialogs.Sheet, "exec", dialogs.Sheet.exec)
+        dialogs.Sheet.exec = lambda dialog: 0
+        dialog = w.show_preview()
+        self.assertIn("<img", dialog.pages["book"].document.toHtml())
+        dialog.view.grab()
 
 
 class OtherFormatsTest(Sandbox):

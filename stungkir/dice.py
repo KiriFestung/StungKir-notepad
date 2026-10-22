@@ -8,7 +8,7 @@ import random
 from functools import lru_cache
 from itertools import combinations
 
-from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QTimer
+from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QTimer, QVariantAnimation
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF, QRadialGradient, QTransform
 from PySide6.QtWidgets import (
     QButtonGroup, QCheckBox, QComboBox, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, QSizePolicy, QSpinBox,
@@ -649,8 +649,9 @@ class RandomDialog(Sheet):
     """Рандомайзеры: кубики и монетка на столе, число от-до, строка из списка, персонаж или термин мира,
     рулетка. Всё выпавшее попадает и в историю бросков."""
 
-    def __init__(self, parent, names, terms, settings, on_result, open_term=None):
+    def __init__(self, parent, names, terms, settings, on_result, open_term=None, history=None):
         super().__init__(parent, "Рандомайзеры")
+        self.history = history if history is not None else []      # список окна: новое - первым
         self.setMinimumWidth(820)                      # шесть вкладок в ряд
         self.names, self.terms, self.settings = list(names), list(terms), settings
         self.on_result, self.open_term = on_result, open_term
@@ -824,7 +825,6 @@ class RandomDialog(Sheet):
 
         self.roulette = Roulette(load=self.load_box.currentData())
         self.revolver = Revolver()
-        self.revolver.material = self.material.currentData() or "bone"
         self.needs_load = True                           # первая прокрутка - с зарядкой
         self.revolver.on_round = lambda last: self._sound("round_in", 0.9 if last else 0.6)
         self.revolver.turn_to(self.roulette.current, duration=1)
@@ -844,6 +844,10 @@ class RandomDialog(Sheet):
         self.content.addWidget(self.note)
 
         buttons = QHBoxLayout()
+        self.history_button = QPushButton("История")
+        self.history_button.setToolTip("Что выпадало, пока открыт блокнот")
+        self.history_button.clicked.connect(self.show_history)
+        buttons.addWidget(self.history_button)
         self.open_button = QPushButton("Открыть статью")
         self.open_button.setVisible(False)
         self.open_button.clicked.connect(self._open_term)
@@ -871,9 +875,7 @@ class RandomDialog(Sheet):
         material = self.material.currentData() or "bone"
         for button in self.dice_group.buttons():
             button.setIcon(dice_icon(material, int(button.property("sides"))))
-        if hasattr(self, "revolver"):                    # барабан - того же материала
-            self.revolver.material = material
-            self.revolver.update()
+
 
     def set_mode(self, mode):
         keys = [k for k, _t in MODES]
@@ -987,7 +989,30 @@ class RandomDialog(Sheet):
                                        self.settings.value("roulette_only_own", "false") == "true",
                                        self.level_box.currentData())
 
+    PULL_PAUSE_MS = 450           # между щелчками спуска - не чаще (иначе можно «строчить» без конца)
+
+    def _paused(self):
+        clock = getattr(self, "_pull_clock", None)
+        return clock is not None and clock.elapsed() < self.PULL_PAUSE_MS
+
+    def _roulette_ready(self):
+        """Можно ли сейчас жать: барабан не крутится, не заряжается, «бах» отгремел, пауза прошла."""
+        bang = self.revolver.effect is not None and self.revolver.effect[0] == "bang"
+        if self.revolver.busy or bang or self.revolver.flash_anim.state() == QVariantAnimation.Running:
+            return False
+        return not self._paused()
+
+    def _roulette_touched(self):
+        from PySide6.QtCore import QElapsedTimer
+        self._pull_clock = QElapsedTimer()
+        self._pull_clock.start()
+
     def spin(self):
+        if self.revolver.loading is not None or self._paused():
+            return                                       # заряжается или только что жали
+        if self.revolver.busy:
+            self.revolver.finish()
+        self._roulette_touched()
         if self.needs_load:                              # барабан только что перезаряжен - сначала зарядка
             self.needs_load = False
             self.shuffle.setText("")
@@ -1003,9 +1028,9 @@ class RandomDialog(Sheet):
                               on_done=lambda: self.note.setText(f"Жми «Спуск»: {self.roulette.chance_text()}"))
 
     def pull(self):
-        if self.revolver.busy:
-            self.revolver.finish()
+        if not self._roulette_ready():
             return
+        self._roulette_touched()
         if self.revolver.revealed:                       # после «баха» барабан перезаряжен - сперва прокрутка
             self.spin()
             return
@@ -1019,7 +1044,7 @@ class RandomDialog(Sheet):
             self.note.setText("Бах! Вот твой вызов. Барабан перезаряжен - крутани заново")
             self.roulette.reload()
             self.needs_load = True
-            self.on_result(f"Рулетка: {challenge}")
+            self._result(f"Рулетка: {challenge}")
             QTimer.singleShot(0, self, self.adjustSize)      # вызов в две строки - окно подрастает
             return
         self._sound("trigger_click")
@@ -1038,11 +1063,31 @@ class RandomDialog(Sheet):
             pool += [(t.name, t) for t in self.terms if t.name.lower() not in known]
         return pool
 
+    def _result(self, entry):
+        """Выпавшее - в историю и наружу (окну)."""
+        before = len(self.history)
+        if self.on_result is not None:
+            self.on_result(entry)                       # окно само кладёт в свою историю
+        if len(self.history) == before:
+            self.history.insert(0, entry)
+
+    def show_history(self):
+        from .style import rounded_menu
+        menu = rounded_menu(self)
+        if not self.history:
+            menu.addAction("Пока ничего не выпадало").setEnabled(False)
+        for entry in self.history[:30]:
+            menu.addAction(entry).setEnabled(False)
+        if self.history:
+            menu.addSeparator()
+            menu.addAction("Стереть историю", self.history.clear)
+        menu.exec(self.history_button.mapToGlobal(self.history_button.rect().topLeft()))
+
     def _done(self, entry, note=""):
         self.note.setText(note)
         self.open_button.setVisible(self.picked_term is not None and self.open_term is not None
                                     and getattr(self.picked_term, "path", None) is not None)
-        self.on_result(entry)
+        self._result(entry)
 
     def _done_big(self, entry, shown):
         """Кубик или монетка легли: что выпало - крупно под столом."""

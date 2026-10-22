@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Русская рулетка для писателя: барабан на шесть гнёзд, в нём от одного до шести «патронов».
 Крутишь, жмёшь на спуск: щёлк - пронесло, бах - выпадает писательский вызов (встроенный или свой).
-Вызовы - пять уровней жёсткости, от безобидных до адища. Без крови, только работа."""
+Вызовы - шесть ступеней жёсткости, от безобидных до «Без тормозов» (самые чёрные - про жестокость
+и грязь на странице, не в жизни)."""
 
 import math
 import random
@@ -128,8 +129,14 @@ LEVEL_CHALLENGES = {
         "Начни книгу заново с другим героем - хотя бы первую страницу",
     ]),
 }
+from .challenges_extra import MORE  # noqa: E402 - ещё по сорок на ступень и шестая, самая чёрная
+
+for _level, _items in MORE.items():
+    if _level in LEVEL_CHALLENGES:
+        LEVEL_CHALLENGES[_level][1].extend(_items)
+LEVEL_CHALLENGES[6] = ("Без тормозов", list(MORE[6]))
 CHALLENGES = [text for _title, items in LEVEL_CHALLENGES.values() for text in items]
-# что выбрать в «Вызовы»: 0 - любые; 1..5 - этот уровень и на ступень мягче, чтобы не было однообразно
+# что выбрать в «Вызовы»: 0 - любые; 1..6 - этот уровень и на ступень мягче, чтобы не было однообразно
 LEVELS = [(0, "Любые")] + [(level, f"{level}. {title}") for level, (title, _items) in LEVEL_CHALLENGES.items()]
 
 # сколько заряжено
@@ -142,8 +149,8 @@ def own_list(text):
 
 
 def level_pool(level):
-    if not level:
-        return list(CHALLENGES)
+    if not level:                                # «любые» - без шестой ступени: её выбирают нарочно
+        return [text for lvl, (_t, items) in LEVEL_CHALLENGES.items() if lvl < 6 for text in items]
     pool = list(LEVEL_CHALLENGES[level][1])
     if level > 1:
         pool += LEVEL_CHALLENGES[level - 1][1]
@@ -239,7 +246,7 @@ class Revolver(QWidget):
         self.effect_clock = QElapsedTimer()
         self.effect_timer = QTimer(self, interval=16)
         self.effect_timer.timeout.connect(self._effect_step)
-        self.material = "bone"                     # барабан - из того же материала, что кубики
+        self.material = "metal"                    # барабан - металлический (дуб и кость ему не идут)
 
     EFFECT_FPS = 30
     EFFECTS = {"bang": "anim/bang/bang", "dust": "anim/dust/dust", "glint": "anim/roulette/drum-glint"}

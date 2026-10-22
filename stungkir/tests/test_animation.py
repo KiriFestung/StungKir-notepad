@@ -252,14 +252,14 @@ class ToyAnimationsTest(WindowCase):
         self.assertIn("anim/coin/coin-edge-shine", [e["name"] for e in table.over.live])
         table.grab()
 
-    def test_drum_follows_dice_material_and_glints_after_loading(self):
+    def test_drum_is_metal_and_glints_after_loading(self):
         from stungkir.dice import RandomDialog
         settings = QSettings(C.APP_ID, C.APP_ID)
         dialog = RandomDialog(None, ["Кира"], [], settings, lambda *a: None)
         dialog.show()
         index = dialog.material.findData("oak")
         dialog.material.setCurrentIndex(index)
-        self.assertEqual(dialog.revolver.material, "oak")
+        self.assertEqual(dialog.revolver.material, "metal")         # кубики дубовые, а барабан - металл
         dialog.revolver.load(["live", "empty", "empty", "empty", "empty", "empty"])
         dialog.revolver.finish_load()
         self.assertEqual(dialog.revolver.effect[0], "glint")

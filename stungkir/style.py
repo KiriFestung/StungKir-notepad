@@ -9,7 +9,9 @@ from PySide6.QtWidgets import QGraphicsOpacityEffect, QMenu
 from . import config as C
 
 
-TEXTURES = {"none": "ровный", "paper": "бумага", "linen": "лён", "picture": "своя картинка"}
+TEXTURES = {"none": "ровный", "paper": "бумага лёгкая", "paper-book": "бумага книжная",
+            "paper-rough": "бумага плотная", "paper-old": "бумага старая", "linen": "лён",
+            "picture": "своя картинка"}
 
 
 def texture_tile(kind):
@@ -19,6 +21,9 @@ def texture_tile(kind):
     from pathlib import Path
     from PySide6.QtCore import QPointF
     from PySide6.QtGui import QImage, QPainter, QPen
+    if kind in ("paper-book", "paper-rough", "paper-old"):     # настоящая фактура (art/paper, бесшовная)
+        drawn = Path(__file__).resolve().parent / "art" / "paper" / f"{kind.split('-')[1]}-overlay.png"
+        return drawn if drawn.is_file() else None
     if kind not in ("paper", "linen"):
         return None
     drawn = Path(__file__).resolve().parent / "art" / f"texture-{kind}.png"

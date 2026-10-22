@@ -4,6 +4,8 @@
 import random
 import unittest
 
+from PySide6.QtWidgets import QPushButton, QWidget
+
 from stungkir.dice import Die3D, RandomDialog, list_items, pick_number, shape
 from stungkir.tests.helpers import WindowCase, app
 
@@ -122,11 +124,22 @@ class RandomWindowTest(WindowCase):
         self.entries = []
         return RandomDialog(self.w, list(names), list(terms), self.w.settings, self.entries.append)
 
-    def test_panel_die_rolls_into_history(self):
-        self.w.roll(20)
-        self.w.dice_value.finish()
-        self.assertEqual(self.w.history.count(), 1)
-        self.assertRegex(self.w.history.item(0).text(), r"^d20:\s+\d+$")
+    def test_results_go_to_history(self):
+        d = RandomDialog(self.w, ["Кира"], [], self.w.settings, self.w.add_to_history, history=self.w.history)
+        d.set_mode("number")
+        d.draw()
+        d.shuffle.finish()
+        d.set_mode("coin")
+        d.draw()
+        d.table.finish()
+        self.assertEqual(len(self.w.history), 2)                   # и только по разу
+        self.assertRegex(self.w.history[0], r"^Монетка: (ворон|ласка|на ребро)")
+        alone = self.dialog()                                     # без окна - своя история
+        alone.set_mode("number")
+        alone.draw()
+        alone.shuffle.finish()
+        self.assertEqual(len(alone.history), 1)
+        self.assertEqual(self.entries, alone.history)
 
     def test_number(self):
         d = self.dialog()
@@ -206,16 +219,28 @@ class RandomWindowTest(WindowCase):
         self.assertTrue({"coin_flick", "coin_land"} <= set(heard))
         self.assertTrue({"bone_hit", "oak_hit", "die_hit"} & set(heard))
 
-    def test_panel_waits_until_die_lands(self):
-        self.w.roll(20)
-        self.w.roll(6)                                    # кубик ещё катится - не считается
-        self.w.flip_coin()
-        self.w.dice_value.finish()
-        self.assertEqual(self.w.history.count(), 1)
-        self.assertTrue(self.w.history.item(0).text().startswith("d20:"))
-        self.w.flip_coin()
-        self.w.dice_value.finish()
-        self.assertRegex(self.w.history.item(0).text(), r"^Монетка: (ворон|ласка|на ребро)")
+    def test_tools_live_in_left_panel(self):
+        self.assertFalse(hasattr(self.w, "right"))                # правой панели больше нет
+        inner = self.w.left.findChild(QWidget, "PanelInner")
+        self.assertTrue(inner.isAncestorOf(self.w.fox_wheel))
+        self.assertTrue(inner.isAncestorOf(self.w.timer_button))
+        texts = [b.text() for b in inner.findChildren(QPushButton)]
+        self.assertIn("Рандомайзеры…", texts)
+        self.w.left.set_open(True)
+        self.w.left.grab()
+        from PySide6.QtCore import QTimer
+        seen = []
+
+        def press_dash():                                         # знаки всплывают, щелчок - в текст
+            menu = self.w._symbols_menu
+            buttons = [b for b in menu.findChildren(QPushButton) if b.text() == "—"]
+            seen.append(len(menu.findChildren(QPushButton)))
+            buttons[0].click()
+        QTimer.singleShot(150, press_dash)
+        self.w.editor.setPlainText("")
+        self.w.show_symbols()
+        self.assertGreaterEqual(seen[0], 12)
+        self.assertIn("—", self.w.editor.toPlainText())
 
     def test_list_without_repeats(self):
         d = self.dialog()

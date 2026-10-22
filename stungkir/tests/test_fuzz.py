@@ -137,15 +137,11 @@ class Robot:
             self.w.insert_symbol(self.rng.choice(["—", "«»", "…", "́", "ё", "[ ]", "**", "*"]))
 
     def toys(self):
-        choice = self.rng.randint(0, 4)
+        choice = self.rng.randint(0, 2)
         if choice == 0:
-            self.w.roll(self.rng.choice(C.DICE))
-        elif choice == 1:
-            self.w.flip_coin()
-        elif choice == 2:
-            self.w.dice_value.finish()
-        elif choice == 3:
             self.w.toggle_timer()
+        elif choice == 1:
+            self.w.add_to_history(f"d20: {self.rng.randint(1, 20)}")
         else:
             self.w.history.clear()
 

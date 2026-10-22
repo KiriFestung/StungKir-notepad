@@ -60,6 +60,30 @@ def layout_of(options):
     return layout
 
 
+# картинка в тексте: строка целиком «[картинка: карта.png]» (файл - рядом с главой, в папке категории)
+IMAGE_LINE_RE = re.compile(r"^\s*\[\s*(?:картинка|рисунок|иллюстрация|image)\s*:\s*([^\[\]\n]+?)\s*\]\s*$",
+                           re.IGNORECASE)
+IMAGE_MARK = "\ue000img:"                 # так картинка едет внутри абзацев книги до сборщика формата
+IMAGE_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif",
+               ".webp": "image/webp"}
+
+
+def image_of(text):
+    """Абзац-картинка -> путь к файлу, иначе None."""
+    return Path(text[len(IMAGE_MARK):]) if text.startswith(IMAGE_MARK) else None
+
+
+def find_image(name, folder):
+    """Файл картинки по имени из текста: рядом с главой или в подпапке «картинки». None - нет такого."""
+    if folder is None:
+        return None
+    name = name.strip().strip("«»\"'")
+    for candidate in (Path(folder) / name, Path(folder) / "картинки" / name):
+        if candidate.is_file() and candidate.suffix.lower() in IMAGE_TYPES:
+            return candidate
+    return None
+
+
 def is_scene_break(text):
     return bool(SCENE_RE.match(text))
 
@@ -72,7 +96,8 @@ def heading_of(text):
 
 def marker_lines(text):
     """Строки, которые целиком - пометка в скобках: при сборке книги они бы пропали."""
-    return [m.group(0).strip() for line in text.split("\n") for m in [MARKER_LINE_RE.match(line)] if m]
+    return [m.group(0).strip() for line in text.split("\n") for m in [MARKER_LINE_RE.match(line)]
+            if m and not IMAGE_LINE_RE.match(line)]
 
 
 def book_volume(chapters):
@@ -80,7 +105,7 @@ def book_volume(chapters):
     chars = words = 0
     for _name, paragraphs in chapters:
         for text in paragraphs:
-            if is_scene_break(text):
+            if is_scene_break(text) or image_of(text):
                 continue
             heading = heading_of(text)
             plain = heading[1] if heading else plain_markup(text)
@@ -100,18 +125,28 @@ def volume_line(chapters):
             f"({sheets} а. л.), {spaced(words)} {plural(words, 'слово', 'слова', 'слов')}")
 
 
-def book_paragraphs(text, strip_markers, marker_headings=False):
+def book_paragraphs(text, strip_markers, marker_headings=False, folder=None):
     """Текст главы -> абзацы книги. marker_headings: строки вида «[ПРОЛОГ]» становятся
-    заголовками «# ПРОЛОГ», а не вырезаются вместе с остальными пометками."""
+    заголовками «# ПРОЛОГ», а не вырезаются вместе с остальными пометками. folder - папка главы:
+    строки «[картинка: файл]» с найденным файлом становятся абзацами-картинками (image_of)."""
     text = clean_control(text)
+    lines = []
+    for line in text.replace("\r\n", "\n").split("\n"):
+        found = IMAGE_LINE_RE.match(line)
+        if found:
+            picture = find_image(found.group(1), folder)
+            line = IMAGE_MARK + str(picture) if picture else ""      # нет файла - строки нет
+        lines.append(line)
+    text = "\n".join(lines)
     if marker_headings:
         text = "\n".join(MARKER_LINE_RE.sub(lambda m: f"# {m.group(1).strip()}", line)
                           for line in text.split("\n"))
     if strip_markers:
         text = MARKER_RE.sub("", text)
     paragraphs = []
-    for line in text.replace("\r\n", "\n").split("\n"):
-        line = re.sub(r"[ \t]{2,}", " ", line).strip()
+    for line in text.split("\n"):
+        if not line.startswith(IMAGE_MARK):
+            line = re.sub(r"[ \t]{2,}", " ", line).strip()
         if line:
             paragraphs.append(line)
     return paragraphs
@@ -125,7 +160,7 @@ def export_txt(target, title, author, chapters, options):
         block = [name, ""] if options["headings"] else []
         layout = layout_of(options)
         block += [layout["scene_break"] if is_scene_break(p) else
-                  heading_of(p)[1] if heading_of(p) else plain_markup(p) for p in paragraphs]
+                  heading_of(p)[1] if heading_of(p) else plain_markup(p) for p in paragraphs if not image_of(p)]
         parts.append("\n".join(block))
     target.write_text("\n\n\n".join(parts) + "\n", encoding="utf-8")
 
@@ -142,6 +177,8 @@ h2, h3, h4 { font-size: 1.2em; text-align: center; margin: 1.6em 0 1em; page-bre
 .title p { text-indent: 0; text-align: center; font-size: 1.2em; }
 .cover { text-align: center; margin: 0; }
 .cover img { max-width: 100%; max-height: 100%; }
+p.pic { text-indent: 0; text-align: center; margin: 1em 0; }
+p.pic img { max-width: 100%; }
 """
 
 
@@ -176,6 +213,13 @@ def export_epub(target, title, author, chapters, options):
                 '<link rel="stylesheet" type="text/css" href="style.css"/>\n</head>\n'
                 f'<body>\n{body}\n</body>\n</html>\n')
 
+    pictures = []                              # (имя в книге, путь)
+
+    def picture_html(path):
+        name = f"img-{len(pictures) + 1:03}{path.suffix.lower()}"
+        pictures.append((name, path))
+        return f'<p class="pic"><img src="{name}" alt=""/></p>'
+
     files = [("title.xhtml", title, page(title, '<section class="title" epub:type="titlepage">\n'
                                                f'<h1>{esc(title)}</h1>\n'
                                                + (f'<p>{esc(author)}</p>\n' if author else '')
@@ -188,6 +232,10 @@ def export_epub(target, title, author, chapters, options):
                 body.append(f"<h1>{esc(name)}</h1>")
             after_break = not options["headings"]
             for text in paragraphs:
+                if image_of(text):
+                    body.append(picture_html(image_of(text)))
+                    after_break = True
+                    continue
                 if is_scene_break(text):
                     body.append(f'<p class="scene">{esc(layout["scene_break"])}</p>')
                     after_break = True
@@ -218,6 +266,8 @@ def export_epub(target, title, author, chapters, options):
            f'<navMap>\n{ncx_points}\n</navMap>\n</ncx>\n')
     manifest = "\n".join(f'<item id="f{i}" href="{f}" media-type="application/xhtml+xml"/>'
                          for i, (f, _label, _) in enumerate(files))
+    manifest += "".join(f'\n<item id="pic{i}" href="{name}" media-type="{IMAGE_TYPES[path.suffix.lower()]}"/>'
+                        for i, (name, path) in enumerate(pictures))
     spine = "\n".join(f'<itemref idref="f{i}"/>' for i in range(len(files)))
     cover = options.get("cover")
     cover_meta = ""
@@ -255,6 +305,8 @@ def export_epub(target, title, author, chapters, options):
         book.writestr("OEBPS/style.css", css, zipfile.ZIP_DEFLATED)
         for f, _label, content in files:
             book.writestr(f"OEBPS/{f}", content, zipfile.ZIP_DEFLATED)
+        for name, path in pictures:
+            book.writestr(f"OEBPS/{name}", Path(path).read_bytes(), zipfile.ZIP_STORED)
         if cover:
             book.writestr("OEBPS/cover.jpg", cover, zipfile.ZIP_STORED)
             book.writestr("OEBPS/cover.xhtml", cover_page, zipfile.ZIP_DEFLATED)
@@ -301,6 +353,7 @@ def export_fb2(target, title, author, chapters, options):
     genre = options.get("genre") or "prose_contemporary"
     today = date.today()
     body = [f"<title><p>{esc(title)}</p></title>"]
+    binaries = []                             # картинки: в FB2 они лежат в конце файла base64
     for name, paragraphs in chapters:
         name = clean_control(name)
         try:
@@ -308,6 +361,16 @@ def export_fb2(target, title, author, chapters, options):
             if options["headings"]:
                 section.append(f"<title><p>{esc(name)}</p></title>")
             for text in paragraphs:
+                picture = image_of(text)
+                if picture and picture.suffix.lower() in (".png", ".jpg", ".jpeg"):
+                    import base64
+                    ident = f"img{len(binaries) + 1}{picture.suffix.lower()}"
+                    binaries.append(f'<binary id="{ident}" content-type="{IMAGE_TYPES[picture.suffix.lower()]}">'
+                                    f'{base64.b64encode(picture.read_bytes()).decode()}</binary>')
+                    section.append(f'<image l:href="#{ident}"/>')
+                    continue
+                if picture:
+                    continue
                 text = clean_control(text)
                 if is_scene_break(text):
                     section.append(f"<subtitle>{esc(layout['scene_break'])}</subtitle>")
@@ -334,7 +397,7 @@ def export_fb2(target, title, author, chapters, options):
            f"<program-used>{C.APP_NAME} {__version__}</program-used>\n"
            f'<date value="{today.isoformat()}">{today:%d.%m.%Y}</date>\n'
            f"<id>{uuid.uuid4()}</id>\n<version>1.0</version>\n</document-info>\n</description>\n"
-           "<body>\n" + "\n".join(body) + "\n</body>\n</FictionBook>\n")
+           "<body>\n" + "\n".join(body) + "\n</body>\n" + "\n".join(binaries) + "\n</FictionBook>\n")
     Path(target).write_text(xml, encoding="utf-8")
 
 
@@ -379,6 +442,13 @@ def export_pdf(target, title, author, chapters, options):
         return round(value * 96 / 25.4)
 
     def paragraph_html(text, first):
+        picture = image_of(text)
+        if picture:                           # картинка по центру, не шире полосы набора
+            from PySide6.QtGui import QImageReader
+            size = QImageReader(str(picture)).size()
+            natural = size.width() / 150 * 25.4 if size.width() > 0 else width       # мм при 150 точках на дюйм
+            shown = min(width - right - left, natural)
+            return (f'<p class="scene"><img src="{html.escape(picture.as_posix())}" width="{mm(shown)}"></p>')
         if is_scene_break(text):
             return f'<p class="scene">{html.escape(layout["scene_break"])}</p>'
         heading = heading_of(text)
@@ -579,6 +649,17 @@ def export_docx(target, title, author, chapters, options):
                 book.add_heading(clean_control(name), level=1)
             first = options["headings"]
             for text in paragraphs:
+                picture = image_of(text)
+                if picture:                   # картинка по центру, во всю ширину полосы, если крупная
+                    try:
+                        book.add_picture(str(picture), width=Mm(min(width - left - right, 160)))
+                        book.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        book.paragraphs[-1].paragraph_format.first_line_indent = Cm(0)
+                    except Exception as error:     # noqa: BLE001 - не та картинка - книга без неё
+                        from .storage import log_error
+                        log_error(f"Картинка не попала в Word: {picture}", error)
+                    first = True
+                    continue
                 if is_scene_break(text):
                     line = centered(layout["scene_break"], size)
                     line.paragraph_format.space_before = Pt(size)

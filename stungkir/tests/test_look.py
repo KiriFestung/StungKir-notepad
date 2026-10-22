@@ -39,6 +39,11 @@ class LookWindowTest(WindowCase):
         self.assertEqual(w.settings.value("texture"), "linen")
         w.set_texture("none")
         self.assertNotIn("texture-", QApplication.instance().styleSheet())
+        for kind in ("paper-book", "paper-rough", "paper-old"):          # настоящая бумага - плиткой
+            w.set_texture(kind)
+            self.assertIn(f"paper/{kind.split('-')[1]}-overlay.png", QApplication.instance().styleSheet())
+        w.editor.grab()
+        w.set_texture("none")
 
     def test_zen_hides_everything_but_text_and_comes_back(self):
         w = self.window()
@@ -70,7 +75,7 @@ class LookWindowTest(WindowCase):
                     walk(action.menu())
         walk(menu)
         self.assertIn("Полночь", titles)
-        self.assertIn("Бумага", titles)
+        self.assertIn("Бумага книжная", titles)
         self.assertTrue(any(t.startswith("Без отвлечений") for t in titles))
         wait(0.01)
 
@@ -120,10 +125,6 @@ class IconsAndImportanceTest(WindowCase):
         w.toggle_timer()
         self.assertIsNone(w.fox_wheel.left)
         self.assertEqual(w.timer_button.property("autoIcon"), "play")
-        w.flip_coin()
-        w.dice_value.finish()
-        self.assertRegex(w.history.item(0).text(), r"^Монетка: (ворон|ласка|на ребро)")
-        self.assertEqual(w.sounds.played[0][0], "coin_flick")
 
 
 class ScreenItemsTest(WindowCase):
@@ -139,7 +140,6 @@ class ScreenItemsTest(WindowCase):
         self.assertNotIn("сессия", w.status_plain)
         w.toggle_screen("tabs")
         self.assertFalse(w.left.hint.isVisible())
-        self.assertFalse(w.right.hint.isVisible())
         w.toggle_screen("status")
         self.assertFalse(w.status.isVisible())
         self.assertTrue(w.corner_clock.isVisible())             # остальное на месте
@@ -156,7 +156,7 @@ class ScreenItemsTest(WindowCase):
         w.goal = 500
         w.update_status()
         w.set_screen_all(False)
-        for widget in (w.status, w.goal_strip, w.corner_clock, w.left.hint, w.right.hint):
+        for widget in (w.status, w.goal_strip, w.corner_clock, w.left.hint):
             self.assertFalse(widget.isVisible())
         self.assertFalse(w.notes_margin.shown)
         self.assertFalse(w.left.quiet)                          # панели у краёв по-прежнему выезжают
@@ -304,6 +304,9 @@ class ReaderPreviewTest(WindowCase):
         path = self.chapter("Книга", "Глава 1", "\n".join(f"Абзац номер {i}, *с курсивом*, длинный - чтобы "
                                                           "строк хватило на несколько страниц." for i in range(80))
                             + "\n* * *\n# Конец\nПоследний.")
+        self.chapter("Книга", "Вторая", "Вторая глава.\n" * 20)
+        from stungkir import storage
+        storage.save_order(path.parent, ["Глава 1.txt", "Вторая.txt"])
         w.open_path(path)
         self.patch_exec = dialogs.Sheet.exec
         dialogs.Sheet.exec = lambda dialog: 0
@@ -322,6 +325,33 @@ class ReaderPreviewTest(WindowCase):
             self.assertIn(f"из {counts[device]}", dialog.counter.text())
         self.assertGreater(counts["phone"], counts["book"])          # на телефоне страниц больше
         self.assertGreater(counts["book"], 1)
+        dialog.set_device("book")                                   # размеры книги и бумага
+        dialog.size_box.setCurrentIndex(dialog.size_box.findData("a4"))
+        a4 = dialog.pages["book"].count()
+        dialog.size_box.setCurrentIndex(dialog.size_box.findData("pocket"))
+        self.assertGreater(dialog.pages["book"].count(), a4)        # в карманной страниц больше
+        dialog.paper_box.setCurrentIndex(dialog.paper_box.findData("old"))
+        self.assertEqual(dialog.pages["book"].paper_key, "old")
+        dialog.turn(1)                                              # перелистывание - с загибом
+        self.assertIsNotNone(dialog.view.flip)
+        dialog.view.flip_t = 0.5
+        dialog.view.grab()
+        dialog.view.finish_flip()
+        self.assertIsNone(dialog.view.flip)
+        dialog.set_device("tablet")
+        dialog.view.grab()
+        dialog.set_device("phone")                                  # лентой: главы подряд
+        dialog.mode_box.setCurrentIndex(dialog.mode_box.findData("ribbon"))
+        ribbon = dialog.view.pages
+        self.assertEqual(len(ribbon.parts), 1)
+        for _ in range(400):
+            dialog.view.scroll_by(500)
+            if len(ribbon.parts) == 2:
+                break
+        self.assertEqual(len(ribbon.parts), 2)                      # следующая глава подгрузилась сама
+        self.assertEqual(ribbon.parts[1][0], "Вторая")
+        dialog.view.grab()
+        self.assertIn("из 2", dialog.counter.text())
         from stungkir.preview import chapter_html
         markup = chapter_html("Глава", "Раз *курсив*.\n* * *\n# Конец\n[пометка для себя]Текст.")
         self.assertIn("<i>курсив</i>", markup)

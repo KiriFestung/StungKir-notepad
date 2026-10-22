@@ -1,6 +1,6 @@
 # StungKir - писательский блокнот. Copyright (C) 2026 KiriFesTung
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Антистресс (F12): пупырка, мячик, спиннер, песок с граблями и тумблеры. Отдельное окошко -
+"""Антистресс (F12): пупырка, мячик, спиннер, песок с граблями, тумблеры, блинчики и блоки. Отдельное окошко -
 на экране ничего не занимает: открылось по клавише, помял, закрыл и пишешь дальше."""
 
 import math
@@ -1503,13 +1503,324 @@ class Toggles(QWidget):
         p.drawEllipse(tip, unit * 0.055, unit * 0.055)
 
 
-PAGES = ("Пупырка", "Мячик", "Спиннер", "Песок", "Тумблеры", "Блинчики")
+# ---------------- «Блоки»: падающие фигуры из четырёх клеток ----------------
+SHAPES = {           # фигура: клетки в положении «как появилась» (x, y), y вниз
+    "I": ((0, 1), (1, 1), (2, 1), (3, 1)),
+    "O": ((1, 0), (2, 0), (1, 1), (2, 1)),
+    "T": ((1, 0), (0, 1), (1, 1), (2, 1)),
+    "S": ((1, 0), (2, 0), (0, 1), (1, 1)),
+    "Z": ((0, 0), (1, 0), (1, 1), (2, 1)),
+    "J": ((0, 0), (0, 1), (1, 1), (2, 1)),
+    "L": ((2, 0), (0, 1), (1, 1), (2, 1)),
+}
+LINE_SCORE = {1: 100, 2: 300, 3: 500, 4: 800}
+
+
+class BlocksGame:
+    """Логика «Блоков» без рисования: стакан 10×20, фигура, следующая, очки, линии, уровень.
+    Фигуры выпадают «мешком» (все семь по разу, потом заново) - без долгих засух на палку."""
+
+    COLS, ROWS = 10, 20
+
+    def __init__(self, rng=None):
+        self.rng = rng or random.Random()
+        self.reset()
+
+    def reset(self):
+        self.grid = [[None] * self.COLS for _ in range(self.ROWS)]
+        self.bag = []
+        self.score = self.lines = 0
+        self.over = False
+        self.next = self._take()
+        self._spawn()
+
+    @property
+    def level(self):
+        return 1 + self.lines // 10
+
+    def interval(self):
+        """Сколько мс между шагами вниз: с уровнем быстрее, но без безумия - это антистресс."""
+        return max(110, 720 - (self.level - 1) * 60)
+
+    def _take(self):
+        if not self.bag:
+            self.bag = list(SHAPES)
+            self.rng.shuffle(self.bag)
+        return self.bag.pop()
+
+    def _spawn(self):
+        self.kind, self.next = self.next, self._take()
+        self.cells = list(SHAPES[self.kind])
+        self.x, self.y = 3, 0
+        if not self._fits(self.cells, self.x, self.y):
+            self.over = True
+
+    def blocks(self, cells=None, x=None, y=None):
+        cells = self.cells if cells is None else cells
+        x = self.x if x is None else x
+        y = self.y if y is None else y
+        return [(x + cx, y + cy) for cx, cy in cells]
+
+    def _fits(self, cells, x, y):
+        for bx, by in self.blocks(cells, x, y):
+            if not (0 <= bx < self.COLS and by < self.ROWS) or (by >= 0 and self.grid[by][bx] is not None):
+                return False
+        return True
+
+    def move(self, dx):
+        if not self.over and self._fits(self.cells, self.x + dx, self.y):
+            self.x += dx
+            return True
+        return False
+
+    def rotate(self):
+        """Поворот по часовой; упёрлась в стену или кучу - пробуем сдвинуть на клетку-две."""
+        if self.over or self.kind == "O":
+            return False
+        size = 4 if self.kind == "I" else 3
+        turned = [(size - 1 - cy, cx) for cx, cy in self.cells]
+        for dx in (0, -1, 1, -2, 2):
+            if self._fits(turned, self.x + dx, self.y):
+                self.cells, self.x = turned, self.x + dx
+                return True
+        return False
+
+    def ghost_y(self):
+        y = self.y
+        while self._fits(self.cells, self.x, y + 1):
+            y += 1
+        return y
+
+    def step(self):
+        """Шаг вниз. -> сколько линий убрано (если фигура легла), иначе None."""
+        if self.over:
+            return None
+        if self._fits(self.cells, self.x, self.y + 1):
+            self.y += 1
+            return None
+        return self._lock()
+
+    def drop(self):
+        """Сразу вниз (пробел). -> сколько линий убрано."""
+        if self.over:
+            return 0
+        fall = self.ghost_y() - self.y
+        self.y += fall
+        self.score += 2 * fall
+        return self._lock()
+
+    def _lock(self):
+        for bx, by in self.blocks():
+            if by < 0:
+                self.over = True
+                return 0
+            self.grid[by][bx] = self.kind
+        full = [row for row in range(self.ROWS) if all(self.grid[row])]
+        for row in full:
+            del self.grid[row]
+            self.grid.insert(0, [None] * self.COLS)
+        if full:
+            self.lines += len(full)
+            self.score += LINE_SCORE[len(full)] * self.level
+        self._spawn()
+        return len(full)
+
+
+class Blocks(QWidget):
+    """«Блоки»: ← → двигать, ↑ повернуть, ↓ быстрее, пробел - сразу вниз, P - пауза.
+    Фигуры - мягкие объёмные кубики в цветах темы; рядом - следующая фигура и счёт."""
+
+    def __init__(self, on_sound=None, on_change=None):
+        super().__init__()
+        self.on_sound = on_sound
+        self.on_change = on_change
+        self.setMinimumSize(COLUMNS * 52, ROWS * 52)
+        self.setFocusPolicy(Qt.StrongFocus)
+        self.game = BlocksGame()
+        self.best = 0
+        self.paused = True                      # стартует, когда окно с игрой открыли и нажали клавишу
+        self.flash = {}                         # убранные линии вспыхивают
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._tick)
+
+    def start(self):
+        if self.game.over:
+            self.game.reset()
+        self.paused = False
+        self.timer.start(self.game.interval())
+        self._changed()
+
+    def pause(self, on=True):
+        self.paused = on
+        if on:
+            self.timer.stop()
+        else:
+            self.timer.start(self.game.interval())
+        self._changed()
+
+    def hideEvent(self, event):                 # ушли на другую вкладку - пауза
+        if not self.paused:
+            self.pause(True)
+        super().hideEvent(event)
+
+    def _changed(self):
+        self.best = max(self.best, self.game.score)
+        if self.on_change:
+            self.on_change()
+        self.update()
+
+    def _landed(self, lines):
+        if lines:
+            if self.on_sound:
+                self.on_sound("pop", min(1.0, 0.5 + 0.15 * lines))
+        elif self.on_sound:
+            self.on_sound("toggle_down", 0.35)
+        if self.game.over:
+            self.timer.stop()
+            self.paused = True
+        else:
+            self.timer.setInterval(self.game.interval())
+        self._changed()
+
+    def _tick(self):
+        lines = self.game.step()
+        if lines is not None:
+            self._landed(lines)
+        else:
+            self.update()
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key in (Qt.Key_P, Qt.Key_Escape) and not self.game.over:
+            if key == Qt.Key_Escape and self.paused:
+                super().keyPressEvent(event)
+                return
+            self.pause(not self.paused)
+            return
+        if self.paused:
+            if key in (Qt.Key_Space, Qt.Key_Return, Qt.Key_Enter, Qt.Key_Left, Qt.Key_Right, Qt.Key_Up, Qt.Key_Down):
+                self.start()
+            else:
+                super().keyPressEvent(event)
+            return
+        if key == Qt.Key_Left:
+            self.game.move(-1)
+        elif key == Qt.Key_Right:
+            self.game.move(1)
+        elif key in (Qt.Key_Up, Qt.Key_X):
+            if self.game.rotate() and self.on_sound:
+                self.on_sound("toggle_up", 0.25)
+        elif key == Qt.Key_Down:
+            lines = self.game.step()
+            self.game.score += 1
+            if lines is not None:
+                self._landed(lines)
+        elif key == Qt.Key_Space:
+            self._landed(self.game.drop())
+        else:
+            super().keyPressEvent(event)
+            return
+        self.update()
+
+    def mousePressEvent(self, _event):
+        self.setFocus()
+        if self.paused:
+            self.start()
+
+    # ---- рисование ----
+    def _palette(self):
+        colors = C.toy_colors()
+        body, glow = colors["body"], colors["glow"]
+        tones = {"I": C.mix(glow, "#ffffff", 0.2), "O": glow, "T": body.lighter(150), "S": C.mix(body, glow, 0.5),
+                 "Z": C.mix(glow, "#c0392b", 0.45), "J": body.lighter(115), "L": C.mix(glow, body, 0.25)}
+        return colors, tones
+
+    def _block(self, p, rect, color, ghost=False):
+        color = QColor(color)
+        if ghost:
+            p.setPen(QPen(C.mix(color, "#ffffff", 0.2), 1.2, Qt.DashLine))
+            p.setBrush(Qt.NoBrush)
+            p.drawRoundedRect(rect.adjusted(2, 2, -2, -2), 4, 4)
+            return
+        fill = QLinearGradient(rect.topLeft(), rect.bottomRight())
+        fill.setColorAt(0, color.lighter(135))
+        fill.setColorAt(1, color.darker(130))
+        p.setPen(QPen(color.darker(170), 1))
+        p.setBrush(fill)
+        p.drawRoundedRect(rect.adjusted(1, 1, -1, -1), 4, 4)
+        p.setPen(Qt.NoPen)
+        p.setBrush(QColor(255, 255, 255, 60))
+        p.drawRoundedRect(QRectF(rect.x() + 3, rect.y() + 3, rect.width() * 0.5, rect.height() * 0.22), 2, 2)
+
+    def paintEvent(self, _event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        colors, tones = self._palette()
+        g = self.game
+        cell = min((self.height() - 20) / g.ROWS, (self.width() - 40) / (g.COLS + 7))
+        well = QRectF((self.width() - cell * (g.COLS + 6)) / 2, (self.height() - cell * g.ROWS) / 2,
+                      cell * g.COLS, cell * g.ROWS)
+        p.setPen(QPen(C.mix(colors["body"], "#ffffff", 0.25), 1.5))
+        p.setBrush(C.mix(colors["bg"], "#000000", 0.25))
+        p.drawRoundedRect(well.adjusted(-6, -6, 6, 6), 10, 10)
+        p.setPen(QPen(QColor(255, 255, 255, 12), 1))
+        for col in range(1, g.COLS):
+            p.drawLine(QPointF(well.x() + col * cell, well.top()), QPointF(well.x() + col * cell, well.bottom()))
+        for row in range(g.ROWS):
+            for col in range(g.COLS):
+                if g.grid[row][col]:
+                    self._block(p, QRectF(well.x() + col * cell, well.y() + row * cell, cell, cell),
+                                tones[g.grid[row][col]])
+        if not g.over:
+            ghost = g.ghost_y()
+            for bx, by in g.blocks(y=ghost):
+                if by >= 0:
+                    self._block(p, QRectF(well.x() + bx * cell, well.y() + by * cell, cell, cell), tones[g.kind], True)
+            for bx, by in g.blocks():
+                if by >= 0:
+                    self._block(p, QRectF(well.x() + bx * cell, well.y() + by * cell, cell, cell), tones[g.kind])
+        side = QRectF(well.right() + cell * 1.2, well.top(), cell * 4.8, well.height())
+        font = QFont(p.font())
+        font.setPixelSize(max(11, int(cell * 0.55)))
+        font.setBold(True)
+        p.setFont(font)
+        p.setPen(C.mix(colors["glow"], "#ffffff", 0.1))
+        p.drawText(QRectF(side.x(), side.y(), side.width(), cell), Qt.AlignLeft | Qt.AlignVCenter, "Дальше")
+        small = cell * 0.8
+        for cx, cy in SHAPES[g.next]:
+            self._block(p, QRectF(side.x() + cx * small, side.y() + cell * 1.3 + cy * small, small, small), tones[g.next])
+        lines = [("Очки", g.score), ("Линии", g.lines), ("Уровень", g.level), ("Рекорд", self.best)]
+        for i, (label, value) in enumerate(lines):
+            top = side.y() + cell * (4.4 + i * 2.1)
+            font.setBold(False)
+            p.setFont(font)
+            p.setPen(QColor(C.TEXT))
+            p.drawText(QRectF(side.x(), top, side.width(), cell), Qt.AlignLeft | Qt.AlignVCenter, label)
+            font.setBold(True)
+            p.setFont(font)
+            p.setPen(C.mix(colors["glow"], "#ffffff", 0.1))
+            p.drawText(QRectF(side.x(), top + cell * 0.8, side.width(), cell), Qt.AlignLeft | Qt.AlignVCenter,
+                       f"{value:,}".replace(",", " "))
+        if self.paused or g.over:
+            p.setPen(Qt.NoPen)
+            p.setBrush(QColor(0, 0, 0, 140))
+            p.drawRoundedRect(well, 8, 8)
+            p.setPen(QColor("#ffffff"))
+            text = (f"Конец: {g.score} очков\nПробел - ещё раз" if g.over else
+                    "Пауза\nПробел или щелчок - играть" if g.score or g.lines else
+                    "Щёлкни или нажми пробел\n← → ↑ ↓ и пробел")
+            p.drawText(well, Qt.AlignCenter, text)
+        p.end()
+
+
+PAGES = ("Пупырка", "Мячик", "Спиннер", "Песок", "Тумблеры", "Блинчики", "Блоки")
 HINTS = {
     1: "Зажми мячик и подержи - сожмётся. Схвати и брось - отскочит",
     2: "Раскрути спиннер мышью",
     3: "Веди мышью с зажатой кнопкой - грабли оставят бороздки",
     4: "Щёлк. А красный - под крышкой: откинь и попробуй",
     5: "Зажми мышь, оттяни вниз и отпусти. Колесо - угол: чем площе, тем больше блинчиков",
+    6: "← → двигать, ↑ повернуть, ↓ быстрее, пробел - сразу вниз, P - пауза",
 }
 
 
@@ -1530,8 +1841,10 @@ class StressDialog(Sheet):
         self.skip = StoneSkip(on_sound=lambda name, strength: self._play(name, strength), on_result=self._skipped)
         self.skip.best = int(self.settings.value("skip_best", 0) or 0)
         self.skip.best_distance = float(self.settings.value("skip_best_distance", 0) or 0)
+        self.blocks = Blocks(on_sound=lambda name, strength: self._play(name, strength), on_change=self._blocks_changed)
+        self.blocks.best = int(self.settings.value("blocks_best", 0) or 0)
         for index, (title, page) in enumerate(zip(PAGES, (self.wrap, self.ball, self.spinner, self.sand,
-                                                          toggles_page, self.skip))):
+                                                          toggles_page, self.skip, self.blocks))):
             button = QPushButton(title)
             button.setCheckable(True)
             button.setAutoDefault(False)                 # иначе первая вкладка выглядит нажатой всегда
@@ -1634,8 +1947,14 @@ class StressDialog(Sheet):
         self.next_button.setEnabled(puzzle and self.toggles.solved)
         self.hint_button.setEnabled(puzzle and not self.toggles.solved)
 
+    def _blocks_changed(self):
+        if self.blocks.best > int(self.settings.value("blocks_best", 0) or 0):
+            self.settings.setValue("blocks_best", self.blocks.best)
+
     def _show_page(self, index):
         self.pages.setCurrentIndex(index)
+        if self.pages.widget(index) is self.blocks:
+            self.blocks.setFocus()
         self.group.buttons()[index].setChecked(True)
         self.refill.setVisible(index in (0, 3))
         self.refill.setText("Разровнять" if index == 3 else "Новый лист")

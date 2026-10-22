@@ -478,10 +478,11 @@ class FilesMixin:
         target = Path(target)
         if target.suffix.lower() != "." + extension:
             target = target.with_name(target.name + "." + extension)
-        texts, skipped = [], []
+        texts, skipped, folders = [], [], {}
         for path in options["chapters"]:
             try:
                 texts.append((path.stem, self.current_text() if path == self.path else read_text(path)))
+                folders[len(texts) - 1] = path.parent          # там ищутся картинки из текста
             except (OSError, LockedFile) as error:
                 skipped.append(path)
                 log_error(f"Глава не попала в книгу: {path}", error)
@@ -502,7 +503,8 @@ class FilesMixin:
                 if choice in (None, "cancel"):
                     return
                 as_headings = choice == "heading"
-        chapters = [(name, book_paragraphs(text, options["strip_markers"], as_headings)) for name, text in texts]
+        chapters = [(name, book_paragraphs(text, options["strip_markers"], as_headings, folders.get(i)))
+                    for i, (name, text) in enumerate(texts)]
         if options.get("category") and options.get("use_cover", True):
             from .covers import cover_bytes
             options["cover"] = cover_bytes(Path(options["category"]))   # своя картинка категории - обложкой

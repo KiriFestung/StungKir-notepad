@@ -39,11 +39,14 @@ class RouletteLogicTest(unittest.TestCase):
         self.assertTrue(all(full.pull() == "live" for _ in range(10)))
         self.assertEqual(Roulette(load="ерунда").load, "1")
 
-    def test_hundred_challenges_by_level(self):
+    def test_challenges_by_level(self):
         from stungkir.roulette import CHALLENGES, LEVEL_CHALLENGES, LEVELS, Roulette, level_pool
-        self.assertEqual(len(CHALLENGES), 100)
-        self.assertEqual(len(set(CHALLENGES)), 100)
-        self.assertEqual(len(LEVELS), 6)
+        self.assertEqual(len(CHALLENGES), 340)
+        self.assertEqual(len(set(CHALLENGES)), 340)                 # без повторов
+        self.assertEqual(len(LEVELS), 7)
+        self.assertFalse(any("—" in text for text in CHALLENGES))   # длинное тире - только в начале реплики
+        self.assertFalse(set(level_pool(0)) & set(LEVEL_CHALLENGES[6][1]))   # «любые» - без шестой
+        self.assertEqual(set(level_pool(6)), set(LEVEL_CHALLENGES[6][1] + LEVEL_CHALLENGES[5][1]))
         self.assertEqual(set(level_pool(5)), set(LEVEL_CHALLENGES[5][1] + LEVEL_CHALLENGES[4][1]))
         self.assertEqual(set(level_pool(1)), set(LEVEL_CHALLENGES[1][1]))
         r = Roulette(random.Random(4))
@@ -100,20 +103,34 @@ class RouletteDialogTest(WindowCase):
         dialog = RandomDialog(None, ["Кира"], [], settings, results.append)
         dialog.set_mode("roulette")
         dialog.show()
+        dialog.revolver.finish()
+        dialog.PULL_PAUSE_MS = 0                          # в проверках жмём быстрее человека
         return dialog, results, settings
+
+    @staticmethod
+    def _settle(dialog):
+        """Барабан доехал и вспышка «баха» погасла - можно жать дальше."""
+        dialog.revolver.finish()
+        dialog.revolver.flash_anim.stop()
+        dialog.revolver.flash = 0.0
+        dialog.revolver.effect = None
 
     def test_spin_pull_until_bang(self):
         dialog, results, _settings = self._dialog()
         self.assertTrue(dialog.revolver.isVisible())
         dialog.spin()
-        dialog.pull()                                    # пока крутится - только доводит барабан
+        dialog.pull()                                    # пока крутится - щелчок не считается
         self.assertFalse(results)
+        self.assertTrue(dialog.revolver.busy)
         for _ in range(6):
+            self._settle(dialog)
             dialog.pull()
-            dialog.revolver.finish()
             if results:
                 break
         self.assertEqual(len(results), 1)
+        dialog.pull()                                    # сразу после «баха» - не жмётся
+        self.assertTrue(dialog.revolver.revealed)
+        self._settle(dialog)
         self.assertTrue(results[0].startswith("Рулетка: "))
         self.assertTrue(dialog.revolver.revealed)
         self.assertIn("live", dialog.revolver.shown)
@@ -154,8 +171,9 @@ class RouletteDialogTest(WindowCase):
         self.assertIn(results[-1].removeprefix("Рулетка: "), level_pool(5))
         settings.setValue("roulette_own", "Мой вызов")
         settings.setValue("roulette_only_own", "true")
+        self._settle(dialog)
         dialog.pull()                                    # после «баха» - прокрутка
-        dialog.revolver.finish()
+        self._settle(dialog)
         dialog.pull()
         self.assertEqual(results[-1], "Рулетка: Мой вызов")
         dialog.close()
@@ -367,6 +385,59 @@ class AntistressTest(WindowCase):
         QTest.mousePress(spinner, Qt.LeftButton, Qt.NoModifier, at(0))
         self.assertEqual(spinner.speed, 0.0)                     # схватил - остановил
         QTest.mouseRelease(spinner, Qt.LeftButton, Qt.NoModifier, at(0))
+        dialog.close()
+
+    def test_blocks_game_rules(self):
+        from stungkir.antistress import SHAPES, BlocksGame
+        game = BlocksGame(random.Random(3))
+        first_seven = [game.kind, game.next] + [game._take() for _ in range(5)]
+        self.assertEqual(sorted(first_seven), sorted(SHAPES))      # мешок: все семь по разу
+        game = BlocksGame(random.Random(1))
+        game.grid[19] = ["Z"] * 9 + [None]                        # почти полная нижняя строка
+        game.grid[18] = ["Z"] * 9 + [None]
+        game.kind, game.cells, game.x, game.y = "I", list(SHAPES["I"]), 3, 0
+        self.assertTrue(game.rotate())                            # палка встала торчком
+        while game.move(1):
+            pass
+        cleared = game.drop()
+        self.assertEqual(cleared, 2)
+        self.assertEqual(game.lines, 2)
+        self.assertGreaterEqual(game.score, 300)
+        self.assertTrue(all(cell is None for cell in game.grid[19][:9]) or game.grid[19].count(None) >= 1)
+        game.kind, game.cells, game.x, game.y = "T", list(SHAPES["T"]), 0, 5
+        self.assertFalse(game.move(-1))                           # стена
+        self.assertTrue(game.rotate())
+        game = BlocksGame(random.Random(2))
+        for _ in range(200):                                      # сыпать в одну точку - конец игры
+            game.drop()
+            if game.over:
+                break
+        self.assertTrue(game.over)
+        self.assertEqual(game.drop(), 0)
+        self.assertLess(BlocksGame().interval(), 800)
+
+    def test_blocks_page_plays_with_keys(self):
+        from stungkir.antistress import StressDialog
+        dialog = StressDialog(self.window())
+        dialog.show()
+        dialog._show_page(6)
+        blocks = dialog.blocks
+        self.assertTrue(blocks.paused)
+        QTest.keyClick(blocks, Qt.Key_Space)                      # пробел - старт
+        self.assertFalse(blocks.paused)
+        before = blocks.game.y
+        QTest.keyClick(blocks, Qt.Key_Down)
+        self.assertGreater(blocks.game.y, before)
+        QTest.keyClick(blocks, Qt.Key_Left)
+        QTest.keyClick(blocks, Qt.Key_Up)
+        QTest.keyClick(blocks, Qt.Key_Space)                      # сразу вниз - фигура легла
+        self.assertTrue(any(any(row) for row in blocks.game.grid))
+        blocks._tick()
+        blocks.grab()
+        QTest.keyClick(blocks, Qt.Key_P)
+        self.assertTrue(blocks.paused)
+        blocks.grab()
+        dialog._show_page(0)
         dialog.close()
 
     def test_f12_opens_it(self):

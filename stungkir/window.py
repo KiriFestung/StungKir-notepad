@@ -12,7 +12,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QColor, QCursor, QFont, QKeySequence, QShortcut, QTextBlockFormat, QTextCursor
 from PySide6.QtWidgets import (
-    QApplication, QFileDialog, QLabel, QListWidgetItem, QMainWindow, QSplitter, QStackedWidget, QVBoxLayout, QWidget,
+    QApplication, QFileDialog, QLabel, QMainWindow, QSplitter, QStackedWidget, QVBoxLayout, QWidget,
 )
 
 from . import config as C
@@ -205,10 +205,9 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         self.clock_timer.timeout.connect(self.update_clock)
         self.clock_timer.start()
         self.update_clock()
+        self.history = []                        # выпавшее в «Рандомайзерах» (новое - первым)
         self.left = SlidePanel(central, "left", C.LEFT_WIDTH)
         self._build_left(self.left)
-        self.right = SlidePanel(central, "right", C.RIGHT_WIDTH)
-        self._build_right(self.right)
         self.toast = Toast(central)
         self.streak_pop = StreakPop(central)
         self.goal_pop = GoalPop(central)
@@ -331,7 +330,6 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
     def eventFilter(self, obj, event):
         if obj is self.centralWidget() and event.type() == QEvent.Resize:
             self.left.place()
-            self.right.place()
             self.place_overlays()
         return super().eventFilter(obj, event)
 
@@ -343,7 +341,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         заметки на полях и язычки панелей; панели у краёв не выезжают. F10 - всё обратно."""
         self.zen = on
         self.update_empty_hint()
-        for panel in (self.left, self.right):
+        for panel in (self.left,):
             panel.set_quiet(on)
         self.apply_screen()
         self.notes_margin.setVisible(not on)
@@ -497,7 +495,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         zen = getattr(self, "zen", False)
         self.corner_clock.setVisible(not zen and self.screen_shown("clock"))
         self.status.setVisible(not zen and self.screen_shown("status"))
-        for panel in (self.left, self.right):
+        for panel in (self.left,):
             panel.set_tabs(self.screen_shown("tabs"))
         self.update_status()                     # и полоски, и части строки внизу
         self.place_overlays()                    # часы прячутся, если их угол занят панелью «рядом»
@@ -556,17 +554,11 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         central = self.centralWidget()
         pos = central.mapFromGlobal(QCursor.pos())
         inside_y = 0 <= pos.y() <= central.height()
-        width = central.width()
         reach = 30
         if not self.left.opened and inside_y and 0 <= pos.x() <= C.EDGE:
             self.left.set_open(True)
         elif self.left.opened and (pos.x() > C.MARGIN + self.left.width() + reach or not inside_y):
             self.left.set_open(False)
-        if not self.right.opened and inside_y and width - C.EDGE <= pos.x() <= width:
-            self.right.set_open(True)
-        elif self.right.opened and (
-                pos.x() < width - C.MARGIN - self.right.width() - reach or not inside_y):
-            self.right.set_open(False)
 
     def toggle_fullscreen(self):
         if self.isFullScreen():
@@ -788,7 +780,16 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
             return None
         from .preview import PreviewDialog
         title = self.path.stem if self.path else "Без названия"
-        dialog = PreviewDialog(self, title, self.editor.toPlainText(), device)
+        following = []                           # для ленты: следующие главы той же категории
+        if self.path is not None:
+            try:
+                chapters = [f for f in S.files_in(self.path.parent) if f.suffix.lower() in (".txt", ".md", "")]
+                after = chapters[chapters.index(self.path) + 1:] if self.path in chapters else []
+                following = [(f.stem, lambda f=f: S.read_text(f)) for f in after]
+            except OSError:
+                following = []
+        dialog = PreviewDialog(self, title, self.editor.toPlainText(), device, following,
+                               self.path.parent if self.path else None)
         dialog.exec()
         return dialog
 
@@ -1020,27 +1021,6 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         self.editor.setTextCursor(cursor)
         QTimer.singleShot(0, self.editor, self.editor.center_cursor)
 
-    # ---------------- кубики ----------------
-    def roll(self, sides):
-        if self.dice_value.rolling:                      # пока кубик не лёг - второй раз не бросить
-            return
-        result = random.randint(1, sides)
-        self.dice_value.roll(sides, result, lambda value, s=sides: self._rolled(s, value))
-
-    def _rolled(self, sides, result):
-        color = C.CRIT_HIGH if result == sides else C.CRIT_LOW if result == 1 else None
-        entry = QListWidgetItem(f"d{sides}:  {result}")
-        if color:
-            entry.setForeground(QColor(color))
-        self.history.insertItem(0, entry)
-
-    def flip_coin(self):
-        if self.dice_value.rolling:
-            return
-        from .dice import toss_coin
-        self.dice_value.roll("coin", toss_coin(), lambda value: self.add_to_history(
-            "Монетка: на ребро! Такое бывает раз из ста" if value == "Ребро" else f"Монетка: {value.lower()}"))
-
     # ---------------- звук печатной машинки ----------------
     def typing_volume(self):
         from .sounds import VOLUMES
@@ -1088,8 +1068,11 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         self.sounds.play(name, random.uniform(0.75, 1.0), volume)
 
     def add_to_history(self, text):
-        self.history.insertItem(0, QListWidgetItem(text))
+        """Всё выпавшее в «Рандомайзерах» - сверху списка истории (живёт, пока открыт блокнот)."""
+        self.history.insert(0, text)
+        del self.history[200:]
 
     def show_random(self):
         terms = list(self.lore.terms) if self.lore is not None else []
-        RandomDialog(self, self.names, terms, self.settings, self.add_to_history, self.open_lore_term).exec()
+        RandomDialog(self, self.names, terms, self.settings, self.add_to_history, self.open_lore_term,
+                     history=self.history).exec()

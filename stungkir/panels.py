@@ -9,7 +9,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QFont, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit,
-    QListWidget, QPushButton, QScrollArea, QSizePolicy, QSpinBox,
+    QListWidget, QPushButton, QScrollArea, QSpinBox,
     QVBoxLayout, QWidget,
 )
 
@@ -20,7 +20,6 @@ from .storage import (
     lock_path,
 )
 from .windows import load_config_raw
-from .dice import Die3D
 from .widgets import FileTree, FoxWheel, GoalStrip, SoftButton
 from .sample import has_sample
 
@@ -115,7 +114,9 @@ class PanelsMixin:
         self.tree.itemClicked.connect(self.on_item_clicked)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.tree_menu)
+        self.tree.setMinimumHeight(150)
         layout.addWidget(self.tree, 1)
+        self._build_tools(layout)
 
     def _submenu(self, menu, title):
         sub = frameless_menu(menu.addMenu(title))
@@ -252,11 +253,9 @@ class PanelsMixin:
         self.hover_timer.stop()
         steps = [
             (0, lambda: (self.left.set_open(True),
-                         self.toast.show_message("Слева: файлы, меню и режимы. Подведи мышь к левому краю", 2600))),
-            (3000, lambda: (self.left.set_open(False), self.right.set_open(True),
-                            self.toast.show_message("Справа: знаки, таймер и кубики. Подведи мышь к правому краю",
-                                                    2600))),
-            (6000, lambda: (self.right.set_open(False), self.hover_timer.start())),
+                         self.toast.show_message("Слева: файлы, меню, знаки и таймер. Подведи мышь к левому краю",
+                                                 3200))),
+            (3600, lambda: (self.left.set_open(False), self.hover_timer.start())),
         ]
         for delay, step in steps:
             QTimer.singleShot(delay, self, step)     # с окном-хозяином: закрыли окно - шаги отменятся
@@ -295,72 +294,112 @@ class PanelsMixin:
         layout.addWidget(holder)
         return grid
 
-    def _build_right(self, panel):
-        layout = QVBoxLayout(self._scrolling(panel))
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(5)
-
-        self._title("Знаки", layout)
-        grid = self._grid(layout)
-        for i, (label, value, tip) in enumerate(C.SYMBOLS):
-            button = QPushButton(label)
-            button.setCursor(Qt.PointingHandCursor)
-            if tip:
-                button.setToolTip(tip)
-            button.clicked.connect(lambda checked=False, v=value: self.insert_symbol(v))
-            grid.addWidget(button, i // 4, i % 4)
-
-        layout.addSpacing(4)
+    def _build_tools(self, layout):
+        """Низ левой панели: знаки (всплывают по кнопке), таймер с лаской и рандомайзеры.
+        Правой панели больше нет: кубики и монетка живут в «Рандомайзерах», там они лучше."""
+        self.symbols_button = self._button("Знаки  ▸", self.show_symbols, layout,
+                                           "Тире, кавычки, ударение, разметка", "edit")
+        self._button("Рандомайзеры…", self.show_random, layout,
+                     "Кубики и монетка на столе, число, вариант из списка, персонаж или термин мира, "
+                     "рулетка с вызовами", "dice")
+        layout.addSpacing(6)
         self._title("Таймер", layout)
-        self.fox_wheel = FoxWheel()
-        layout.addWidget(self.fox_wheel)
         row = QHBoxLayout()
         row.setSpacing(6)
+        self.fox_wheel = FoxWheel()
+        self.fox_wheel.setFixedHeight(96)
+        row.addWidget(self.fox_wheel, 3)
+        column = QVBoxLayout()
+        column.setSpacing(6)
         self.timer_minutes = QSpinBox()
         self.timer_minutes.setRange(1, 600)
         self.timer_minutes.setSuffix(" мин")
         self.timer_minutes.setAlignment(Qt.AlignCenter)
         self.timer_minutes.setValue(int(self.settings.value("timer_minutes", C.TIMER_MINUTES)))
-        row.addWidget(self.timer_minutes, 1)
+        column.addWidget(self.timer_minutes)
         self.timer_button = QPushButton("Старт")
-        self.timer_button.setObjectName("Primary")          # главное действие панели - цветом «Важное»
+        self.timer_button.setObjectName("Primary")          # главное действие - цветом «Важное»
         self.timer_button.setCursor(Qt.PointingHandCursor)
         self.timer_button.clicked.connect(self.toggle_timer)
-        row.addWidget(self.timer_button, 1)
+        column.addWidget(self.timer_button)
+        row.addLayout(column, 2)
         layout.addLayout(row)
         self.timer_close = QCheckBox("Сохранить и выйти")
         self.timer_close.setToolTip("Когда время выйдет, StungKir всё сохранит и закроется сам")
         self.timer_close.setChecked(self.settings.value("timer_close", "true") == "true")
         layout.addWidget(self.timer_close)
 
-        layout.addSpacing(4)
-        self._title("Кубики", layout)
-        grid = self._grid(layout)
-        for i, sides in enumerate(C.DICE):
-            button = QPushButton(f"d{sides}")
+    def insert_picture(self, source=None):
+        """Картинка в текст: файл копируется к главе (папка «картинки» категории), в текст встаёт
+        отдельная строка «[картинка: имя]». В редакторе это строка, в книге и превью - картинка."""
+        import shutil
+        from pathlib import Path
+        from PySide6.QtWidgets import QFileDialog
+        from .export import IMAGE_TYPES
+        if self.path is None or self.view is not None:
+            self.toast.show_message("Картинку можно вставить в главу - открой её")
+            return None
+        if source is None:
+            source, _ = QFileDialog.getOpenFileName(self, "Картинка в текст", str(Path.home()),
+                                                    "Картинки (*.png *.jpg *.jpeg *.gif *.webp)")
+            if not source:
+                return None
+        source = Path(source)
+        if source.suffix.lower() not in IMAGE_TYPES or not source.is_file():
+            self.toast.show_message("Это не картинка: подойдут PNG, JPG, GIF, WebP")
+            return None
+        folder = self.path.parent
+        if source.parent in (folder, folder / "картинки"):
+            name = source.name
+        else:
+            target_dir = folder / "картинки"
+            target_dir.mkdir(exist_ok=True)
+            target = target_dir / source.name
+            n = 2
+            while target.exists() and target.read_bytes() != source.read_bytes():
+                target = target_dir / f"{source.stem}-{n}{source.suffix}"
+                n += 1
+            if not target.exists():
+                shutil.copyfile(source, target)
+            name = target.name
+        cursor = self.editor.textCursor()
+        line = f"[картинка: {name}]"
+        block_text = cursor.block().text()
+        before = "\n" if block_text.strip() and cursor.positionInBlock() > 0 else ""
+        after = "\n" if cursor.positionInBlock() < len(block_text) else ""
+        cursor.insertText(before + line + after)
+        self.editor.setTextCursor(cursor)
+        self.editor.setFocus()
+        self.toast.show_message("Картинка вставлена: в книге и превью она будет на своём месте", 2500)
+        return name
+
+    def show_symbols(self):
+        """Знаки - сеткой во всплывающем окошке рядом с кнопкой; щелчок вставляет знак в текст."""
+        from PySide6.QtWidgets import QWidgetAction
+        menu = rounded_menu(self)
+        holder = QWidget()
+        holder.setObjectName("Grid")
+        grid = QGridLayout(holder)
+        grid.setContentsMargins(8, 8, 8, 8)
+        grid.setSpacing(5)
+        for i, (label, value, tip) in enumerate(C.SYMBOLS):
+            button = QPushButton(label)
             button.setCursor(Qt.PointingHandCursor)
-            button.clicked.connect(lambda checked=False, s=sides: self.roll(s))
+            button.setMinimumWidth(52)
+            if tip:
+                button.setToolTip(tip)
+            button.clicked.connect(lambda checked=False, v=value: (menu.close(), self.insert_symbol(v)))
             grid.addWidget(button, i // 4, i % 4)
-        coin = QPushButton("")
-        coin.setIcon(make_icon("coin"))
-        coin.setIconSize(QSize(18, 18))
-        self._icon_buttons = getattr(self, "_icon_buttons", []) + [(coin, "coin")]
-        coin.setCursor(Qt.PointingHandCursor)
-        coin.setToolTip("Ворон или ласка - поровну, и один раз из ста монетка встаёт на ребро")
-        coin.clicked.connect(lambda checked=False: self.flip_coin())
-        grid.addWidget(coin, len(C.DICE) // 4, len(C.DICE) % 4)
-        self.dice_value = Die3D(132)
-        self.dice_value.on_sound = self.sounds.play
-        self.dice_value.setToolTip("Кубик ложится выпавшей гранью к тебе")
-        layout.addWidget(self.dice_value)
-        self._button("Рандомайзеры…", self.show_random, layout,
-                     "Число от и до, вариант из своего списка, персонаж или термин мира, рулетка с вызовами")
-        self.history = QListWidget()
-        self.history.setMinimumHeight(64)               # хотя бы пара последних бросков видна всегда
-        # история берёт только оставшееся место: сначала кубик в полный размер, потом она
-        self.history.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Ignored)
-        layout.addWidget(self.history, 1)
-        self._button("Стереть историю", self.history.clear, layout)
+        picture = QPushButton("Картинка в текст…")
+        picture.setCursor(Qt.PointingHandCursor)
+        picture.setToolTip("Строка [картинка: файл] - в книге, «Как увидит читатель» и на сайте будет картинка")
+        picture.clicked.connect(lambda checked=False: (menu.close(), self.insert_picture()))
+        grid.addWidget(picture, (len(C.SYMBOLS) + 3) // 4, 0, 1, 4)
+        action = QWidgetAction(menu)
+        action.setDefaultWidget(holder)
+        menu.addAction(action)
+        self._symbols_menu = menu                         # для проверок
+        menu.exec(self.symbols_button.mapToGlobal(QPoint(self.symbols_button.width(), 0)))
 
     def _build_search_bar(self, parent):
         bar = QFrame(parent)

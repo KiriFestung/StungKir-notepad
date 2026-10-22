@@ -105,11 +105,11 @@ def coin_flick():
 
 
 def coin_land():
-    """Монетка упала на стол, звенит и дребезжит, пока не ляжет."""
-    ring = metal(1.1, 3150, [1.0, 1.006, 2.33, 3.81, 5.42], [1.0, 0.8, 0.45, 0.25, 0.12],
-                 [0.55, 0.5, 0.3, 0.16, 0.09], wobble=0.55)
-    track = 0.55 * wood(1.1) + 0.35 * ring
-    return finish(track, 0.6)
+    """Монетка упала на стол: мягкий короткий звяк, без долгого звона (долгий раздражал)."""
+    ring = metal(1.1, 2150, [1.0, 1.006, 2.33, 3.81, 5.42], [1.0, 0.7, 0.22, 0.08, 0.03],
+                 [0.16, 0.13, 0.07, 0.04, 0.025], wobble=0.35)
+    track = 0.8 * lowpass(wood(1.1), 2400) + 0.22 * lowpass(ring, 3600)
+    return finish(track, 0.42)
 
 
 def drum_spin():
@@ -285,6 +285,17 @@ def water_plunk():
     return finish(track, 0.5)
 
 
+def page_turn():
+    """Перелистнули страницу: сухой шелест бумаги - нарастает и стихает, без щелчка."""
+    seconds = 0.42
+    t = t_axis(seconds)
+    noise = highpass(lowpass(rng.standard_normal(len(t)), 5200), 700)
+    swell = np.sin(np.pi * np.clip(t / seconds, 0, 1)) ** 1.6
+    flutter = 0.75 + 0.25 * np.sin(2 * np.pi * (18 + 30 * t) * t)
+    crisp = highpass(rng.standard_normal(len(t)), 3500) * np.exp(-((t - 0.3) / 0.03) ** 2) * 0.35
+    return finish(noise * swell * flutter + crisp, 0.32)
+
+
 if __name__ == "__main__":
     for i, f0 in enumerate((2750, 3080, 3420, 2900), 1):
         save(f"die_hit_{i}.wav", die_hit(f0))
@@ -316,4 +327,5 @@ if __name__ == "__main__":
     for i, f0 in enumerate((850, 1000, 1150), 1):
         save(f"water_skip_{i}.wav", water_skip(f0))
     save("water_plunk.wav", water_plunk())
+    save("page_turn.wav", page_turn())
     print("готово:", ", ".join(sorted(p.name for p in OUT.glob("*.wav"))))
