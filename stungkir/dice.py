@@ -153,14 +153,24 @@ def shape(kind):
 
 COIN_SIDES = {"Ворон": "coin-heads", "Ласка": "coin-tails"}    # рисунки сторон монетки (art/)
 COIN_EDGE = "Ребро"
-EDGE_CHANCE = 0.01             # монетка встаёт на ребро в одном броске из ста
+# Настоящие цифры из опытов:
+# - на ребро монетка встаёт примерно раз из 6000 бросков (Murray, Teare, Physical Review E, 1993 -
+#   расчёт и опыты с американской монетой в 5 центов);
+# - падает той же стороной, какой лежала вверх перед броском, в 50,8% бросков (Bartoš и др., 2023 -
+#   350 757 бросков руками 48 человек): рука подбрасывает монетку чуть «с покачиванием».
+EDGE_CHANCE = 1 / 6000
+SAME_SIDE = 0.508
 
 
-def toss_coin(rng=random):
-    """Ворон или Ласка поровну, и изредка - ребро."""
+def toss_coin(rng=random, up=None):
+    """Ворон или Ласка, как в жизни: сторона, что лежала сверху (up), выпадает чуть чаще -
+    50,8 на 49,2; без up - поровну. И изредка, раз из 6000, - ребро."""
     if rng.random() < EDGE_CHANCE:
         return COIN_EDGE
-    return rng.choice(list(COIN_SIDES))
+    if up not in COIN_SIDES:
+        return rng.choice(list(COIN_SIDES))
+    other = next(side for side in COIN_SIDES if side != up)
+    return up if rng.random() < SAME_SIDE else other
 
 
 def labels(sides):
@@ -732,11 +742,12 @@ class RandomDialog(Sheet):
         self._dice_icons()
         self.pages.addWidget(page)
         # монетка на столе
-        coin = QLabel("Ворон или ласка - поровну, и раз из ста монетка встаёт на ребро. "
-                      "Подлетит, покрутится и упадёт на стол.")
+        self.coin_up = settings.value("coin_up", "Ворон") or "Ворон"     # как монетка лежит перед броском
+        coin = self.coin_note = QLabel("")
         coin.setObjectName("Status")
         coin.setWordWrap(True)
         self.pages.addWidget(coin)
+        self._coin_text()
         # число
         page = QWidget()
         row = QHBoxLayout(page)
@@ -864,6 +875,20 @@ class RandomDialog(Sheet):
         self.content.addLayout(buttons)
         self.set_mode(settings.value("random_mode", "dice") or "dice")
 
+    def _coin_text(self):
+        self.coin_note.setText(
+            f"Сейчас сверху - {self.coin_up.lower()}. Как в жизни: монетка чуть чаще падает той стороной, "
+            "что лежала сверху (50,8 на 49,2 - опыт на 350 757 бросках), а на ребро встаёт примерно "
+            "раз из 6000. Подлетит, покрутится и упадёт на стол.")
+
+    def _coin_landed(self, side):
+        if side in COIN_SIDES:                    # подняли - и она лежит той же стороной вверх
+            self.coin_up = side
+            self.settings.setValue("coin_up", side)
+            self._coin_text()
+        self._done_big("Монетка: на ребро! Такое бывает раз из 6000" if side == COIN_EDGE
+                       else f"Монетка: {side.lower()}", "На ребро!" if side == COIN_EDGE else side)
+
     def _material_changed(self, index):
         button = self.material_group.button(index)
         if button is not None:
@@ -927,12 +952,10 @@ class RandomDialog(Sheet):
             title = self.material.currentText().lower()
             self.table.throw(sides, value, material, lambda v: self._done_big(f"d{sides} ({title}): {v}", str(v)))
         elif self.mode == "coin":
-            side = toss_coin()
+            side = toss_coin(up=self.coin_up)
             self.shuffle.setText("")
             self.note.setText("")
-            self.table.toss(side, lambda v: self._done_big(
-                "Монетка: на ребро! Такое бывает раз из ста" if v == COIN_EDGE else f"Монетка: {v.lower()}",
-                "На ребро!" if v == COIN_EDGE else v))
+            self.table.toss(side, lambda v: self._coin_landed(v))
         elif self.mode == "list":
             self.settings.setValue("random_list", self.list_edit.toPlainText())
             items = list_items(self.list_edit.toPlainText())

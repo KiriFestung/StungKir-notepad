@@ -70,22 +70,24 @@ def texture_tile(kind):
     return path
 
 
-def check_icon(color):
-    """Картинка галочки нужного цвета: стили Qt умеют ставить её только из файла."""
+def check_icon(color, shape="check"):
+    """Картинка галочки (или стрелки списка, shape="arrow") нужного цвета: стили Qt умеют
+    ставить её только из файла."""
     import tempfile
     from pathlib import Path
     color = QColor(color).name()
     folder = C.cache_dir()
-    path = folder / f"check-{color[1:]}.svg"
+    path = folder / f"{shape}-{color[1:]}.svg"
     if not path.exists():
+        line = "M3.5 8.5l3 3 6-7" if shape == "check" else "M4 6.5l4 4 4-4"
         svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
-               f'<path d="M3.5 8.5l3 3 6-7" fill="none" stroke="{color}" stroke-width="2.2" '
+               f'<path d="{line}" fill="none" stroke="{color}" stroke-width="2.2" '
                f'stroke-linecap="round" stroke-linejoin="round"/></svg>')
         try:
             folder.mkdir(parents=True, exist_ok=True)
             path.write_text(svg, encoding="utf-8")
         except OSError:
-            path = Path(tempfile.gettempdir()) / f"stungkir-check-{color[1:]}.svg"
+            path = Path(tempfile.gettempdir()) / f"stungkir-{shape}-{color[1:]}.svg"
             path.write_text(svg, encoding="utf-8")
     return path.as_posix()
 
@@ -144,14 +146,21 @@ QTreeWidget::item, QListWidget::item {{ padding: 5px 6px; border-radius: 8px; }}
 QTreeWidget::item:hover, QListWidget::item:hover {{ background: {C.HOVER}; }}
 QTreeWidget::item:selected, QListWidget::item:selected {{ background: {C.SELECT}; color: {C.TEXT}; }}
 
-QLineEdit, QComboBox, QSpinBox, QTimeEdit {{
-    background: {C.BG}; border: 1px solid {C.BORDER}; border-radius: 10px;
-    padding: 7px 12px; selection-background-color: {C.SELECT};
+QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QTimeEdit {{
+    background: {C.mix(C.PANEL, C.BG, 0.55).name()}; border: 1px solid {C.mix(C.BORDER, C.PANEL, 0.2).name()};
+    border-radius: 10px; padding: 7px 12px; selection-background-color: {C.SELECT};
 }}
-QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QTimeEdit:hover {{ border-color: {C.mix(C.BORDER, C.TEXT, 0.25).name()}; }}
-QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QTimeEdit:focus {{
+QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover, QTimeEdit:hover {{
+    border-color: {C.mix(C.BORDER, C.TEXT, 0.25).name()}; }}
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus, QTimeEdit:focus {{
     border: 1px solid {C.mix(C.ACCENT, C.TEXT, 0.4).name()}; }}
-QSpinBox::up-button, QSpinBox::down-button {{ width: 0; border: none; }}
+QSpinBox::up-button, QSpinBox::down-button, QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {{
+    width: 0; border: none; }}
+QComboBox {{ padding-right: 30px; }}
+QComboBox::drop-down {{ subcontrol-origin: padding; subcontrol-position: center right; width: 28px;
+    border: none; background: transparent; }}
+QComboBox::down-arrow {{ image: url({check_icon(C.mix(C.TEXT, C.PANEL, 0.35), "arrow")}); width: 12px; height: 12px; }}
+QComboBox::down-arrow:on {{ top: 1px; }}
 QComboBox QAbstractItemView {{
     background: {C.PANEL}; border: 1px solid {C.BORDER}; outline: 0;
     selection-background-color: {C.SELECT};

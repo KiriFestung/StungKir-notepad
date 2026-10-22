@@ -84,18 +84,21 @@ class ShapesTest(unittest.TestCase):
         die.grab()
 
     def test_fair(self):
-        """Честность: монетка поровну и ребро около 1%, числа и рулетка - без перекоса."""
+        """Честность: монетка как в жизни (50,8% той стороной, что сверху, ребро раз из 6000),
+        числа и рулетка - без перекоса."""
         from stungkir.dice import toss_coin
         from stungkir.roulette import CHAMBERS, Roulette
         rng = random.Random(2026)
         n = 200_000
         counts = {}
         for _ in range(n):
-            side = toss_coin(rng)
+            side = toss_coin(rng, up="Ворон")
             counts[side] = counts.get(side, 0) + 1
-        self.assertAlmostEqual(counts["Ребро"] / n, 0.01, delta=0.002)
-        self.assertAlmostEqual(counts["Ворон"] / n, 0.495, delta=0.006)
-        self.assertAlmostEqual(counts["Ласка"] / n, 0.495, delta=0.006)
+        self.assertLess(counts.get("Ребро", 0), 120)                # ~33 из 200 000
+        self.assertAlmostEqual(counts["Ворон"] / n, 0.508, delta=0.004)
+        self.assertAlmostEqual(counts["Ласка"] / n, 0.492, delta=0.004)
+        plain = [toss_coin(rng) for _ in range(40_000)]
+        self.assertAlmostEqual(plain.count("Ворон") / len(plain), 0.5, delta=0.012)
         for sides in (4, 6, 20, 100):
             got = [0] * sides
             for _ in range(sides * 2000):

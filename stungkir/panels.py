@@ -101,6 +101,7 @@ class PanelsMixin:
             button.setCheckable(True)
         self.more_button = self._button("Ещё  ▸", self.show_more_menu, layout,
                                         "Настройки, статистика, цели, пароль…", "more")
+        self._build_tools(layout)                       # знаки, рандомайзеры и таймер - под рукой, выше глав
         layout.addSpacing(6)
         self._title("Категории", layout)
         self.tree = FileTree(self.on_drop)
@@ -116,7 +117,6 @@ class PanelsMixin:
         self.tree.customContextMenuRequested.connect(self.tree_menu)
         self.tree.setMinimumHeight(150)
         layout.addWidget(self.tree, 1)
-        self._build_tools(layout)
 
     def _submenu(self, menu, title):
         sub = frameless_menu(menu.addMenu(title))
@@ -295,7 +295,7 @@ class PanelsMixin:
         return grid
 
     def _build_tools(self, layout):
-        """Низ левой панели: знаки (всплывают по кнопке), таймер с лаской и рандомайзеры.
+        """Середина левой панели: знаки (всплывают по кнопке), таймер с лаской и рандомайзеры.
         Правой панели больше нет: кубики и монетка живут в «Рандомайзерах», там они лучше."""
         self.symbols_button = self._button("Знаки  ▸", self.show_symbols, layout,
                                            "Тире, кавычки, ударение, разметка", "edit")

@@ -493,7 +493,9 @@ class PreviewDialog(Sheet):
             self.group.addButton(button)
             self.buttons[key] = button
             row.addWidget(button)
-        row.addSpacing(10)
+        row.addStretch()
+        self.content.addLayout(row)
+        row = QHBoxLayout()                       # второй ряд: размер, как листать, бумага
         self.size_box = QComboBox()
         self.size_box.currentIndexChanged.connect(self._size_changed)
         row.addWidget(self.size_box)

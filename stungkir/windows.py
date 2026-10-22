@@ -318,6 +318,7 @@ class CompileDialog(Sheet):
         self.page.addItems(list(PAGE_SIZES))
         self.page.setToolTip("Размер страницы (для PDF и Word)")
         self.size = QDoubleSpinBox()
+        self.size.setAlignment(Qt.AlignCenter)
         self.size.setRange(8, 18)
         self.size.setSingleStep(0.5)
         self.size.setDecimals(1)
