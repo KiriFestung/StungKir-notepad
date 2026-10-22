@@ -964,7 +964,7 @@ class StoneSkip(QWidget):
         else:
             # яркость - нарисованная (свет и тени остаются), оттенок - как у неба и воды
             picture = source.toImage().convertToFormat(QImage.Format_ARGB32_Premultiplied)
-            result = self._tint(picture, C.mix(body, "#ffffff", 0.35))
+            result = self._tint(picture, C.mix(body, "#ffffff", 0.1))
             result.setDevicePixelRatio(ratio)
         self._shore_cache = (key, result)
         return result
@@ -974,6 +974,10 @@ class StoneSkip(QWidget):
         """Картинка в оттенке color: яркость каждой точки умножается на цвет, прозрачность та же."""
         from PySide6.QtGui import QPixmap
         gray = image.convertToFormat(QImage.Format_Grayscale8).convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        q = QPainter(gray)                            # картинка тёмная: яркость вдвое, иначе берег - сажа
+        q.setCompositionMode(QPainter.CompositionMode_Plus)
+        q.drawImage(0, 0, gray.copy())
+        q.end()
         tinted = QImage(gray.size(), QImage.Format_ARGB32_Premultiplied)
         tinted.fill(color)
         q = QPainter(tinted)
