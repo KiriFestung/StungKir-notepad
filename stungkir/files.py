@@ -861,7 +861,9 @@ class FilesMixin:
             return
         versions = list_versions(path)
         if not versions:
-            self.toast.show_message("Версий пока нет: они появляются при сохранении")
+            self.toast.show_message("Версий пока нет: они появляются при сохранении", 3000)
+            if hasattr(self, "picture_pop"):
+                self.picture_pop.play("empty-versions", 3000, width=260)
             return
         if not self.open_path(path):
             return

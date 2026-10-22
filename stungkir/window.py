@@ -30,7 +30,7 @@ from .dialogs import HotkeysDialog, show_error, show_warning
 from .windows import SettingsDialog, load_config_raw
 from .dice import RandomDialog
 from .sounds import DEFAULT_VOLUME, Sounds
-from .widgets import ClockFace, EmptyHint, GoalStrip, NightVeil, SlidePanel, StreakPop, Toast
+from .widgets import ClockFace, EmptyHint, GoalPop, GoalStrip, NightVeil, PicturePop, SlidePanel, StreakPop, Toast
 from .editor import Editor, NotesMargin, ProseHighlighter, Rehighlighter, SidePane, Speller, visible_blocks
 from .table import TableView
 from .board import BoardView
@@ -211,6 +211,8 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         self._build_right(self.right)
         self.toast = Toast(central)
         self.streak_pop = StreakPop(central)
+        self.goal_pop = GoalPop(central)
+        self.picture_pop = PicturePop(central)
         central.installEventFilter(self)
         S._problem_hook = lambda text: self.toast.show_message(text, 3500)
         for text in S._pending_problems:
@@ -538,6 +540,9 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
                 align, (central.width() - self.streak_pop.width()) // 2)
             y = central.height() - self.streak_pop.height() - 56 if self.place("bar") == "bottom" else 64
             self.streak_pop.move(x, y)
+            pop = self.goal_pop                      # праздник цели - из той же точки над строкой
+            y = central.height() - pop.height() - 40 if self.place("bar") == "bottom" else 40
+            pop.move(x + (self.streak_pop.width() - pop.width()) // 2, y)
         for box in (self.global_search, getattr(self, "characters", None)):
             if box is None:
                 continue

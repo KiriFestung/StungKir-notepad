@@ -146,6 +146,7 @@ class SearchMixin:
         query = self.global_edit.text().strip()
         if len(query) < 2:
             self.global_results.clear()
+            self._empty_picture(None)
             self.global_count.setText("Напиши хотя бы две буквы")
             return
         self._fill_results(re.compile(re.escape(query), re.IGNORECASE))
@@ -200,6 +201,8 @@ class SearchMixin:
                                                text[i:j], label))
                     self.global_results.addItem(item)
                 files_hit += hit_here
+        self._empty_picture(None if total else {"search": "empty-search", "markers": "empty-notes"}.get(
+            self.overlay_mode))
         if total:
             what = {"search": plural(total, "совпадение", "совпадения", "совпадений"),
                     "markers": plural(total, "пометка", "пометки", "пометок"),
@@ -222,6 +225,16 @@ class SearchMixin:
             self.global_count.setText("Везде понятно, кто говорит")
         else:
             self.global_count.setText("Ничего не нашлось")
+
+    def _empty_picture(self, name):
+        """Посреди пустого списка: ласка с лупой (ничего не нашлось) или чистая закладка (пометок нет)."""
+        picture = getattr(self, "global_empty", None)
+        if picture is None:
+            return
+        if name:
+            picture.show_picture(name)
+        else:
+            picture.hide()
 
     def _open_global_result(self, item):
         path, position, length, found = item.data(Qt.UserRole)[:4]

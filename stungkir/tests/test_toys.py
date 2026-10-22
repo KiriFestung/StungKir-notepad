@@ -67,11 +67,15 @@ class RouletteLogicTest(unittest.TestCase):
 
 class RouletteDialogTest(WindowCase):
     def test_drawn_bang_and_dust_frames_play_and_end(self):
-        from stungkir.artwork import pixmap
+        from stungkir.artwork import frame_count, pixmap
         from stungkir.roulette import Revolver
-        for name, count in Revolver.EFFECTS.items():
+        for name, frames in Revolver.EFFECTS.items():
+            count = frame_count(frames)
+            self.assertGreaterEqual(count, 8, name)
             for k in range(count):
-                self.assertFalse(pixmap(f"anim/{name}/{name}_{k:02d}").isNull(), f"{name} {k}")
+                self.assertFalse(pixmap(f"{frames}_{k:02d}").isNull(), f"{name} {k}")
+        for drum in Revolver.DRUMS.values():
+            self.assertFalse(pixmap(drum).isNull(), drum)
         revolver = Revolver()
         revolver.resize(260, 260)
         revolver.show()

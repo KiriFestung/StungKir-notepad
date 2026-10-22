@@ -824,6 +824,7 @@ class RandomDialog(Sheet):
 
         self.roulette = Roulette(load=self.load_box.currentData())
         self.revolver = Revolver()
+        self.revolver.material = self.material.currentData() or "bone"
         self.needs_load = True                           # первая прокрутка - с зарядкой
         self.revolver.on_round = lambda last: self._sound("round_in", 0.9 if last else 0.6)
         self.revolver.turn_to(self.roulette.current, duration=1)
@@ -870,6 +871,9 @@ class RandomDialog(Sheet):
         material = self.material.currentData() or "bone"
         for button in self.dice_group.buttons():
             button.setIcon(dice_icon(material, int(button.property("sides"))))
+        if hasattr(self, "revolver"):                    # барабан - того же материала
+            self.revolver.material = material
+            self.revolver.update()
 
     def set_mode(self, mode):
         keys = [k for k, _t in MODES]

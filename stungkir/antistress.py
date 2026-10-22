@@ -5,6 +5,7 @@
 
 import math
 import random
+import time
 
 from PySide6.QtCore import QEasingCurve, QElapsedTimer, QPointF, QRectF, Qt, QTimer, QVariantAnimation
 from PySide6.QtGui import QColor, QFont, QImage, QLinearGradient, QPainter, QPainterPath, QPen, QRadialGradient
@@ -33,10 +34,18 @@ class BubbleWrap(QWidget):
         self.setMinimumSize(COLUMNS * 52, ROWS * 52)
         self.setCursor(Qt.PointingHandCursor)
         self.popped_total = 0
+        self.clock = time.monotonic
+        self.popping = {}                       # пузырь -> когда лопнул (пока играет «лоп»)
+        self.pop_timer = QTimer(self)
+        self.pop_timer.setInterval(33)
+        self.pop_timer.timeout.connect(self._pop_tick)
         self.refill()
+
+    POP_FPS = 30
 
     def refill(self):
         self.popped = set()
+        self.popping = {}
         cells = [(c, r) for c in range(COLUMNS) for r in range(ROWS)]
         self.wobble = {key: random.uniform(-0.06, 0.06) for key in cells}
         # какой из трёх рисунков у пузырька - случайно у каждого (раньше выбор зависел только
@@ -67,11 +76,28 @@ class BubbleWrap(QWidget):
         if key is None or key in self.popped:
             return False
         self.popped.add(key)
+        self.popping[key] = self.clock()
+        if not self.pop_timer.isActive():
+            self.pop_timer.start()
         self.popped_total += 1
         if self.on_pop:
             self.on_pop()
         self.update()
         return True
+
+    def pop_frame(self, key):
+        """Кадр «лопа» у этого пузыря (0..5) или None - уже лопнул совсем."""
+        start = self.popping.get(key)
+        if start is None:
+            return None
+        index = int((self.clock() - start) * self.POP_FPS)
+        return index if index < 6 else None
+
+    def _pop_tick(self):
+        self.popping = {key: start for key, start in self.popping.items() if self.pop_frame(key) is not None}
+        if not self.popping:
+            self.pop_timer.stop()
+        self.update()
 
     def all_popped(self):
         return len(self.popped) == COLUMNS * ROWS
@@ -103,6 +129,10 @@ class BubbleWrap(QWidget):
                     center = origin + QPointF((col + 0.5) * size, (row + 0.5) * size)
                     k = self.kind[(col, row)]
                     picture = popped[k] if (col, row) in self.popped else whole[k]
+                    frame = self.pop_frame((col, row))
+                    if frame is not None:                          # лопается прямо сейчас
+                        moving = scaled(f"anim/bubble-pop/bubble-{k}-pop_{frame:02d}", size * 0.86, ratio)
+                        picture = picture if moving.isNull() else moving
                     side = size * (0.86 + self.wobble[(col, row)] * 0.4)
                     p.save()
                     p.translate(center)
@@ -145,12 +175,15 @@ class SquishBall(QWidget):
     GRAVITY = 2600.0          # точек в секунду за секунду
     BOUNCE = 0.72             # сколько скорости остаётся после отскока
     DRAG_START = 8            # на сколько точек сдвинуть мышь, чтобы это был не «сжать», а «схватить»
+    DUST_SPEED = 1100         # с какой скорости удар о пол поднимает пыль
 
     def __init__(self, on_bounce=None):
         super().__init__()
         self.on_bounce = on_bounce
         self.setMinimumSize(COLUMNS * 52, ROWS * 52)
         self.setCursor(Qt.OpenHandCursor)
+        from .artwork import Effects
+        self.dust = Effects(self)              # пыльное колечко от сильного удара о пол
         self.squeeze = 0.0                     # 0 - круглый, 1 - сплющен до предела
         self.squash_axis = 1                   # 1 - сплющен сверху вниз (пол), 0 - с боков (стенка)
         self.press_point = QPointF()
@@ -299,6 +332,9 @@ class SquishBall(QWidget):
         if y >= bottom:
             y = bottom
             if vy > 0:
+                if vy > self.DUST_SPEED:
+                    self.dust.play("anim/ball/ball-dust", x, self.floor() + 3, r * 3.4, anchor="bottom",
+                                   opacity=min(1.0, vy / 2600))
                 self._hit(vy, 1)
                 vy = -vy * self.BOUNCE
             if abs(vy) < 60:
@@ -331,6 +367,8 @@ class SquishBall(QWidget):
         p.setPen(Qt.NoPen)
         p.setBrush(QColor(0, 0, 0, int(80 * shadow_scale)))
         p.drawEllipse(QPointF(center.x(), self.floor() + 2), rx * 0.9 * shadow_scale, radius * 0.12 * shadow_scale)
+        p.setRenderHint(QPainter.SmoothPixmapTransform)
+        self.dust.paint(p)
         if self.squash_axis == 1:                    # сплющивается к тому, обо что ударился
             body_center = QPointF(center.x(), center.y() + (radius - ry))
         else:
@@ -503,7 +541,7 @@ class ZenSand(QWidget):
         super().__init__()
         self.on_rake = on_rake
         self.setMinimumSize(COLUMNS * 52, ROWS * 52)
-        self.setCursor(Qt.CrossCursor)
+        self.setCursor(self._rake_cursor())
         self.lines = []                 # готовые бороздки: списки точек в долях ширины и высоты
         self.current = []               # бороздка, которую ведут сейчас
         self.stones = []
@@ -524,8 +562,20 @@ class ZenSand(QWidget):
             if all(math.hypot(x - a, (y - b) * 0.75) > 0.22 for a, b, _r in stones):
                 stones.append((x, y, r))
         self.stones = stones
+        self.stone_kinds = random.sample(range(1, 5), len(stones))   # какой из четырёх рисунков
         self.base = QImage()
         self.update()
+
+    @staticmethod
+    def _rake_cursor():
+        """Курсор - маленькие грабли (art/rake), остриё - середина ряда зубьев; без картинки - крестик."""
+        from PySide6.QtGui import QCursor
+        from .artwork import pixmap
+        picture = pixmap("rake")
+        if picture.isNull():
+            return QCursor(Qt.CrossCursor)
+        small = picture.scaledToWidth(44, Qt.SmoothTransformation)
+        return QCursor(small, 22, int(small.height() * 112 / 128))
 
     def _side(self):
         return max(1.0, min(self.width(), self.height()))
@@ -686,7 +736,10 @@ class ZenSand(QWidget):
         if len(self.current) >= 2:
             self._groove(p, [self._px(q) for q in self.current])
         side = self._side()
-        for x, y, r in self.stones:
+        from PySide6.QtGui import QPixmap
+        from .artwork import scaled
+        p.setRenderHint(QPainter.SmoothPixmapTransform)
+        for index, (x, y, r) in enumerate(self.stones):
             center = self._px((x, y))
             rx, ry = r * side * 1.12, r * side * 0.82
             shadow = QRadialGradient(center + QPointF(rx * 0.25, ry * 0.55), rx * 1.4)
@@ -695,6 +748,14 @@ class ZenSand(QWidget):
             p.setPen(Qt.NoPen)
             p.setBrush(shadow)
             p.drawEllipse(center + QPointF(rx * 0.25, ry * 0.55), rx * 1.4, ry * 1.2)
+            kinds = getattr(self, "stone_kinds", [])
+            picture = scaled(f"stone-{kinds[index]}", rx * 2.8, self.devicePixelRatioF()) \
+                if index < len(kinds) else QPixmap()
+            if not picture.isNull():                    # нарисованный камень, тень под ним - наша
+                height = rx * 2.8 * picture.height() / picture.width()
+                p.drawPixmap(QRectF(center.x() - rx * 1.4, center.y() - height / 2, rx * 2.8, height),
+                             picture, QRectF(picture.rect()))
+                continue
             stone = QRadialGradient(center - QPointF(rx * 0.35, ry * 0.45), rx * 1.5)
             stone.setColorAt(0, QColor("#9a97a3"))
             stone.setColorAt(0.55, QColor("#5d5a68"))
@@ -729,6 +790,7 @@ class StoneSkip(QWidget):
         self.best_distance = 0.0
         self.ripples = []                       # (вбок, дальность, время рождения)
         self.drops = []                         # брызги: [x, y, z, vx, vy, vz, время]
+        self.splashes = []                      # нарисованные брызги: (вбок, дальность, время, имя)
         self.pull = None                        # (откуда тянем, где сейчас)
         self.t = 0.0
         self.clock = QElapsedTimer()
@@ -807,12 +869,14 @@ class StoneSkip(QWidget):
             s[4] = -s[4] * 0.55 + random.uniform(-0.1, 0.2)
             s[3] = s[3] * 0.86 + random.uniform(-0.25, 0.25)
             s[5] *= 0.86
+            self._splash(s[0], s[2], "skip-splash")
             self._sound("water_skip", min(1.0, 0.35 + forward / 25))
             return
         self._sound("water_plunk", min(1.0, 0.4 + forward / 30))
-        for _ in range(14):                             # брызги
-            self.drops.append([s[0], 0.0, s[2], random.uniform(-1.2, 1.2), random.uniform(1.5, 3.8),
-                               random.uniform(-1.0, 1.0), self.t])
+        if not self._splash(s[0], s[2], "skip-plunk"):
+            for _ in range(14):                         # брызги (если нет нарисованного «булька»)
+                self.drops.append([s[0], 0.0, s[2], random.uniform(-1.2, 1.2), random.uniform(1.5, 3.8),
+                                   random.uniform(-1.0, 1.0), self.t])
         self.distance = s[2]
         self.stone = None
         new_record = self.skips > self.best or (self.skips == self.best and self.distance > self.best_distance)
@@ -821,6 +885,22 @@ class StoneSkip(QWidget):
         self.best_distance = max(self.best_distance, self.distance)
         if self.on_result:
             self.on_result(self.skips, self.distance, new_record and self.skips > 0)
+
+    SPLASH_FPS = 30
+    SPLASH_SIZE = {"skip-splash": 1.8, "skip-plunk": 2.2}      # ширина в метрах (нарочно крупнее, как камень)
+
+    def _splash(self, lateral, ahead, name):
+        """Нарисованные брызги в точке шлепка; False - кадров нет."""
+        from .artwork import frame_count
+        if not frame_count(f"anim/lake/{name}"):
+            return False
+        self.splashes.append((lateral, ahead, self.t, name))
+        return True
+
+    def _splash_frame(self, splash):
+        from .artwork import frame_count
+        index = int((self.t - splash[2]) * self.SPLASH_FPS)
+        return index if index < frame_count(f"anim/lake/{splash[3]}") else None
 
     @staticmethod
     def skip_chance(steep, forward):
@@ -862,11 +942,48 @@ class StoneSkip(QWidget):
             drop[2] += drop[5] * dt
         self.drops = [d for d in self.drops if d[1] > -0.05]
         self.ripples = [r for r in self.ripples if self.t - r[2] < 3.0]
-        if self.stone is None and not self.drops and not self.ripples:
+        self.splashes = [x for x in self.splashes if self._splash_frame(x) is not None]
+        if self.stone is None and not self.drops and not self.ripples and not self.splashes:
             self.timer.stop()
         self.update()
 
     # ---- рисование ----
+    def _shore(self, width):
+        """Дальний берег (art/lake-shore) в цветах темы: картинку красим в оттенок «тела» темы.
+        Готовая картинка запоминается до смены размера или темы."""
+        from .artwork import scaled
+        ratio = self.devicePixelRatioF()
+        body = C.toy_colors()["body"]
+        key = (int(width), round(ratio, 2), body.name())
+        cached = getattr(self, "_shore_cache", None)
+        if cached and cached[0] == key:
+            return cached[1]
+        source = scaled("lake-shore", width, ratio)
+        if source.isNull():
+            result = source
+        else:
+            # яркость - нарисованная (свет и тени остаются), оттенок - как у неба и воды
+            picture = source.toImage().convertToFormat(QImage.Format_ARGB32_Premultiplied)
+            result = self._tint(picture, C.mix(body, "#ffffff", 0.35))
+            result.setDevicePixelRatio(ratio)
+        self._shore_cache = (key, result)
+        return result
+
+    @staticmethod
+    def _tint(image, color):
+        """Картинка в оттенке color: яркость каждой точки умножается на цвет, прозрачность та же."""
+        from PySide6.QtGui import QPixmap
+        gray = image.convertToFormat(QImage.Format_Grayscale8).convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        tinted = QImage(gray.size(), QImage.Format_ARGB32_Premultiplied)
+        tinted.fill(color)
+        q = QPainter(tinted)
+        q.setCompositionMode(QPainter.CompositionMode_Multiply)
+        q.drawImage(0, 0, gray)
+        q.setCompositionMode(QPainter.CompositionMode_DestinationIn)
+        q.drawImage(0, 0, image)                      # прозрачность - как у картинки
+        q.end()
+        return QPixmap.fromImage(tinted)
+
     def paintEvent(self, _event):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
@@ -892,19 +1009,26 @@ class StoneSkip(QWidget):
         p.drawEllipse(sun, h * 0.035, h * 0.035)
         # дальний берег: холмы и ели
         rnd = random.Random(5)
+        shore_picture = self._shore(w)
+        if not shore_picture.isNull():
+            ratio = shore_picture.devicePixelRatio()
+            shore_h = shore_picture.height() / ratio
+            p.drawPixmap(QRectF(0, horizon + 1 - shore_h, w, shore_h), shore_picture, QRectF(shore_picture.rect()))
         hills = QPainterPath(QPointF(0, horizon))
         for k in range(13):
             hills.lineTo(QPointF(w * k / 12, horizon - h * rnd.uniform(0.02, 0.06)))
         hills.lineTo(QPointF(w, horizon))
         p.setBrush(C.mix(body, "#000000", 0.6))
-        p.drawPath(hills)
+        if shore_picture.isNull():
+            p.drawPath(hills)
         for _ in range(40):
             x = rnd.uniform(0, w)
             top = horizon - h * rnd.uniform(0.04, 0.09)
             tree = QPainterPath(QPointF(x, top))
             tree.lineTo(QPointF(x - h * 0.012, horizon))
             tree.lineTo(QPointF(x + h * 0.012, horizon))
-            p.drawPath(tree)
+            if shore_picture.isNull():
+                p.drawPath(tree)
         # вода
         water = QLinearGradient(0, horizon, 0, h)
         water.setColorAt(0, C.mix(light, body, 0.5))
@@ -933,6 +1057,21 @@ class StoneSkip(QWidget):
             p.setBrush(Qt.NoBrush)
             p.drawEllipse(center, radius, radius * 0.28)
             p.drawEllipse(center, radius * 0.6, radius * 0.6 * 0.28)
+        # нарисованные брызги и «бульк»: дальние меньше
+        p.setRenderHint(QPainter.SmoothPixmapTransform)
+        from .artwork import scaled
+        for splash in self.splashes:
+            index = self._splash_frame(splash)
+            if index is None:
+                continue
+            point, scale = self.project(splash[0], 0, splash[1])
+            width = max(8.0, scale * self.SPLASH_SIZE[splash[3]])
+            picture = scaled(f"anim/lake/{splash[3]}_{index:02d}", width, self.devicePixelRatioF())
+            if picture.isNull():
+                continue
+            height = width * picture.height() / picture.width()
+            p.drawPixmap(QRectF(point.x() - width / 2, point.y() + scale * 0.03 - height, width, height),
+                         picture, QRectF(picture.rect()))
         # брызги
         p.setPen(Qt.NoPen)
         for x, y, z, *_rest in self.drops:
@@ -947,11 +1086,20 @@ class StoneSkip(QWidget):
             p.drawEllipse(shadow, max(3.0, scale * 0.2), max(1.0, scale * 0.05))
             point, scale = self.project(x, y, z)
             rx, ry = max(3.0, scale * 0.17), max(1.8, scale * 0.08)        # камень нарочно крупнее - чтобы видно
-            stone = QRadialGradient(point - QPointF(rx * 0.35, ry * 0.4), rx * 1.4)
-            stone.setColorAt(0, QColor("#d9d6e4"))
-            stone.setColorAt(1, QColor("#4a4858"))
-            p.setBrush(stone)
-            p.drawEllipse(point, rx, ry)
+            picture = scaled("skip-stone", rx * 2.3, self.devicePixelRatioF())
+            if not picture.isNull():                    # нарисованный блинчик, крутится в полёте
+                p.save()
+                p.translate(point)
+                p.rotate(math.sin(self.t * 9) * 8)
+                height = rx * 2.3 * picture.height() / picture.width()
+                p.drawPixmap(QRectF(-rx * 1.15, -height / 2, rx * 2.3, height), picture, QRectF(picture.rect()))
+                p.restore()
+            else:
+                stone = QRadialGradient(point - QPointF(rx * 0.35, ry * 0.4), rx * 1.4)
+                stone.setColorAt(0, QColor("#d9d6e4"))
+                stone.setColorAt(1, QColor("#4a4858"))
+                p.setBrush(stone)
+                p.drawEllipse(point, rx, ry)
         # ближний берег и рука с камнем
         shore = QPainterPath(QPointF(0, h))
         shore.lineTo(QPointF(0, h * 0.9))
@@ -1050,6 +1198,8 @@ class Toggles(QWidget):
         self.guard_open = False
         self.guard_t = 0.0
         self.party = 0.0
+        from .artwork import Effects
+        self.effects = Effects(self)            # звёздная вспышка над решённым пультом
         self._party = QVariantAnimation(self)
         self._party.setDuration(2400)
         self._party.setStartValue(0.0)
@@ -1149,6 +1299,8 @@ class Toggles(QWidget):
             self.solved = True
             self._party.stop()
             self._party.start()
+            self.effects.play("anim/toggle/puzzle-solved", self.width() / 2, self.height() / 2,
+                              min(self.width(), self.height()) * 1.1)
             self._sound("chime")
         self._changed()
         self.update()
@@ -1197,6 +1349,8 @@ class Toggles(QWidget):
         for row in range(self.rows):
             for col in range(self.cols):
                 self._paint_switch(p, col, row, font)
+        p.setRenderHint(QPainter.SmoothPixmapTransform)
+        self.effects.paint(p)
         p.end()
 
     def _paint_switch(self, p, col, row, font):
@@ -1237,38 +1391,10 @@ class Toggles(QWidget):
         p.setPen(QPen(QColor("#0e0f22"), 1))
         p.setBrush(bulb)
         p.drawEllipse(lamp, lamp_r, lamp_r)
-        # гайка с основанием
-        nut = QPainterPath()
-        nut_r = unit * 0.13
-        for k in range(6):
-            angle = math.pi / 6 + k * math.pi / 3
-            q = pivot + QPointF(math.cos(angle) * nut_r, math.sin(angle) * nut_r)
-            nut.moveTo(q) if k == 0 else nut.lineTo(q)
-        nut.closeSubpath()
-        steel = QRadialGradient(pivot - QPointF(nut_r * 0.4, nut_r * 0.5), nut_r * 1.6)
-        steel.setColorAt(0, QColor("#eef0f6"))
-        steel.setColorAt(1, QColor("#6b6f86"))
-        p.setPen(QPen(QColor("#22243a"), 1))
-        p.setBrush(steel)
-        p.drawPath(nut)
-        p.setBrush(QColor("#2a2c40"))
-        p.drawEllipse(pivot, nut_r * 0.45, nut_r * 0.45)
-        # рычаг: вверх - вкл, вниз - выкл; посередине хода он смотрит на нас и кажется короче
+        # гайка и рычаг: вверх - вкл, вниз - выкл
         on = self.state[row][col]
         t = self.anim.get((col, row), 1.0 if on else 0.0)
-        reach = unit * 0.25 * (2 * t - 1)
-        tip = pivot + QPointF(0, -reach)
-        lever = QPen(QColor("#d7d9e3"), unit * 0.07, Qt.SolidLine, Qt.RoundCap)
-        p.setPen(QPen(QColor(0, 0, 0, 70), unit * 0.08, Qt.SolidLine, Qt.RoundCap))
-        p.drawLine(pivot + QPointF(2, 3), tip + QPointF(3, 4))                 # тень рычага
-        p.setPen(lever)
-        p.drawLine(pivot, tip)
-        knob = QRadialGradient(tip - QPointF(unit * 0.02, unit * 0.025), unit * 0.07)
-        knob.setColorAt(0, QColor("#ffffff"))
-        knob.setColorAt(1, QColor("#8d90a6") if not special else QColor("#b02a22"))
-        p.setPen(QPen(QColor("#2a2c40"), 1))
-        p.setBrush(knob)
-        p.drawEllipse(tip, unit * 0.055, unit * 0.055)
+        self._paint_lever(p, pivot, unit, t, special)
         # защитная крышка «не трогать»: красная, откидывается вверх
         if special:
             cover = QRectF(0, 0, unit * 0.42, unit * 0.5)
@@ -1330,7 +1456,20 @@ class Toggles(QWidget):
             p.drawRoundedRect(key.adjusted(-6, -6, 6, 6), radius + 4, radius + 4)
 
     def _paint_lever(self, p, pivot, unit, t, special=False):
-        """Гайка и рычаг тумблера: t=1 - вверх (вкл), 0 - вниз."""
+        """Гайка и рычаг тумблера: t=1 - вверх (вкл), 0 - вниз. Обычные - нарисованные
+        (art/toggle-up, toggle-down: гайка на (64, 120) из 128×192), красный - свой."""
+        if not special:
+            from .artwork import scaled
+            width = unit * 0.545
+            picture = scaled("toggle-up" if t >= 0.5 else "toggle-down", width, p.device().devicePixelRatioF())
+            if not picture.isNull():
+                height = width * 1.5
+                p.save()
+                p.setRenderHint(QPainter.SmoothPixmapTransform)
+                p.drawPixmap(QRectF(pivot.x() - width / 2, pivot.y() - height * 120 / 192, width, height),
+                             picture, QRectF(picture.rect()))
+                p.restore()
+                return
         nut = QPainterPath()
         nut_r = unit * 0.13
         for k in range(6):

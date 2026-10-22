@@ -154,6 +154,7 @@ class ProgressMixin:
             if key not in self._chapter_toasted:
                 self._chapter_toasted.add(key)
                 self.fox_wheel.celebrate()
+                self._goal_burst("chapter")
                 self.toast.show_message(f"Цель главы выполнена: {words_label(self.words)}", 3000)
                 return
         if not self.goal or self.today_words() < self.goal:
@@ -161,7 +162,15 @@ class ProgressMixin:
         if self.settings.value("goal_done") != self.today:
             self.settings.setValue("goal_done", self.today)
             self.fox_wheel.celebrate()
+            self._goal_burst("day")
             self.toast.show_message(f"Цель на сегодня выполнена: {words_label(self.today_words())}", 3000)
+
+    def _goal_burst(self, kind):
+        """Звёздочки и конфетти над строкой (если окно их умеет и кадры на месте)."""
+        pop = getattr(self, "goal_pop", None)
+        if pop is not None:
+            self.place_overlays()
+            pop.play(kind)
 
     def chapter_goal(self):
         return self.chapter_goals.get(self._position_key(self.path), 0) if self.path else 0
@@ -289,6 +298,8 @@ class ProgressMixin:
         text = self.EYE_TEXTS[2] if self._breaks % 3 == 0 else self.EYE_TEXTS[(self._breaks - 1) % 2]
         self.sounds.play("chime", 0.8)
         self.toast.show_message(text.format(m=minutes), 9000)
+        if hasattr(self, "picture_pop"):                 # ласка смотрит вдаль
+            self.picture_pop.play("eye-break", 9000)
         return True
 
     def _tick(self):

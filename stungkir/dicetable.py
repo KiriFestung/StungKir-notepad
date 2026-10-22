@@ -84,6 +84,16 @@ class DiceTable(QWidget):
         self.timer = QTimer(self)
         self.timer.setInterval(16)
         self.timer.timeout.connect(self._frame)
+        from .artwork import Effects
+        self.under = Effects(self)                # пыль от удара и золотое сияние - под костью
+        self.over = Effects(self)                 # облачко «эх» и блеск монетки - поверх
+
+    def _scale(self):
+        """Во сколько раз экран больше «стола», на котором считается полёт."""
+        body = self.bodies[0] if self.bodies else None
+        if body is None or not hasattr(body, "width"):
+            return 1.0, 1.0
+        return self.width() / max(1.0, body.width), self.height() / max(1.0, body.height)
 
     def sizeHint(self):
         return QSize(640, 290)
@@ -202,6 +212,11 @@ class DiceTable(QWidget):
                     strength = min(1.0, -body.vz / (900 if coin else 700))
                     name = "coin_land" if coin else MATERIALS[body.material][5]
                     self._sound(name, strength if not coin or body.landings == 1 else strength * 0.4)
+                    if strength > 0.2 and body.landings <= 3:              # пылинки с сукна
+                        sx, sy = self._scale()
+                        self.under.play("anim/table/felt-dust", body.x * sx, body.y * sy + r * 0.55,
+                                        r * 2.2 * (1.0 if coin else 1.2), anchor="bottom",
+                                        opacity=min(1.0, 0.4 + strength))
                 body.vz = -body.vz * (0.3 if coin else 0.42)
                 if coin:                                           # монетка от стола теряет вращение
                     body.w = tuple(c * 0.45 for c in body.w)
@@ -297,11 +312,41 @@ class DiceTable(QWidget):
                 body.done = True
         if not active:
             self.timer.stop()
+            self._finale()
             if self.mode == "dice":
                 self._sound(MATERIALS[self.bodies[0].material][6], 0.45)
             if self.on_done:
                 self.on_done(self.result)
         self.update()
+
+    def finale_kind(self):
+        """Чем отметить итог: "crit-high" (выпал максимум), "crit-low" (единица), "edge" (монетка
+        на ребре) или None."""
+        if self.mode == "coin":
+            return "edge" if self.result == COIN_EDGE else None
+        try:
+            value = int(self.result)
+        except (TypeError, ValueError):
+            return None
+        if isinstance(self.sides, int) and value == self.sides:
+            return "crit-high"
+        return "crit-low" if value == 1 else None
+
+    def _finale(self):
+        kind = self.finale_kind()
+        bodies = [b for b in self.bodies if hasattr(b, "width")]
+        if kind is None or not bodies:
+            return
+        sx, sy = self._scale()
+        x = sum(b.x for b in bodies) / len(bodies) * sx
+        y = sum(b.y for b in bodies) / len(bodies) * sy
+        r = bodies[0].radius * (1.6 if len(bodies) > 1 else 1.0)
+        if kind == "crit-high":
+            self.under.play("anim/table/crit-high", x, y, r * 5.2)
+        elif kind == "crit-low":
+            self.over.play("anim/table/crit-low", x, y - r * 0.6, r * 4.2)
+        else:
+            self.over.play("anim/coin/coin-edge-shine", x, y - r * 0.2, r * 4.6)
 
     def finish(self):
         while self.timer.isActive():
@@ -328,8 +373,9 @@ class DiceTable(QWidget):
         p.setRenderHint(QPainter.Antialiasing)
         p.setRenderHint(QPainter.TextAntialiasing)
         self._paint_table(p)
-        sx = self.width() / max(1.0, self.bodies[0].width) if self.bodies and hasattr(self.bodies[0], "width") else 1
-        sy = self.height() / max(1.0, self.bodies[0].height) if self.bodies and hasattr(self.bodies[0], "height") else 1
+        p.setRenderHint(QPainter.SmoothPixmapTransform)
+        self.under.paint(p)
+        sx, sy = self._scale()
         for body in sorted(self.bodies, key=lambda b: b.y):
             if not hasattr(body, "width"):
                 continue
@@ -345,6 +391,7 @@ class DiceTable(QWidget):
             p.setBrush(shadow)
             p.drawEllipse(QPointF(x + lift * 0.18, y + radius * 0.55), radius * 1.15, radius * 0.5)
             self._paint_body(p, body, x, y - lift * 0.45, radius)
+        self.over.paint(p)
         p.end()
 
     def _paint_table(self, p):

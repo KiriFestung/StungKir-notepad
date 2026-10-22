@@ -272,7 +272,9 @@ class PanelsMixin:
                   [("ok", "Понятно", True)])
         from PySide6.QtWidgets import QLabel
         from .artwork import scaled
-        picture = scaled("about", 520, self.devicePixelRatioF())
+        picture = scaled("about-day" if C.is_light() else "about", 520, self.devicePixelRatioF())
+        if picture.isNull():
+            picture = scaled("about", 520, self.devicePixelRatioF())
         if not picture.isNull():                    # шапка: ласка и ворон
             header = QLabel()
             header.setPixmap(picture)
@@ -428,6 +430,8 @@ class PanelsMixin:
         self.global_results.setContextMenuPolicy(Qt.CustomContextMenu)
         self.global_results.customContextMenuRequested.connect(self._results_menu)
         layout.addWidget(self.global_results, 1)
+        from .widgets import EmptyPicture
+        self.global_empty = EmptyPicture(self.global_results)
         close = QShortcut(QKeySequence(Qt.Key_Escape), box)
         close.setContext(Qt.WidgetWithChildrenShortcut)
         close.activated.connect(self.hide_global_search)

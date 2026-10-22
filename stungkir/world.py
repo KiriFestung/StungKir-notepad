@@ -235,7 +235,9 @@ class WorldMixin:
             self.save(auto=True)
         versions = list_versions(self.path)
         if not versions:
-            self.toast.show_message("Версий пока нет: они появляются при сохранении")
+            self.toast.show_message("Версий пока нет: они появляются при сохранении", 3000)
+            if hasattr(self, "picture_pop"):
+                self.picture_pop.play("empty-versions", 3000, width=260)
             return
         # самая свежая версия часто совпадает с текстом - берём первую, которая отличается
         if index is None:

@@ -239,16 +239,19 @@ class Revolver(QWidget):
         self.effect_clock = QElapsedTimer()
         self.effect_timer = QTimer(self, interval=16)
         self.effect_timer.timeout.connect(self._effect_step)
+        self.material = "bone"                     # барабан - из того же материала, что кубики
 
     EFFECT_FPS = 30
-    EFFECTS = {"bang": 16, "dust": 8}
+    EFFECTS = {"bang": "anim/bang/bang", "dust": "anim/dust/dust", "glint": "anim/roulette/drum-glint"}
+    DRUMS = {"bone": "drum-bone", "metal": "drum-metal", "oak": "drum-oak", "resin": "drum-indigo"}
 
     def play_effect(self, name):
         """Проиграть кадры поверх барабана. Нет кадров - False (тогда рисуется простая вспышка)."""
-        from .artwork import pixmap
-        if pixmap(f"anim/{name}/{name}_00").isNull():
+        from .artwork import frame_count
+        count = frame_count(self.EFFECTS[name])
+        if not count:
             return False
-        self.effect = (name, self.EFFECTS[name], 0)
+        self.effect = (name, count, 0)
         self.effect_clock.start()
         self.effect_timer.start()
         self.update()
@@ -318,6 +321,7 @@ class Revolver(QWidget):
 
     def _load_finished(self):
         self.loading = None
+        self.play_effect("glint")                  # барабан защёлкнулся - блик по металлу
         self.update()
         done, self._load_done = self._load_done, None
         if done:
@@ -463,7 +467,9 @@ class Revolver(QWidget):
             p.setBrush(glow)
             p.drawEllipse(center, radius * 1.4, radius * 1.4)
         from .artwork import scaled
-        drum = scaled("drum", 2 * radius, self.devicePixelRatioF())
+        drum = scaled(self.DRUMS.get(self.material, "drum"), 2 * radius, self.devicePixelRatioF())
+        if drum.isNull():
+            drum = scaled("drum", 2 * radius, self.devicePixelRatioF())
         if not drum.isNull():
             # нарисованный барабан (индиго с охрой) и патроны в гнёздах крутятся как одна вещь:
             # раньше патроны рисовались поверх неповёрнутыми, и казалось, что они «плывут» по барабану
@@ -496,9 +502,11 @@ class Revolver(QWidget):
             name, _count, frame = self.effect
             if name == "bang":                           # «бах» - на весь барабан
                 spot, extent = center, radius + 6
+            elif name == "glint":                        # блик - ровно по барабану
+                spot, extent = center, radius
             else:                                        # пыль - из гнезда под курком
                 spot, extent = center - QPointF(0, radius * 0.59), radius * 0.62
-            picture = scaled(f"anim/{name}/{name}_{frame:02d}", 2 * extent, self.devicePixelRatioF())
+            picture = scaled(f"{self.EFFECTS[name]}_{frame:02d}", 2 * extent, self.devicePixelRatioF())
             if not picture.isNull():
                 p.setRenderHint(QPainter.SmoothPixmapTransform)
                 p.drawPixmap(QRectF(spot.x() - extent, spot.y() - extent, 2 * extent, 2 * extent), picture,

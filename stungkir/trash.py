@@ -118,6 +118,8 @@ class TrashDialog(Sheet):
         self.listing = QListWidget()
         self.listing.itemDoubleClicked.connect(lambda _i: self._restore())
         self.content.addWidget(self.listing, 1)
+        from .widgets import EmptyPicture
+        self.empty_picture = EmptyPicture(self.listing)
         row = QHBoxLayout()
         self.empty = QPushButton("Очистить корзину")
         self.empty.clicked.connect(self._empty)
@@ -150,9 +152,11 @@ class TrashDialog(Sheet):
         has = self.listing.count() > 0
         if has:
             self.listing.setCurrentRow(0)
+            self.empty_picture.hide()
         else:
             self.listing.addItem("Корзина пуста")
             self.listing.item(0).setFlags(Qt.NoItemFlags)
+            self.empty_picture.show_picture("empty-trash")
         for button in (self.back, self.forget, self.empty):
             button.setEnabled(has)
 

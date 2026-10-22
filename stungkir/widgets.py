@@ -11,7 +11,7 @@ from PySide6.QtCore import (
     QVariantAnimation,
 )
 from PySide6.QtGui import (
-    QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPen, QPolygonF,
+    QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QPolygonF,
     QRadialGradient,
 )
 from PySide6.QtWidgets import (
@@ -325,6 +325,21 @@ class FoxWheel(QWidget):
         if not self.visibleRegion().isEmpty():
             self.update()
 
+    RUN_FRAMES, CHEER_FRAMES = 10, 12
+
+    def _drawn_frame(self, wide, ratio):
+        """Нарисованный кадр ласки (art/anim/weasel-run, weasel-cheer) или None, если кадров нет.
+        Стоит - первый кадр бега; бежит - кадр по фазе шага; радуется - кадры прыжка за 0,6 с."""
+        from .artwork import scaled
+        if self.jump is not None and self.jump < 0.6:
+            frame = min(self.CHEER_FRAMES - 1, int(self.jump / 0.6 * self.CHEER_FRAMES))
+            picture = scaled(f"anim/weasel-cheer/weasel-cheer_{frame:02d}", wide, ratio)
+            if not picture.isNull():
+                return picture, True
+        frame = int(self.phase / (2 * math.pi) * self.RUN_FRAMES) % self.RUN_FRAMES if self.speed > 0.05 else 0
+        picture = scaled(f"anim/weasel-run/weasel-run_{frame:02d}", wide, ratio)
+        return (picture, False) if not picture.isNull() else None
+
     def _geometry(self):
         """(радиус колеса, центр x, центр y): снизу оставлено место под стойку."""
         r = self.height() / 2 - 8
@@ -426,7 +441,19 @@ class FoxWheel(QWidget):
         p.drawEllipse(QPointF(ox, oy + 1.2 * s), 30 * s * (1 - 0.3 * lifted), 4 * s)    # тень
         from .artwork import scaled
         wide = 1.5 * r                                                         # ласка почти во всё колесо
-        sprite = scaled("weasel", wide, self.devicePixelRatioF())
+        ratio = self.devicePixelRatioF()
+        drawn = self._drawn_frame(wide, ratio)
+        if drawn is not None:
+            # нарисованные кадры: бег (цикл из 10 кадров в такт шагу) и прыжок радости
+            sprite, cheer = drawn
+            tall = wide * sprite.height() / sprite.width()
+            p.save()
+            p.translate(ox, oy + (0 if cheer else breathe * s))
+            p.drawPixmap(QRectF(-wide / 2, -tall, wide, tall), sprite, QRectF(sprite.rect()))
+            p.restore()
+            sprite = QPixmap()
+        else:
+            sprite = scaled("weasel", wide, ratio)
         if not sprite.isNull():
             tall = wide * sprite.height() / sprite.width()
             stride = math.sin(2 * t) * run                                    # шаг: тянется и сжимается
@@ -817,6 +844,149 @@ def streak_line(count, voice):
     return lines[(count * 7 + 3) % len(lines)]
 
 
+class PicturePop(QWidget):
+    """Картинка над всплывающей плашкой (например, ласка «дай глазам отдохнуть»): мягко
+    появляется, стоит, пока видна плашка, и тает. Мышь проходит насквозь."""
+
+    SIDE = 170
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.setFixedSize(self.SIDE, self.SIDE)
+        self.side = self.SIDE
+        self.name, self.opacity = None, 0.0
+        self.anim = QVariantAnimation(self)
+        self.anim.setStartValue(0.0)
+        self.anim.setEndValue(1.0)
+        self.anim.valueChanged.connect(self._step)
+        self.anim.finished.connect(self.hide)
+        self.hide()
+
+    def play(self, name, ms=9000, width=SIDE):
+        """False - картинки нет."""
+        from .artwork import pixmap
+        source = pixmap(name)
+        if source.isNull():
+            return False
+        self.name, self.side = name, width
+        self.setFixedSize(width, int(width * source.height() / source.width()) + 2)
+        parent = self.parentWidget()
+        self.move((parent.width() - self.width()) // 2, max(0, parent.height() - self.height() - 96))
+        self.anim.stop()
+        self.anim.setDuration(max(1200, ms + 650))
+        self.opacity = 0.0
+        self.show()
+        self.raise_()
+        self.anim.start()
+        return True
+
+    def _step(self, value):
+        total = self.anim.duration()
+        ms = float(value) * total
+        self.opacity = min(1.0, ms / 300, max(0.0, (total - ms) / 600))
+        self.update()
+
+    def paintEvent(self, _event):
+        if not self.name:
+            return
+        from .artwork import scaled
+        picture = scaled(self.name, self.side, self.devicePixelRatioF())
+        if picture.isNull():
+            return
+        p = QPainter(self)
+        p.setRenderHint(QPainter.SmoothPixmapTransform)
+        p.setOpacity(self.opacity)
+        height = self.side * picture.height() / picture.width()
+        p.drawPixmap(QRectF(0, self.height() - height, self.side, height), picture, QRectF(picture.rect()))
+        p.end()
+
+
+class EmptyPicture(QWidget):
+    """Картинка «пусто» посреди списка (поиск ничего не нашёл, корзина пуста, пометок нет):
+    show_picture(имя) - показать, hide() - убрать. Мышь проходит насквозь."""
+
+    def __init__(self, view):
+        super().__init__(view.viewport())
+        self.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.name = None
+        view.viewport().installEventFilter(self)
+        self.hide()
+
+    def eventFilter(self, obj, event):
+        if obj is self.parentWidget() and event.type() == QEvent.Resize:
+            self.setGeometry(obj.rect())
+        return False
+
+    def show_picture(self, name):
+        from .artwork import pixmap
+        if pixmap(name).isNull():
+            self.hide()
+            return False
+        self.name = name
+        self.setGeometry(self.parentWidget().rect())
+        self.show()
+        self.raise_()
+        self.update()
+        return True
+
+    def paintEvent(self, _event):
+        from .artwork import scaled
+        if not self.name:
+            return
+        width = min(320.0, self.width() * 0.75)
+        picture = scaled(self.name, width, self.devicePixelRatioF())
+        if picture.isNull():
+            return
+        height = width * picture.height() / picture.width()
+        if height > self.height() * 0.8:                 # список низкий - картинку меньше
+            width *= self.height() * 0.8 / height
+            height = self.height() * 0.8
+        p = QPainter(self)
+        p.setRenderHint(QPainter.SmoothPixmapTransform)
+        p.setOpacity(0.9)
+        top = max(28.0, (self.height() - height) / 2)
+        p.drawPixmap(QRectF((self.width() - width) / 2, top, width, height), picture, QRectF(picture.rect()))
+        p.end()
+
+
+class GoalPop(QWidget):
+    """Выполнена цель дня или главы: над строкой внизу из одной точки вылетают звёздочки
+    и конфетти (нарисованные кадры art/anim/goal), меньше секунды. Мышь проходит насквозь."""
+
+    SIZES = {"day": 300, "chapter": 220}
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        from .artwork import Effects
+        self.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.setFixedSize(320, 300)
+        self.effects = Effects(self)
+        self.effects.timer.timeout.connect(self._maybe_hide)
+        self.hide()
+
+    def play(self, kind="day"):
+        """False - кадров нет, праздник обходится надписью."""
+        self.effects.clear()
+        width = self.SIZES.get(kind, 300)
+        if not self.effects.play(f"anim/goal/goal-{kind}", self.width() / 2, self.height() - 4, width,
+                                 anchor="bottom"):
+            return False
+        self.show()
+        self.raise_()
+        return True
+
+    def _maybe_hide(self):
+        if not self.effects.busy:
+            self.hide()
+
+    def paintEvent(self, _event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.SmoothPixmapTransform)
+        self.effects.paint(p)
+        p.end()
+
+
 class StreakPop(QWidget):
     """Новый засчитанный день серии: огонёк с числом выпрыгивает над строкой внизу,
     чуть подрагивает и тает. Каждые 10 дней подряд огонь подрастает и становится наряднее
@@ -828,7 +998,7 @@ class StreakPop(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
         self.setAttribute(Qt.WA_TransparentForMouseEvents)
-        self.setFixedSize(360, 196)
+        self.setFixedSize(360, 220)
         self.count, self.label, self.line, self.t = 0, "", "", 0.0
         self.anim = QVariantAnimation(self)
         self.anim.setStartValue(0.0)
@@ -870,6 +1040,47 @@ class StreakPop(QWidget):
         k = (t - 0.78) / 0.22
         return 1.0 - 0.08 * k, 1.0 - k, 22 * k
 
+    BASE_Y = 116                     # где середина огонька по высоте окошка
+    FLAME_FPS = 24
+
+    def _paint_drawn(self, scale, opacity, rise, stage):
+        """Нарисованное пламя (art/anim/flame/flame-<ступень>_NN): горит циклом, число - в светлом
+        пятне посередине, подписи - под ним. False - кадров нет, рисуем по-старому."""
+        from .artwork import scaled
+        size = 150.0                                     # ступени уже нарисованы разного размера
+        frame = int(self.t * self.DURATION / 1000 * self.FLAME_FPS) % 12
+        picture = scaled(f"anim/flame/flame-{stage}_{frame:02d}", size * 1.15, self.devicePixelRatioF())
+        if picture.isNull():
+            return False
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.SmoothPixmapTransform)
+        p.setOpacity(max(0.0, opacity))
+        p.translate(self.width() / 2, self.BASE_Y - rise)
+        p.scale(scale, scale)
+        bottom = 40.0                                     # низ пламени (в кадре он на 96% высоты)
+        top = bottom - size * 246 / 256
+        p.drawPixmap(QRectF(-size / 2, top, size, size), picture, QRectF(picture.rect()))
+        font = QFont(C.FONT_FAMILY, 14 + stage)
+        font.setBold(True)
+        p.setFont(font)
+        p.setPen(QColor("#2a2680"))                       # тёмное число на светлом пятне
+        spot = top + size * 158 / 256
+        p.drawText(QRectF(-40, spot - 20, 80, 40), Qt.AlignCenter, str(self.count))
+        font.setPointSize(11)
+        p.setFont(font)
+        p.setPen(QColor("#d4a02e") if not C.is_light() else QColor("#2e2a6e"))
+        p.drawText(QRectF(-170, bottom + 4, 340, 24), Qt.AlignCenter, self.label)
+        if self.line:
+            font.setPointSize(10)
+            font.setBold(False)
+            font.setItalic(True)
+            p.setFont(font)
+            p.setPen(QColor(C.TEXT))
+            p.drawText(QRectF(-175, bottom + 26, 350, 22), Qt.AlignCenter, self.line)
+        p.end()
+        return True
+
     @staticmethod
     def _drop(height, width, flicker=0.0, lean=0.0):
         """Язык пламени: капля острием вверх. lean - наклон кончика вбок."""
@@ -888,10 +1099,12 @@ class StreakPop(QWidget):
         scale, opacity, rise = self._state()
         stage = self.stage(self.count)
         grow = 1 + 0.11 * stage
+        if self._paint_drawn(scale, opacity, rise, stage):
+            return
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         p.setOpacity(max(0.0, opacity))
-        p.translate(self.width() / 2, 92 - rise)
+        p.translate(self.width() / 2, self.BASE_Y - rise)
         p.scale(scale * grow, scale * grow)
         t = self.t
         flicker = math.sin(t * 40) * 0.04                              # язычок пламени дышит
@@ -963,7 +1176,7 @@ class StreakPop(QWidget):
                 p.drawEllipse(QPointF(x, y), 2.2 - phase, 2.2 - phase)
         p.resetTransform()
         p.setOpacity(max(0.0, opacity))
-        p.translate(self.width() / 2, 92 - rise)
+        p.translate(self.width() / 2, self.BASE_Y - rise)
         p.scale(scale, scale)
         font = QFont(C.FONT_FAMILY, 15 + stage)
         font.setBold(True)

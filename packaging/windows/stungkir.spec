@@ -18,13 +18,15 @@ datas = [
     (str(ROOT / "stungkir" / "art" / "dice" / "metal" / "*.png"), "stungkir/art/dice/metal"),
     (str(ROOT / "stungkir" / "art" / "dice" / "oak" / "*.png"), "stungkir/art/dice/oak"),
     (str(ROOT / "stungkir" / "art" / "dice" / "resin" / "*.png"), "stungkir/art/dice/resin"),
-    (str(ROOT / "stungkir" / "art" / "anim" / "bang" / "*.png"), "stungkir/art/anim/bang"),
-    (str(ROOT / "stungkir" / "art" / "anim" / "dust" / "*.png"), "stungkir/art/anim/dust"),
     (str(PACKAGING / "dictionaries" / "ru_RU.dic"), "stungkir/dictionaries"),
     (str(PACKAGING / "dictionaries" / "ru_RU.aff"), "stungkir/dictionaries"),
     (str(PACKAGING / "dictionaries" / "LICENSE-ru_RU.txt"), "stungkir/dictionaries"),
     (str(ROOT / "LICENSE"), "."),
 ]
+# кадры анимаций: каждая - своя папка в art/anim (ласка, огонёк, праздник цели, брызги ...)
+for folder in sorted((ROOT / "stungkir" / "art" / "anim").iterdir()):
+    if folder.is_dir():
+        datas.append((str(folder / "*.png"), f"stungkir/art/anim/{folder.name}"))
 # шаблоны Word (колонтитулы, стили) лежат внутри python-docx файлами - без них сборка в .docx падает
 datas += collect_data_files("docx", include_py_files=True)   # и .py: шаблоны ищутся через docx/parts/../templates
 

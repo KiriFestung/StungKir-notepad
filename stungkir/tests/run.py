@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 
-MODULES = ["test_board", "test_colors", "test_corkboard", "test_crutches", "test_deadline", "test_dice", "test_editing", "test_export", "test_fuzz", "test_guards", "test_hostile", "test_import", "test_layout", "test_look", "test_lore", "test_monkey", "test_password", "test_presence", "test_replace", "test_rhythm", "test_safety",
+MODULES = ["test_board", "test_colors", "test_corkboard", "test_crutches", "test_deadline", "test_animation", "test_dice", "test_editing", "test_export", "test_fuzz", "test_guards", "test_hostile", "test_import", "test_layout", "test_look", "test_lore", "test_monkey", "test_password", "test_presence", "test_replace", "test_rhythm", "test_safety",
            "test_snapshots", "test_speakers", "test_speech", "test_speed", "test_storage", "test_templates", "test_timeline", "test_toys", "test_trash", "test_text", "test_two_devices", "test_window"]
 
 
