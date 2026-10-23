@@ -71,6 +71,20 @@ class SafetyWindowTest(WindowCase):
         self.assertEqual(self.path.read_text(encoding="utf-8"), "Было на диске.")   # сам не перезаписал
         self.assertTrue(S.versions_dir(self.path).exists())
 
+    def test_recovery_warns_when_disk_is_newer(self):
+        import os
+        import time
+        safety.write_journal(self.path, "Набрано до сбоя.")
+        self.path.write_text("Потом поменяли на телефоне.", encoding="utf-8", newline="\n")
+        later = time.time() + 120                           # глава на диске - новее запасного файла
+        os.utime(self.path, (later, later))
+        asked = []
+        self.assertTrue(self.w.offer_recovery(lambda text: asked.append(text) or True))
+        self.assertIn("новее запасного файла", asked[0])
+        self.assertEqual(self.path.read_text(encoding="utf-8"), "Потом поменяли на телефоне.")   # не тронута
+        versions = S.list_versions(self.path)
+        self.assertIn("Потом поменяли на телефоне.", S.read_text(versions[0]))           # и есть в версиях
+
     def test_recovery_declined_or_needless(self):
         safety.write_journal(self.path, "Другой текст")
         self.assertFalse(self.w.offer_recovery(lambda text: False))

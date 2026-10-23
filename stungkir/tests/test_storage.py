@@ -246,3 +246,21 @@ class PortableTest(Sandbox):
             self.assertEqual(C._portable_dir(), folder.resolve())
         # без сборки (запуск из исходников) метка не действует
         self.assertIsNone(C._portable_dir())
+
+
+class NamesTest(Sandbox):
+    def test_unique_path_ignores_letter_case(self):
+        """«Глава» и «глава» на Windows и телефоне - один файл: новое имя не должно с ним совпасть."""
+        folder = C.ROOT / "Книга"
+        folder.mkdir()
+        (folder / "Глава.txt").write_text("раз", encoding="utf-8", newline="\n")
+        self.assertEqual(S.unique_path(folder / "глава.txt").name, "глава (2).txt")
+        self.assertEqual(S.unique_path(folder / "Глава.txt").name, "Глава (2).txt")
+        (folder / "ГЛАВА (2).txt").write_text("два", encoding="utf-8", newline="\n")
+        self.assertEqual(S.unique_path(folder / "глава.txt").name, "глава (3).txt")
+        self.assertEqual(S.unique_path(folder / "Другая.txt").name, "Другая.txt")
+
+    def test_content_files_without_root(self):
+        """Папку с книгами удалили или диск отключился - список пуст, без падения."""
+        shutil.rmtree(C.ROOT)
+        self.assertEqual([p for p in S.content_files() if C.ROOT in p.parents], [])

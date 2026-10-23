@@ -14,6 +14,16 @@ import java.time.LocalDateTime
 class BookTest {
     private fun book(): Book = Book(Files.createTempDirectory("stungkir").toFile())
 
+    @Test fun namesDifferingOnlyInCaseClash() {
+        val b = book()
+        val cat = b.createCategory("Книга")
+        b.createChapter(cat, "Глава")
+        val chapter = runCatching { b.createChapter(cat, "глава") }
+        assertTrue(chapter.isFailure)                 // на телефоне и Windows это тот же файл
+        assertTrue(runCatching { b.createCategory("КНИГА") }.isFailure)
+        assertEquals("Другая.txt", b.createChapter(cat, "Другая").name)
+    }
+
     @Test fun keepsDesktopOrder() {
         val b = book()
         for (name in listOf("Аа", "Бб", "Вв")) File(b.root, name).mkdirs()

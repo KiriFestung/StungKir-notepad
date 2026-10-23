@@ -79,9 +79,13 @@ class Book(val root: File) {
         writeAtomic(File(folder, ORDER_FILE), Json.ofList(shown.map { it.name } + name).toByteArray())
     }
 
+    /** Есть ли рядом то же имя в другом регистре («Глава» и «глава»): на Windows и телефоне это один файл. */
+    private fun clash(file: File): Boolean =
+        file.exists() || (file.parentFile?.listFiles()?.any { it.name.equals(file.name, ignoreCase = true) } ?: false)
+
     fun createCategory(name: String): File {
         val folder = File(root, name.trim())
-        require(!folder.exists()) { "Такая категория уже есть" }
+        require(!clash(folder)) { "Такая категория уже есть" }
         if (!folder.mkdirs()) throw java.io.IOException("Не получилось создать папку")
         appendToOrder(root, folder.name)
         return folder
@@ -90,7 +94,7 @@ class Book(val root: File) {
     fun createChapter(category: File, name: String): File {
         val clean = name.trim()
         val file = File(category, if (clean.endsWith(".txt") || clean.endsWith(".md")) clean else "$clean.txt")
-        require(!file.exists()) { "Такая глава уже есть" }
+        require(!clash(file)) { "Такая глава уже есть" }
         writeAtomic(file, ByteArray(0))
         appendToOrder(category, file.name)
         return file

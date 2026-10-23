@@ -216,10 +216,21 @@ class SafetyMixin:
         name = f"«{path.stem}»" if path else "новый текст без названия"
         when = data.get("time", "")[:16].replace("T", " в ")
         words = word_count(text)
+        newer = ""
+        if on_disk is not None:                    # главу могли поменять после сбоя - например, на телефоне
+            from datetime import datetime
+            try:
+                changed = datetime.fromtimestamp(path.stat().st_mtime)
+                if changed > datetime.fromisoformat(data.get("time", "")):
+                    newer = (f"\n\nОсторожно: глава на диске новее запасного файла - её меняли "
+                             f"{changed:%d.%m в %H:%M} (может, на телефоне). Если вернуть, в главе будет "
+                             "старый набранный текст, а новый - только в «Версиях файла».")
+            except (OSError, ValueError):
+                newer = ""
         if not ask(f"Прошлый раз блокнот закрылся, не успев сохранить {name} ({when}).\n\n"
                    f"В запасном файле {words} {plural(words, 'слово', 'слова', 'слов')}. Вернуть их?\n\n"
                    "Сейчас ничего не перезапишется: текст откроется в главе, а сохранишь ты сам. "
-                   "То, что было на диске, останется в «Версиях файла»."):
+                   "То, что было на диске, останется в «Версиях файла»." + newer):
             clear_journal()
             return False
         if path is not None and path.is_file():

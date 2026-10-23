@@ -64,12 +64,16 @@ def name_clash(target, source=None):
 
 
 def unique_path(path):
-    if not path.exists():
+    """Свободное имя рядом: занято - «имя (2)», «имя (3)»… Занятым считается и то же имя в другом
+    регистре («Глава» и «глава»): на Windows и телефоне это один файл, и синхронизация их бы спутала."""
+    def taken(candidate):
+        return candidate.exists() or name_clash(candidate) is not None
+    if not taken(path):
         return path
     i = 2
     while True:
         candidate = path.with_name(f"{path.stem} ({i}){path.suffix}")
-        if not candidate.exists():
+        if not taken(candidate):
             return candidate
         i += 1
 
@@ -765,7 +769,11 @@ def version_label(path):
 def content_files():
     """Все тексты: главы во всех категориях и их версии."""
     files = []
-    for folder in C.ROOT.iterdir():
+    try:
+        folders = list(C.ROOT.iterdir())          # папку с книгами могли удалить или отключить диск
+    except OSError:
+        folders = []
+    for folder in folders:
         if folder.is_dir() and not folder.name.startswith("."):
             files += files_in(folder)
     versions = C.service_path(".versions")
