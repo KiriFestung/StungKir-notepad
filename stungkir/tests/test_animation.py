@@ -12,7 +12,7 @@ from stungkir.tests.helpers import WindowCase, app, wait
 
 # имя анимации -> сколько кадров должно быть
 FRAMES = {
-    "anim/weasel-run/weasel-run": 10, "anim/weasel-cheer/weasel-cheer": 12,
+    "anim/weasel-run/weasel-run": 12, "anim/weasel-cheer/weasel-cheer": 12,
     **{f"anim/flame/flame-{k}": 12 for k in range(6)},
     "anim/goal/goal-day": 24, "anim/goal/goal-chapter": 12,
     "anim/table/felt-dust": 8, "anim/table/crit-high": 16, "anim/table/crit-low": 16,
@@ -23,7 +23,7 @@ FRAMES = {
 }
 PICTURES = ("lake-shore", "skip-stone", "stone-1", "stone-2", "stone-3", "stone-4", "rake", "toggle-up",
             "toggle-down", "empty-search", "empty-trash", "empty-versions", "empty-notes", "eye-break",
-            "about-day", "drum-bone", "drum-metal", "drum-oak", "drum-indigo")
+            "about-day", "drum-bone", "drum-metal", "drum-oak", "drum-indigo", "anim/weasel-run/weasel-stand")
 
 
 class Clock:
