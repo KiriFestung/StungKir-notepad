@@ -55,6 +55,28 @@ jobs:
           powershell -ExecutionPolicy Bypass -File packaging\windows\build-windows.ps1 *>&1 | Tee-Object -FilePath build.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         # (вывод сборки дублируется в build.log - для заметки об ошибке ниже)
+      - name: Снимки окон на Windows
+        # как блокнот выглядит на настоящем Windows - в «Artifacts» запуска (StungKir-Windows-screens)
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "dist\StungKir\StungKir.exe" -ArgumentList "--screens", "screens" -PassThru
+          if (-not $p.WaitForExit(240000)) { $p.Kill(); Write-Output "::warning::Снимки окон не успели за 4 минуты" }
+          if (-not (Get-ChildItem screens -Filter *.png -ErrorAction SilentlyContinue)) {
+            # без рабочего стола окна не рисуются - тогда хотя бы через offscreen
+            $env:QT_QPA_PLATFORM = "offscreen"
+            $p = Start-Process -FilePath "dist\StungKir\StungKir.exe" -ArgumentList "--screens", "screens" -PassThru
+            if (-not $p.WaitForExit(240000)) { $p.Kill() }
+            Write-Output "::warning::Снимки сделаны через offscreen: шрифты и рамки окон могут отличаться от настоящих"
+          }
+          Get-Content screens\report.txt -ErrorAction SilentlyContinue
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: StungKir-Windows-screens
+          path: screens/
+          retention-days: 30
+          if-no-files-found: ignore
       - name: Отчёт проверок
         if: always()
         shell: pwsh

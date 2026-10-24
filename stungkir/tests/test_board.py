@@ -143,6 +143,42 @@ class StreakTest(unittest.TestCase):
         self.assertEqual(S.streaks({}, set(), self.TODAY), (0, 0))
 
 
+class YearTest(WindowCase):
+    def test_year_heatmap_and_summary(self):
+        from stungkir.windows import StatsDialog, year_summary
+        today = date.today()
+        w = self.window()
+        w.goal = 500
+        w.stats.update({today.isoformat(): 1200, (today - timedelta(days=1)).isoformat(): 500,
+                        (today - timedelta(days=2)).isoformat(): 260, (today - timedelta(days=3)).isoformat(): 40,
+                        (today - timedelta(days=400)).isoformat(): 9000})      # больше года назад - не в счёт
+        marked = (today - timedelta(days=10)).isoformat()
+        words, days, best, best_words = year_summary(w.stats, {marked}, today)
+        self.assertEqual((words, days), (2000, 5))                          # 4 дня со словами и 1 отмеченный
+        per_month = {}
+        for key, value in w.stats.items():
+            if (today - date.fromisoformat(key)).days < 365:
+                per_month[key[:7]] = per_month.get(key[:7], 0) + value
+        self.assertEqual(best_words, max(per_month.values()))
+        month = max(per_month, key=per_month.get)
+        self.assertTrue(best.endswith(month[:4]))                            # «Октябрь 2026»
+        dialog = StatsDialog(w, w.stats, w.goal, {marked}, w.set_day_marks)
+        heat = dialog.heatmap
+        levels = [heat.level(today - timedelta(days=n)) for n in (0, 1, 2, 3, 10, 5)]
+        self.assertEqual(levels, [5, 4, 3, 2, 1, 0])
+        self.assertEqual(heat.start.weekday(), 0)                            # столбец начинается с понедельника
+        self.assertLessEqual((today - heat.start).days, 53 * 7)
+        self.assertEqual(heat.day_at(heat._rect(today).center()), today)
+        dialog.resize(1000, 600)
+        dialog.period.button(1).click()
+        self.assertEqual(dialog.charts.currentIndex(), 1)
+        self.assertIn("За год: 2000 слов", dialog.year_label.text())
+        self.assertFalse(dialog.grab().isNull())
+        day = today - timedelta(days=5)
+        dialog.toggle_day(day)                                               # отметка в календаре - и в годе
+        self.assertEqual(heat.level(day), 1)
+
+
 class CalendarTest(WindowCase):
     def test_click_marks_day_and_streak_shows(self):
         w = self.window()
