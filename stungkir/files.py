@@ -912,6 +912,8 @@ class FilesMixin:
                            lambda: self.toggle_lore_category(path))
             menu.addAction("Обложка…", lambda: self.show_cover(path))
             menu.addAction("Заготовки для мира…", lambda: self.make_world_kit(path))
+            if not is_lore:
+                menu.addAction("Выложить на сайт…", lambda: self.show_publish(path))
             menu.addSeparator()
         else:
             menu.addAction("Открыть рядом" + self.hk("side"), lambda: self.open_beside(path))

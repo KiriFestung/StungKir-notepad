@@ -45,6 +45,7 @@ from .replace import ReplaceMixin
 from .presence import PresenceMixin
 from .deadline import DeadlineMixin
 from .plan import PlanMixin
+from .publish import PublishMixin
 from .templates import TemplatesMixin
 from .rhythm import RhythmMixin
 from .timeline import TimelineView
@@ -60,7 +61,7 @@ from .speech import SpeechMixin
 
 # ---------------- главное окно ----------------
 class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin, ProjectMixin, CrutchesMixin,
-              ReplaceMixin, PresenceMixin, DeadlineMixin, PlanMixin, TemplatesMixin, RhythmMixin, SpeechMixin,
+              ReplaceMixin, PresenceMixin, DeadlineMixin, PlanMixin, PublishMixin, TemplatesMixin, RhythmMixin, SpeechMixin,
               SpeakersMixin, SafetyMixin, ConflictsMixin, SampleMixin, PanelsMixin, MarkupMixin, QMainWindow):
     def __init__(self):
         super().__init__()
