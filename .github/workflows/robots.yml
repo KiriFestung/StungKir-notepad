@@ -1,0 +1,128 @@
+# Роботы по ночам: обезьяна (жмёт по окну что попало) и фаззер (кормит блокнот случайным и битым текстом)
+# с новым зерном каждую ночь - так они каждый раз пробуют другое. Чётные ночи - PySide 6.8 (как во Flatpak),
+# нечётные - новый. Если робот что-то нашёл - задача (issue) «Роботы нашли ошибку» с зерном и командой,
+# которой ошибку повторить; GitHub пришлёт письмо. Одна ночь - около 10 минут Actions.
+# По кнопке «Run workflow» можно задать своё зерно и длину.
+name: Роботы ночью
+
+on:
+  schedule:
+    - cron: "43 1 * * *"          # каждую ночь, 01:43 по UTC
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: "Зерно (пусто - по номеру запуска)"
+        required: false
+      steps:
+        description: "Шагов обезьяны (фаззер - вдвое больше)"
+        required: false
+        default: "3000"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  robots:
+    name: Обезьяна и фаззер
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Зерно и версия PySide
+        id: plan
+        shell: bash
+        env:
+          SEED: ${{ github.event.inputs.seed }}
+          STEPS: ${{ github.event.inputs.steps }}
+          RUN: ${{ github.run_number }}
+        run: |
+          seed="${SEED//[^0-9]/}"                        # только цифры - что бы ни ввели в кнопку
+          [ -z "$seed" ] && seed=$(( RUN * 7 + 100 ))
+          steps="${STEPS//[^0-9]/}"
+          [ -z "$steps" ] && steps=3000
+          if [ $(( seed % 2 )) -eq 0 ]; then pyside="6.8.2.1"; else pyside="новый"; fi
+          echo "seed=$seed" >> "$GITHUB_OUTPUT"
+          echo "steps=$steps" >> "$GITHUB_OUTPUT"
+          echo "pyside=$pyside" >> "$GITHUB_OUTPUT"
+          echo "Зерно $seed, шагов $steps, PySide $pyside"
+      - name: Библиотеки системы для Qt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libxkbcommon0 libxcb-cursor0 libgl1 libenchant-2-2 hunspell-ru libfontconfig1 libdbus-1-3
+      - name: Python-пакеты
+        shell: bash
+        run: |
+          if [ "${{ steps.plan.outputs.pyside }}" = "новый" ]; then pyside="PySide6>=6.8,<7"; else pyside="PySide6==${{ steps.plan.outputs.pyside }}"; fi
+          pip install "$pyside" "cryptography>=42" "python-docx>=1.1" "spylls>=0.1.7" "pyenchant>=3.2"
+      - name: Обезьяна
+        id: monkey
+        continue-on-error: true
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen
+          MONKEY_SEED: ${{ steps.plan.outputs.seed }}
+          MONKEY_STEPS: ${{ steps.plan.outputs.steps }}
+          MONKEY_TIMEOUT: "1200"
+        run: |
+          set -o pipefail
+          python -m unittest stungkir.tests.test_monkey 2>&1 | tee monkey.log
+      - name: Фаззер
+        id: fuzz
+        continue-on-error: true
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen
+          FUZZ_SEED: ${{ steps.plan.outputs.seed }}
+        run: |
+          set -o pipefail
+          FUZZ_STEPS=$(( ${{ steps.plan.outputs.steps }} * 2 )) python -m unittest stungkir.tests.test_fuzz 2>&1 | tee fuzz.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: robots-${{ steps.plan.outputs.seed }}
+          path: "*.log"
+          retention-days: 14
+      - name: Задача, если нашли ошибку
+        if: steps.monkey.outcome == 'failure' || steps.fuzz.outcome == 'failure'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          seed=${{ steps.plan.outputs.seed }}; steps=${{ steps.plan.outputs.steps }}; pyside="${{ steps.plan.outputs.pyside }}"
+          {
+            echo "Ночной прогон роботов нашёл ошибку: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo
+            echo "PySide: $pyside, зерно: $seed"
+            echo
+            if [ "${{ steps.monkey.outcome }}" = "failure" ]; then
+              echo "**Обезьяна.** Повторить:"
+              echo '```'
+              echo "QT_QPA_PLATFORM=offscreen MONKEY_SEED=$seed MONKEY_STEPS=$steps FUZZ_TRACE=1 python3 -m unittest stungkir.tests.test_monkey"
+              echo '```'
+              echo '```'
+              grep -v "^\s*$" monkey.log | tail -n 40
+              echo '```'
+            fi
+            if [ "${{ steps.fuzz.outcome }}" = "failure" ]; then
+              echo "**Фаззер.** Повторить:"
+              echo '```'
+              echo "QT_QPA_PLATFORM=offscreen FUZZ_SEED=$seed FUZZ_STEPS=$(( steps * 2 )) FUZZ_TRACE=1 python3 -m unittest stungkir.tests.test_fuzz"
+              echo '```'
+              echo '```'
+              grep -v "^\s*$" fuzz.log | tail -n 40
+              echo '```'
+            fi
+          } > report.md
+          gh label create "роботы" --color d4a02e --description "Нашли ночные роботы" --force
+          open=$(gh issue list --label "роботы" --state open --json number --jq '.[0].number')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body-file report.md       # одна открытая задача - новые находки в неё
+          else
+            gh issue create --title "Роботы нашли ошибку" --label "роботы" --body-file report.md
+          fi
+          echo "::error::Роботы нашли ошибку - подробности в задаче «Роботы нашли ошибку»"
+          exit 1
