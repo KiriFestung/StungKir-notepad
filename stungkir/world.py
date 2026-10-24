@@ -108,6 +108,10 @@ class WorldMixin:
         self.settings.setValue("margin_notes", "true" if self.notes_margin.shown else "false")
         self.notes_margin.update()
 
+    def toggle_line_numbers(self):
+        self.line_numbers.set_shown(not self.line_numbers.shown)
+        self.settings.setValue("line_numbers", "true" if self.line_numbers.shown else "false")
+
     def toggle_lore_underline(self):
         self.highlighter.lore_underline = not self.highlighter.lore_underline
         self.settings.setValue("lore_underline", "true" if self.highlighter.lore_underline else "false")

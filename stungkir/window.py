@@ -31,7 +31,7 @@ from .windows import SettingsDialog, load_config_raw
 from .dice import RandomDialog
 from .sounds import DEFAULT_VOLUME, Sounds
 from .widgets import ClockFace, EmptyHint, GoalPop, GoalStrip, NightVeil, PicturePop, SlidePanel, StreakPop, Toast
-from .editor import Editor, NotesMargin, ProseHighlighter, Rehighlighter, SidePane, Speller, visible_blocks
+from .editor import Editor, LineNumbers, NotesMargin, ProseHighlighter, Rehighlighter, SidePane, Speller, visible_blocks
 from .table import TableView
 from .board import BoardView
 from .files import FilesMixin
@@ -144,6 +144,9 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         self.notes_margin.add_callback = self.note_for_block
         self.notes_margin.shown = self.settings.value("margin_notes", "true") == "true"
         self.editor.margin_widget = self.notes_margin
+        self.line_numbers = LineNumbers(self.editor)
+        self.editor.line_widget = self.line_numbers
+        self.line_numbers.set_shown(self.settings.value("line_numbers", "false") == "true")
         self.editor.note_callback = self.note_for_block
         self.editor.forward_callback = lambda: self.toast.show_message(
             "Режим «только вперёд»: стирать нельзя, пиши дальше")
@@ -271,6 +274,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
             "note": lambda: self.note_for_block(self.editor.textCursor().block()),
             "side": lambda: self.toggle_side(), "antistress": lambda: self.show_antistress(),
             "compare": lambda: self.compare_with_version(), "preview": lambda: self.show_preview(),
+            "lines": lambda: self.toggle_line_numbers(),
         }
         self.shortcuts = {}
         self.apply_hotkeys()
@@ -345,6 +349,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
             panel.set_quiet(on)
         self.apply_screen()
         self.notes_margin.setVisible(not on)
+        self.line_numbers.set_quiet(on)
         if on:
             self.toast.show_message("Без отвлечений. F10 - вернуть всё", 2600)
         self.editor.setFocus()
@@ -453,6 +458,8 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
             self.settings.setValue(self._screen_key(key), "true" if shown else "false")
         if self.notes_margin.shown != shown:
             self.toggle_margin_notes()
+        if not shown and self.line_numbers.shown:      # номера сами не возвращаются: их включают нарочно
+            self.toggle_line_numbers()
         self.apply_screen()
         self.toast.show_message("Всё вернулось на экран" if shown else
                                 "На экране только текст. Вернуть: Вид → На экране → Вернуть всё", 3500)

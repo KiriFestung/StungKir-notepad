@@ -16,8 +16,8 @@
       margin notes, versions and project snapshots, export to PDF, Word and EPUB, a scheduled daytime theme.</p>
   </description>
   <launchable type="desktop-id">page.codeberg.kirifestung.StungKir.desktop</launchable>
-  <url type="homepage">https://codeberg.org/KiriFesTung/StungKir</url>
-  <url type="bugtracker">https://codeberg.org/KiriFesTung/StungKir/issues</url>
+  <url type="homepage">https://github.com/KiriFestung/StungKir-notepad</url>
+  <url type="bugtracker">https://github.com/KiriFestung/StungKir-notepad/issues</url>
   <content_rating type="oars-1.1"/>
   <releases>
     <release version="1.0.0" date="2026-10-14"/>

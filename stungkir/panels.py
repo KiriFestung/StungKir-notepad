@@ -166,6 +166,7 @@ class PanelsMixin:
         for key, label in self.SCREEN_ITEMS:
             self._toggle(screen, label, lambda _c=False, k=key: self.toggle_screen(k), self.screen_shown(key))
         self._toggle(screen, "Заметки на полях", self.toggle_margin_notes, self.notes_margin.shown)
+        self._toggle(screen, "Номера строк" + self.hk("lines"), self.toggle_line_numbers, self.line_numbers.shown)
         screen.addSeparator()
         for what, title in (("clock", "Часы"), ("bar", "Полоски и строка"), ("align", "Полоски и строка")):
             current = dict(self.PLACES[what])[self.place(what)]
