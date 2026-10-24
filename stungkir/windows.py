@@ -8,9 +8,9 @@ from pathlib import Path
 from PySide6.QtCore import QRectF, QSettings, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QFontComboBox, QGridLayout,
+    QButtonGroup, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QFontComboBox, QGridLayout,
     QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QPushButton,
-    QSpinBox, QTextEdit, QVBoxLayout, QWidget,
+    QSpinBox, QStackedWidget, QTextEdit, QToolTip, QVBoxLayout, QWidget,
 )
 
 from . import config as C
@@ -73,6 +73,117 @@ class StatsChart(QWidget):
         painter.drawText(left, 14, f"макс. {max(values)}")
 
 
+def year_summary(stats, marks, today):
+    """За последний год: (слов, дней с текстом, лучший месяц «Октябрь 2026», слов в нём)."""
+    from .storage import wrote_on
+    start = today - timedelta(days=364)
+    words, days, months = 0, 0, {}
+    for n in range(365):
+        day = start + timedelta(days=n)
+        value = max(0, stats.get(day.isoformat(), 0))
+        words += value
+        days += bool(value) or wrote_on(day, stats, marks)
+        months[(day.year, day.month)] = months.get((day.year, day.month), 0) + value
+    (year, month), best = max(months.items(), key=lambda item: (item[1], item[0]))
+    return words, days, f"{MONTHS[month - 1]} {year}", best
+
+
+class YearHeatmap(QWidget):
+    """Год клеточками, как на GitHub: столбец - неделя, строка - день недели; чем больше слов, тем ярче."""
+
+    WEEKS = 53
+
+    def __init__(self, stats, marks, goal, today):
+        super().__init__()
+        self.stats, self.marks, self.goal, self.today = stats, set(marks or ()), goal or C.DAILY_GOAL or 500, today
+        self.start = today - timedelta(days=today.weekday()) - timedelta(weeks=self.WEEKS - 1)   # понедельник
+        self.setMinimumHeight(200)
+        self.setMouseTracking(True)
+
+    def _geometry(self):
+        left, top = 26, 22
+        cell = max(6.0, min(16.0, (self.width() - left - 4) / self.WEEKS))
+        return left, top, cell
+
+    def _rect(self, day):
+        left, top, cell = self._geometry()
+        index = (day - self.start).days
+        return QRectF(left + (index // 7) * cell, top + (index % 7) * cell, cell - 2, cell - 2)
+
+    def level(self, day):
+        """0 - ничего, 1 - отмечен вручную или немного, 2 - до половины цели, 3 - до цели, 4 - цель, 5 - две цели."""
+        words = max(0, self.stats.get(day.isoformat(), 0))
+        if words >= self.goal * 2:
+            return 5
+        if words >= self.goal:
+            return 4
+        if words >= self.goal / 2:
+            return 3
+        if words > 0:
+            return 2
+        return 1 if day.isoformat() in self.marks else 0
+
+    def day_at(self, point):
+        left, top, cell = self._geometry()
+        column, row = int((point.x() - left) // cell), int((point.y() - top) // cell)
+        if not (0 <= column < self.WEEKS and 0 <= row < 7):
+            return None
+        day = self.start + timedelta(days=column * 7 + row)
+        return day if day <= self.today else None
+
+    def mouseMoveEvent(self, event):
+        day = self.day_at(event.position())
+        if day is None:
+            QToolTip.hideText()
+            return
+        words = max(0, self.stats.get(day.isoformat(), 0))
+        text = f"{day.day} {MONTHS_OF[day.month - 1]} {day.year}: " + (
+            words_label(words) if words else ("писал (отмечено)" if day.isoformat() in self.marks else "ничего"))
+        QToolTip.showText(event.globalPosition().toPoint(), text, self)
+
+    def paintEvent(self, _event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        left, top, cell = self._geometry()
+        shades = [C.mix(C.TEXT, C.BG, 0.93), C.mix(C.TEXT, C.BG, 0.8), C.mix(C.TEXT, C.BG, 0.68),
+                  C.mix(C.TEXT, C.BG, 0.5), C.mix(C.TEXT, C.BG, 0.3), QColor(C.TEXT)]
+        small = QFont(C.FONT_FAMILY, 8)
+        painter.setFont(small)
+        painter.setPen(QColor(C.DIM))
+        for row, name in ((0, "пн"), (2, "ср"), (4, "пт")):
+            painter.drawText(QRectF(0, top + row * cell - 2, left - 4, cell + 2), Qt.AlignRight | Qt.AlignVCenter, name)
+        shown_month = None
+        for n in range(self.WEEKS * 7):
+            day = self.start + timedelta(days=n)
+            if day > self.today:
+                break
+            if n % 7 == 0 and day.month != shown_month and day.day <= 7:     # подпись месяца над первой неделей
+                shown_month = day.month
+                painter.setPen(QColor(C.DIM))
+                painter.drawText(QRectF(left + (n // 7) * cell, 0, cell * 4, top - 4), Qt.AlignLeft | Qt.AlignBottom,
+                                 MONTHS[day.month - 1][:3].lower())
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(shades[self.level(day)])
+            painter.drawRoundedRect(self._rect(day), 2.5, 2.5)
+        today = self._rect(self.today)
+        painter.setBrush(Qt.NoBrush)
+        painter.setPen(QPen(QColor(C.DIALOGUE), 1.5))
+        painter.drawRoundedRect(today.adjusted(-1, -1, 1, 1), 3, 3)
+        # подсказка цветов
+        y = top + 7 * cell + 10
+        x = self.width() - 4 - 6 * (cell + 1) - 74
+        painter.setPen(QColor(C.DIM))
+        painter.drawText(QRectF(x - 90, y - 2, 86, cell + 4), Qt.AlignRight | Qt.AlignVCenter, "меньше")
+        for i, shade in enumerate(shades):
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(shade)
+            painter.drawRoundedRect(QRectF(x + i * (cell + 1), y, cell - 2, cell - 2), 2.5, 2.5)
+        painter.setPen(QColor(C.DIM))
+        painter.drawText(QRectF(x + 6 * (cell + 1) + 4, y - 2, 70, cell + 4), Qt.AlignLeft | Qt.AlignVCenter, "больше")
+
+
+MONTHS_OF = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября",
+             "ноября", "декабря"]
 MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь",
           "Октябрь", "Ноябрь", "Декабрь"]
 
@@ -234,7 +345,41 @@ class StatsDialog(Sheet):
         left.addWidget(hint)
         left.addStretch()
         body.addLayout(left)
-        body.addWidget(StatsChart(days, goal), 1)
+        # справа - 30 дней столбиками или год клеточками
+        right = QVBoxLayout()
+        switch = QHBoxLayout()
+        self.period = QButtonGroup(self)
+        for index, text in enumerate(("30 дней", "Год")):
+            button = QPushButton(text)
+            button.setCheckable(True)
+            button.setAutoDefault(False)
+            button.setProperty("noIcon", True)
+            button.setStyleSheet(f"QPushButton:checked {{ background: {C.IMPORTANT}; "      # как вкладки антистресса
+                                 f"color: {C.on_color(C.IMPORTANT)}; }}")
+            button.setChecked(index == 0)
+            self.period.addButton(button, index)
+            switch.addWidget(button)
+        switch.addStretch()
+        right.addLayout(switch)
+        self.charts = QStackedWidget()
+        self.charts.addWidget(StatsChart(days, goal))
+        year = QWidget()
+        year_layout = QVBoxLayout(year)
+        year_layout.setContentsMargins(0, 8, 0, 0)
+        self.heatmap = YearHeatmap(stats, self.marks, goal, today)
+        self.heatmap.setFixedHeight(140)
+        year_layout.addWidget(self.heatmap)
+        total, active_days, best_month, best_month_words = year_summary(stats, self.marks, today)
+        self.year_label = QLabel(f"За год: {words_label(total)}   ·   дней с текстом: {active_days}"
+                                 + (f"   ·   лучший месяц: {best_month} ({best_month_words})" if best_month_words else ""))
+        self.year_label.setObjectName("Status")
+        self.year_label.setWordWrap(True)
+        year_layout.addWidget(self.year_label)
+        year_layout.addStretch()
+        self.charts.addWidget(year)
+        right.addWidget(self.charts, 1)
+        self.period.idClicked.connect(self.charts.setCurrentIndex)
+        body.addLayout(right, 1)
         layout.addLayout(body, 1)
         self._shift(0)
         self._update_streak()
@@ -262,6 +407,8 @@ class StatsDialog(Sheet):
             self.marks.add(key)
         if self.on_marks:
             self.on_marks(set(self.marks))
+        self.heatmap.marks = set(self.marks)
+        self.heatmap.update()
         self._update_streak()
 
 

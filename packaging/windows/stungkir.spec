@@ -44,7 +44,7 @@ a = Analysis(
     datas=datas,
     # тесты тоже внутри: «StungKir.exe --test» проверит, что сборка рабочая
     hiddenimports=["PySide6.QtTextToSpeech",          # чтение вслух: голос Windows через Qt
-                   "stungkir.tests", "stungkir.tests.run", "stungkir.tests.helpers",
+                   "stungkir.tests", "stungkir.tests.run", "stungkir.tests.helpers", "stungkir.tests.screens",
                    *TEST_MODULES, "spylls.hunspell", "docx", "cryptography"],
     excludes=["enchant", "tkinter"],      # на Windows орфография через spylls и встроенный словарь
     noarchive=False,

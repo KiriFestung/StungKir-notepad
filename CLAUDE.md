@@ -18,7 +18,7 @@ StungKir - писательский блокнот KiriFesTung: PySide6 (Linux, 
 - `ruff check stungkir` должен быть чистым.
 
 ## Сборки (GitHub Actions)
-- `check.yml`: проверки на Linux (PySide 6.8 и новый), на Windows - сборка, проверка готовой сборки, установщик и переносная версия; кладёт их в релиз `windows-latest`.
+- `check.yml`: проверки на Linux (PySide 6.8 и новый), на Windows - сборка, проверка готовой сборки, установщик и переносная версия; кладёт их в релиз `windows-latest`. Ещё снимает окна готовой сборки на Windows (`StungKir.exe --screens <папка>`, код - `stungkir/tests/screens.py`) в артефакт `StungKir-Windows-screens` - так видно вид на Windows без Windows.
 - `android.yml`: проверки и APK, релиз `android-latest`. Подпись: `android/app/stungkir-release.keystore`, пароль - секрет `ANDROID_KEYSTORE_PASSWORD` (есть только у автора). Без секрета APK в релиз не выкладывается.
 - `build.yml`: Flatpak (KDE 6.8), сам при изменениях программы и по кнопке; релиз `linux-latest`.
 - Журналы Actions из сессии Claude не скачиваются: ошибки шагов выводятся заметками (`::error::`), их видно через API check-runs/annotations.

@@ -34,6 +34,10 @@ def main():
     if "--test" in sys.argv:
         from .tests.run import main as run_tests
         return run_tests("-v" in sys.argv)
+    if "--screens" in sys.argv:                # снимки окон для проверки вида (на GitHub - на Windows)
+        from .tests.screens import main as screens
+        index = sys.argv.index("--screens")
+        return screens(sys.argv[index + 1] if len(sys.argv) > index + 1 else "screens")
     if "--install-only" in sys.argv:
         install_launcher()
         return 0
