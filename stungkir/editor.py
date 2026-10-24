@@ -503,7 +503,8 @@ class Editor(QTextEdit):
         self.lore_open = None     # позиция мыши -> открыл ли заметку о термине
         self.note_callback = None  # абзац -> заметка на полях
         self.crutch_callback = None   # слово или оборот -> в мои штампы
-        self.margin_widget = None
+        self.margin_widget = None     # заметки на полях справа
+        self.line_widget = None       # номера строк слева
         self.forward_only = False
         self.forward_callback = None
         self.only_russian = C.ONLY_RUSSIAN
@@ -773,8 +774,7 @@ class Editor(QTextEdit):
         if self.viewportMargins().top() != value:
             side = self._side()
             self.setViewportMargins(side, value, side, 0)
-            if self.margin_widget is not None:
-                self.margin_widget.place()
+            self.place_side_widgets()
 
     def _animate_lift(self, value):
         self._lift_anim.stop()
@@ -835,20 +835,23 @@ class Editor(QTextEdit):
         self._margins()
         super().resizeEvent(event)
         self._update_extra()
-        if self.margin_widget is not None:
-            self.margin_widget.place()
+        self.place_side_widgets()
 
     def _margins(self):
         side = self._side()
         if self.viewportMargins().left() != side or self.viewportMargins().top() != self._lift:
             self.setViewportMargins(side, self._lift, side, 0)
 
+    def place_side_widgets(self):
+        for widget in (self.margin_widget, self.line_widget):
+            if widget is not None:
+                widget.place()
+
     def apply_column(self):
         """Новая ширина колонки из настроек - сразу, без перезапуска."""
         self._margins()
         self._update_extra()
-        if self.margin_widget is not None:
-            self.margin_widget.place()
+        self.place_side_widgets()
 
 
 class NotesMargin(QWidget):
@@ -1029,6 +1032,83 @@ class NotesMargin(QWidget):
     def leaveEvent(self, event):
         QToolTip.hideText()
         super().leaveEvent(event)
+
+
+class LineNumbers(QWidget):
+    """Номера строк слева от текста, как в обычном блокноте. Строка - это абзац (строка файла):
+    номер стоит у первой строчки абзаца и не прыгает, когда меняется ширина окна или шрифт."""
+
+    GAP = 10    # от полосы с номерами до текста
+    PAD = 8     # поля полосы по бокам от номера
+
+    def __init__(self, editor):
+        super().__init__(editor)
+        self.editor = editor
+        self.shown = False
+        self.quiet = False      # «без отвлечений»: спрятаны, но не выключены
+        self.setAttribute(Qt.WA_TransparentForMouseEvents)     # щелчок у начала строки - в текст
+        doc = editor.document()
+        editor.verticalScrollBar().valueChanged.connect(self.update)
+        editor.cursorPositionChanged.connect(self.update)
+        doc.blockCountChanged.connect(lambda _n: self.place())
+        doc.documentLayout().documentSizeChanged.connect(lambda _s: self.place())
+        doc.documentLayout().update.connect(self.update)
+        self.hide()
+
+    def set_shown(self, on):
+        self.shown = on
+        self.place()
+
+    def set_quiet(self, on):
+        self.quiet = on
+        self.place()
+
+    def _font(self):
+        font = QFont(self.editor.font())
+        font.setPointSizeF(max(8.0, font.pointSizeF() * 0.72))
+        font.setWeight(QFont.Normal)
+        return font
+
+    def place(self):
+        if not self.shown or self.quiet:
+            self.hide()
+            return
+        digits = max(2, len(str(self.editor.document().blockCount())))
+        width = QFontMetrics(self._font()).horizontalAdvance("0" * digits) + 2 * self.PAD
+        viewport = self.editor.viewport().geometry()
+        right = viewport.left() + int(self.editor.document().documentMargin()) - self.GAP
+        left = max(0, right - width)
+        self.setGeometry(left, viewport.top(), max(0, right - left), viewport.height())
+        self.show()
+        self.raise_()
+        self.update()
+
+    def paintEvent(self, _event):
+        painter = QPainter(self)
+        stripe = QColor(C.PANEL)
+        stripe.setAlphaF(0.6)       # своя картинка под текстом просвечивает
+        painter.fillRect(self.rect(), stripe)
+        font = self._font()
+        painter.setFont(font)
+        metrics = QFontMetrics(font)
+        layout = self.editor.document().documentLayout()
+        offset = self.editor.verticalScrollBar().value()
+        current = self.editor.textCursor().blockNumber()
+        dim, bright = QColor(C.DIM), QColor(C.mix(C.TEXT, C.BG, 0.15))
+        right = self.width() - self.PAD
+        for block in visible_blocks(self.editor):
+            if not block.isVisible():
+                continue
+            top = layout.blockBoundingRect(block).top() - offset
+            lines = block.layout()
+            if lines is not None and lines.lineCount():
+                first = lines.lineAt(0)
+                baseline = top + first.y() + first.ascent()      # на одной линии с первой строчкой
+            else:
+                baseline = top + metrics.ascent()
+            text = str(block.blockNumber() + 1)
+            painter.setPen(bright if block.blockNumber() == current else dim)
+            painter.drawText(QPointF(right - metrics.horizontalAdvance(text), baseline), text)
 
 
 class _NoSpeller:

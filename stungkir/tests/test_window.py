@@ -243,3 +243,36 @@ class HotkeysTest(WindowCase):
         dialog.reset()
         self.assertEqual(dialog.values()["antistress"], "F12")
         self.assertIs(original, dialogs.Sheet.exec)
+
+
+class LineNumbersTest(WindowCase):
+    def test_numbers_beside_text(self):
+        path = self.chapter("Книга", "Глава", "Первая.\n\n" + "Длинный абзац Киры у реки. " * 40 + "\nПоследняя.")
+        w = self.window()
+        w.resize(900, 600)
+        w.show()
+        w.open_path(path)
+        numbers = w.line_numbers
+        self.assertFalse(numbers.isVisible())                       # по умолчанию выключены
+        self.assertEqual(w.shortcuts["lines"].key().toString(), "Ctrl+L")
+        w.toggle_line_numbers()
+        wait()
+        self.assertTrue(numbers.isVisible())
+        self.assertEqual(w.settings.value("line_numbers"), "true")
+        text_left = w.editor.viewport().geometry().left() + w.editor.document().documentMargin()
+        self.assertLess(numbers.geometry().right(), text_left)       # не залезают на буквы
+        self.assertFalse(numbers.grab().isNull())
+        narrow = numbers.width()
+        w.editor.moveCursor(w.editor.textCursor().MoveOperation.End)
+        w.editor.insertPlainText("\n" * 120)                         # трёхзначные номера - полоса шире
+        wait()
+        self.assertGreater(numbers.width(), narrow)
+        w.set_zen(True)
+        self.assertFalse(numbers.isVisible())
+        w.set_zen(False)
+        self.assertTrue(numbers.isVisible())
+        w.set_screen_all(False)                                     # «только текст» убирает и номера
+        self.assertFalse(numbers.isVisible())
+        self.assertEqual(w.settings.value("line_numbers"), "false")
+        w.set_screen_all(True)                                      # а назад сами не включаются
+        self.assertFalse(numbers.shown)
