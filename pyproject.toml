@@ -32,8 +32,8 @@ dependencies = [
 stungkir = "stungkir.app:run"
 
 [project.urls]
-Homepage = "https://codeberg.org/KiriFesTung/StungKir"
-Issues = "https://codeberg.org/KiriFesTung/StungKir/issues"
+Homepage = "https://github.com/KiriFestung/StungKir-notepad"
+Issues = "https://github.com/KiriFestung/StungKir-notepad/issues"
 
 [tool.setuptools]
 packages = ["stungkir", "stungkir.tests"]
