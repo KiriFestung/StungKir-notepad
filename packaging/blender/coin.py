@@ -1,11 +1,13 @@
 # StungKir - писательский блокнот. Copyright (C) 2026 KiriFesTung
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Монетка-чеканка из рисунка KiriFesTung (packaging/art-src/coin-*.png): золото выпуклое - рельеф
-по рисунку, поле - индиго-эмаль, свет и отражения настоящие. Запуск для обеих сторон:
+по рисунку, поле - индиго-эмаль, свет и отражения настоящие (студийная HDRI с Poly Haven, hdri.py). Запуск для обеих сторон:
 blender -b -P packaging/blender/coin.py -- packaging/art-src/coin-heads.png stungkir/art/coin-heads.png
 blender -b -P packaging/blender/coin.py -- packaging/art-src/coin-tails.png stungkir/art/coin-tails.png figure
 (figure - фигура в индиго тоже выпуклая, как ласка на решке)."""
+import math
 import sys
+from pathlib import Path
 
 import bpy
 import numpy as np
@@ -39,7 +41,7 @@ height = np.clip(blur(figure, 2.6), 0, 1) ** 0.7              # мягкий с�
 light = (r + g + b) / 3
 base = px.copy()
 base[..., :3] = np.where(base[..., :3] <= 0.04045, base[..., :3] / 12.92, ((base[..., :3] + 0.055) / 1.055) ** 2.4)
-gold_c = np.array([0.95, 0.62, 0.2, 1])                     # уже линейные
+gold_c = np.array([1.0, 0.58, 0.11, 1])                     # уже линейные
 indigo_c = np.array([0.018, 0.012, 0.13, 1])
 is_indigo = (b > r) & (a > 0.5)
 base[gold > 0.5] = gold_c
@@ -106,22 +108,11 @@ sc.cycles.use_denoising = True
 sc.render.film_transparent = True
 sc.render.resolution_x = sc.render.resolution_y = N
 sc.view_settings.view_transform = "Standard"
-world = bpy.data.worlds.new("w")
-world.use_nodes = True
-sky = world.node_tree.nodes.new("ShaderNodeTexSky")          # небо - чтобы золоту было что отражать
-sky.sky_type = "HOSEK_WILKIE"
-sky.sun_direction = Vector((-0.5, 0.6, 0.6)).normalized()
-grad = world.node_tree.nodes.new("ShaderNodeTexGradient")      # тёмное окружение со светлой полосой
-coords = world.node_tree.nodes.new("ShaderNodeTexCoord")
-world.node_tree.links.new(coords.outputs["Generated"], grad.inputs["Vector"])
-ramp = world.node_tree.nodes.new("ShaderNodeValToRGB")
-ramp.color_ramp.elements[0].color = (0.02, 0.02, 0.04, 1)
-ramp.color_ramp.elements[1].color = (1.0, 0.85, 0.6, 1)
-ramp.color_ramp.elements[0].position, ramp.color_ramp.elements[1].position = 0.45, 0.62
-world.node_tree.links.new(grad.outputs["Fac"], ramp.inputs["Fac"])
-world.node_tree.links.new(ramp.outputs["Color"], world.node_tree.nodes["Background"].inputs["Color"])
-world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.6
-sc.world = world
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import hdri  # noqa: E402
+
+studio = hdri.world("studio_small_09", 1.6)                  # настоящая студия: блики софтбоксов по ободу и скатам
+studio.node_tree.nodes["Mapping"].inputs["Rotation"].default_value[0] = math.radians(-30)   # софтбоксы - чуть над монетой
 
 
 def light(name, loc, energy, size, color=(1, 1, 1)):
@@ -133,9 +124,7 @@ def light(name, loc, energy, size, color=(1, 1, 1)):
     sc.collection.objects.link(obj)
 
 
-light("key", (-3, 3, 4), 380, 2.0, (1, 0.95, 0.88))
-light("fill", (3, -2, 3), 60, 4, (0.8, 0.85, 1))
-light("strip", (-1.2, 2.0, 2.2), 260, 1.2, (1, 0.9, 0.7))   # узкий тёплый софтбокс: блик по скатам
+light("key", (-3, 3, 4), 270, 2.0, (1, 0.95, 0.88))       # тёплый ключ слева сверху - тени рельефа
 cam = bpy.data.cameras.new("c")
 cam.type = "ORTHO"
 cam.ortho_scale = 2.0
