@@ -459,7 +459,7 @@ class FilesMixin:
             return
         current = self.path.parent if self.path else None
         dialog = CompileDialog(self, self.categories(), current,
-                               self.settings.value("author", ""))
+                               self.settings.value("author", ""), self.skipped_chapters())
         if not dialog.exec():
             return
         options = dialog.options()

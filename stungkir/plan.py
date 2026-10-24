@@ -1,9 +1,10 @@
 # StungKir - писательский блокнот. Copyright (C) 2026 KiriFesTung
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""План книги: у каждой главы статус («Идея», «Черновик», «Правка», «Готово») и пара строк о чём она.
-Слева у главы - цветная точка статуса; «План книги» (Ctrl+P) - все главы таблицей со словами и итогом.
-Хранится в .stungkir/plan.json по пути главы; сами тексты не меняются."""
+"""План книги: у каждой главы статус («Идея», «Черновик», «Правка», «Готово»), чей взгляд, год в истории,
+пара строк о чём она и флажок «не в книгу». Слева у главы - цветная точка статуса; «План книги» (Ctrl+P) -
+все главы таблицей со словами и итогом. Хранится в .stungkir/plan.json по пути главы; тексты не меняются."""
 
+import math
 from pathlib import Path
 
 from PySide6.QtCore import QPointF, Qt, QTimer
@@ -15,9 +16,11 @@ from PySide6.QtWidgets import (
 
 from . import config as C
 from .dialogs import Sheet, ask_text
+from .lore import age_label
 from .storage import LockedFile, files_in, read_text, save_order, save_plan
 from .style import rounded_menu
-from .textutil import WORD_RE, is_prose, plural
+from .textutil import WORD_RE, is_prose, is_timeline, plural
+from .timeline import load_events, year_label
 
 STATUSES = [("idea", "Идея"), ("draft", "Черновик"), ("edit", "Правка"), ("done", "Готово")]
 STATUS_NAMES = dict(STATUSES)
@@ -33,19 +36,32 @@ def thousands(n):
     return f"{n:,}".replace(",", " ")
 
 
+def parse_year(text):
+    """Год главы из того, что написал человек: «1203», «-40», «1203,5». Не число - None."""
+    try:
+        value = float(str(text).strip().replace(",", ".").replace("−", "-"))
+    except ValueError:
+        return None
+    return value if math.isfinite(value) else None
+
+
 def plan_summary(rows, plan, key):
-    """Итог по главам [(путь, слов)]: «Готово 3 из 12 · в правке 2 · …» и всего слов."""
+    """Итог по главам [(путь, слов)]: «Готово 3 из 12 · в правке 2 · …» и всего слов.
+    Главы «не в книгу» не считаются, только упоминаются в конце."""
     counts = {code: 0 for code, _name in STATUSES}
-    for path, _words in rows:
+    book = [(path, words) for path, words in rows if not plan.get(key(path), {}).get("skip")]
+    for path, _words in book:
         code = plan.get(key(path), {}).get("status")
         if code in counts:
             counts[code] += 1
-    total = sum(words for _path, words in rows)
-    parts = [f"Готово {counts['done']} из {len(rows)} {plural(len(rows), 'главы', 'глав', 'глав')}"]
+    total = sum(words for _path, words in book)
+    parts = [f"Готово {counts['done']} из {len(book)} {plural(len(book), 'главы', 'глав', 'глав')}"]
     for code, label in (("edit", "в правке"), ("draft", "в черновике"), ("idea", "в идеях")):
         if counts[code]:
             parts.append(f"{label} {counts[code]}")
     parts.append(f"{thousands(total)} {plural(total, 'слово', 'слова', 'слов')}")
+    if len(book) < len(rows):
+        parts.append(f"не в книгу {len(rows) - len(book)}")
     return " · ".join(parts)
 
 
@@ -88,25 +104,28 @@ class PlanTree(QTreeWidget):
 
 
 class PlanDialog(Sheet):
-    """Все главы книги: статус, слова, о чём. Статус - щелчок по нему; «о чём» - двойной щелчок;
-    двойной щелчок по названию открывает главу; перетаскивание меняет порядок глав."""
+    """Все главы книги: статус, чей взгляд, год, слова, о чём. Щелчок по статусу или взгляду - выбрать;
+    двойной по году или «о чём» - написать; по названию - открыть главу; перетаскивание - порядок глав."""
 
-    NAME, STATUS, WORDS, ABOUT = range(4)
+    NAME, STATUS, POV, YEAR, WORDS, ABOUT = range(6)
 
-    def __init__(self, parent, chapters, plan, key, on_change, on_order):
+    def __init__(self, parent, chapters, plan, key, on_change, on_order, people=(), years=None, born=None):
         super().__init__(parent, "План книги")
-        self.setMinimumSize(860, 560)
+        self.setMinimumSize(980, 580)
         self.chapters = chapters          # [(папка, [(путь, слов)])]
         self.plan, self.key = plan, key
         self.on_change, self.on_order = on_change, on_order
+        self.people = list(people)        # кого предложить в «Чей взгляд»
+        self.years = years or {}          # год главы из хронологии, если в плане не написан
+        self.born = born or {}            # имя -> год рождения
         self.open_target = None
         self._filling = False
         self.summary = QLabel()
         self.summary.setObjectName("Status")
         self.content.addWidget(self.summary)
         self.tree = PlanTree(self._moved)
-        self.tree.setColumnCount(4)
-        self.tree.setHeaderLabels(["Глава", "Статус", "Слов", "О чём"])
+        self.tree.setColumnCount(6)
+        self.tree.setHeaderLabels(["Глава", "Статус", "Чей взгляд", "Год", "Слов", "О чём"])
         self.tree.setRootIsDecorated(False)
         self.tree.setIndentation(14)
         self.tree.setUniformRowHeights(True)
@@ -116,11 +135,12 @@ class PlanDialog(Sheet):
         self.tree.itemChanged.connect(self._changed)
         header = self.tree.header()
         header.setStretchLastSection(True)
-        for column in (self.NAME, self.STATUS, self.WORDS):
+        for column in (self.NAME, self.STATUS, self.POV, self.YEAR, self.WORDS):
             header.setSectionResizeMode(column, QHeaderView.ResizeToContents)
         self.content.addWidget(self.tree, 1)
-        hint = QLabel("Щелчок по статусу - сменить его. Двойной щелчок по «О чём» - написать, по названию - "
-                      "открыть главу. Перетащи главу выше или ниже, чтобы поменять порядок.")
+        hint = QLabel("Щелчок по статусу или «Чей взгляд» - выбрать. Двойной щелчок по году или «О чём» - "
+                      "написать, по названию - открыть главу. Перетащи главу, чтобы поменять порядок. "
+                      "Год главы - в летоисчислении книги; без него возраст героев не посчитать.")
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         self.content.addWidget(hint)
@@ -135,32 +155,62 @@ class PlanDialog(Sheet):
     def rows(self):
         return [row for _folder, rows in self.chapters for row in rows]
 
+    def entry(self, path):
+        return self.plan.get(self.key(path), {})
+
+    def year_of(self, path):
+        """(год, написан ли в плане): из плана, иначе из хронологии."""
+        own = parse_year(self.entry(path).get("year", ""))
+        if own is not None:
+            return own, True
+        return self.years.get(self.key(path)), False
+
     def fill(self):
         self._filling = True
         self.tree.clear()
         bold = QFont(self.tree.font())
         bold.setBold(True)
         for folder, rows in self.chapters:
-            top = QTreeWidgetItem([folder.name, "", thousands(sum(w for _p, w in rows)), ""])
+            words = sum(w for p, w in rows if not self.entry(p).get("skip"))
+            top = QTreeWidgetItem([folder.name, "", "", "", thousands(words), ""])
             top.setData(0, Qt.UserRole, str(folder))
             top.setFont(0, bold)
             top.setFlags(Qt.ItemIsEnabled | Qt.ItemIsDropEnabled)
             top.setTextAlignment(self.WORDS, Qt.AlignRight | Qt.AlignVCenter)
             self.tree.addTopLevelItem(top)
             for path, words in rows:
-                entry = self.plan.get(self.key(path), {})
-                code = entry.get("status")
-                item = QTreeWidgetItem([path.stem, STATUS_NAMES.get(code, "-"), thousands(words),
-                                        entry.get("about", "")])
-                item.setData(0, Qt.UserRole, str(path))
-                item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled | Qt.ItemIsEditable)
-                item.setForeground(self.STATUS, status_color(code) if code else QColor(C.DIM))
-                item.setTextAlignment(self.WORDS, Qt.AlignRight | Qt.AlignVCenter)
-                item.setToolTip(self.ABOUT, entry.get("about", ""))
-                top.addChild(item)
+                top.addChild(self._row(path, words))
             top.setExpanded(True)
         self.summary.setText(plan_summary(self.rows(), self.plan, self.key))
         self._filling = False
+
+    def _row(self, path, words):
+        entry = self.entry(path)
+        code, pov = entry.get("status"), entry.get("pov", "")
+        year, own = self.year_of(path)
+        pov_text = pov
+        if pov and year is not None and self.born.get(pov) is not None:
+            pov_text = f"{pov} ({age_label(year - self.born[pov])})"
+        item = QTreeWidgetItem([path.stem, STATUS_NAMES.get(code, "-"), pov_text or "-",
+                                "" if year is None else year_label(year), thousands(words), entry.get("about", "")])
+        item.setData(0, Qt.UserRole, str(path))
+        item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled | Qt.ItemIsEditable)
+        item.setForeground(self.STATUS, status_color(code) if code else QColor(C.DIM))
+        if not pov:
+            item.setForeground(self.POV, QColor(C.DIM))
+        if year is not None and not own:
+            item.setForeground(self.YEAR, QColor(C.DIM))
+            item.setToolTip(self.YEAR, "Из хронологии: событие, связанное с этой главой")
+        item.setTextAlignment(self.WORDS, Qt.AlignRight | Qt.AlignVCenter)
+        item.setTextAlignment(self.YEAR, Qt.AlignRight | Qt.AlignVCenter)
+        item.setToolTip(self.ABOUT, entry.get("about", ""))
+        if entry.get("skip"):
+            italic = QFont(self.tree.font())
+            italic.setItalic(True)
+            item.setFont(self.NAME, italic)
+            item.setForeground(self.NAME, QColor(C.DIM))
+            item.setToolTip(self.NAME, "Не в книгу: при сборке эта глава не отмечена")
+        return item
 
     @staticmethod
     def path_of(item):
@@ -180,24 +230,49 @@ class PlanDialog(Sheet):
         self.on_change()
 
     def _clicked(self, item, column):
-        if item.parent() is None or column != self.STATUS:
+        if item.parent() is None or column not in (self.STATUS, self.POV):
             return
-        menu = self.status_menu(item)
+        menu = self.status_menu(item) if column == self.STATUS else self.pov_menu(item)
         menu.exec(self.tree.viewport().mapToGlobal(self.tree.visualItemRect(item).bottomLeft()))
 
     def status_menu(self, item):
         menu = rounded_menu(self)
-        current = self.plan.get(self.key(self.path_of(item)), {}).get("status")
         path = self.path_of(item)
+        current = self.entry(path).get("status")
         for code, label in STATUSES + [(None, "Без статуса")]:
-            # первым Qt передаёт «отмечено ли» - его в _c, иначе он попал бы в код статуса
-            action = menu.addAction(label, lambda _c=False, c=code: self.choose_status(path, c))
+            # первым Qt может передать «отмечено ли» - его в _c, чтобы не попал в код статуса
+            action = menu.addAction(label, lambda _c=False, c=code: self.choose(path, "status", c))
             action.setCheckable(True)
             action.setChecked(code == current)
+        menu.addSeparator()
+        skip = menu.addAction("Не в книгу", lambda _c=False: self.choose(path, "skip", "" if self.entry(path).get(
+            "skip") else "yes"))
+        skip.setCheckable(True)
+        skip.setChecked(bool(self.entry(path).get("skip")))
         return menu
 
-    def choose_status(self, path, code):
-        self._set(path, "status", code)
+    def pov_menu(self, item):
+        menu = rounded_menu(self)
+        path = self.path_of(item)
+        current = self.entry(path).get("pov", "")
+        names = list(dict.fromkeys(self.people + ([current] if current else [])))
+        for name in names:
+            action = menu.addAction(name, lambda _c=False, n=name: self.choose(path, "pov", n))
+            action.setCheckable(True)
+            action.setChecked(name == current)
+        if names:
+            menu.addSeparator()
+        menu.addAction("Другое имя…", lambda: self.ask_pov(path))
+        menu.addAction("Ничей", lambda: self.choose(path, "pov", ""))
+        return menu
+
+    def ask_pov(self, path):
+        name, ok = ask_text(self, "Чей взгляд", f"От чьего лица «{path.stem}»:", self.entry(path).get("pov", ""))
+        if ok:
+            self.choose(path, "pov", " ".join(name.split()))
+
+    def choose(self, path, field, value):
+        self._set(path, field, value)
         self.fill()
 
     def _double_clicked(self, item, column):
@@ -205,16 +280,31 @@ class PlanDialog(Sheet):
             return
         if column == self.ABOUT:
             self.tree.editItem(item, self.ABOUT)
+        elif column == self.YEAR:
+            if not self.year_of(self.path_of(item))[1]:
+                self._filling = True
+                item.setText(self.YEAR, "")              # год из хронологии - подсказка, а не то, что пишут
+                self._filling = False
+            self.tree.editItem(item, self.YEAR)
         elif column == self.NAME:
             self.open_target = self.path_of(item)
             self.accept()
 
     def _changed(self, item, column):
-        if self._filling or column != self.ABOUT or item.parent() is None:
+        if self._filling or item.parent() is None:
             return
-        about = " ".join(item.text(self.ABOUT).split())
-        self._set(self.path_of(item), "about", about)
-        self.summary.setText(plan_summary(self.rows(), self.plan, self.key))
+        path = self.path_of(item)
+        if column == self.ABOUT:
+            self._set(path, "about", " ".join(item.text(self.ABOUT).split()))
+            self.summary.setText(plan_summary(self.rows(), self.plan, self.key))
+        elif column == self.YEAR:
+            text = item.text(self.YEAR).strip()
+            year = parse_year(text)
+            if text and year is None:
+                QTimer.singleShot(0, self, self.fill)      # не число - вернуть как было
+                return
+            self._set(path, "year", "" if year is None else year_label(year))
+            QTimer.singleShot(0, self, self.fill)          # возраст во «Чей взгляд» пересчитается
 
     def _moved(self, source, target, where):
         """Глава встала выше или ниже другой главы той же категории; брошена на название категории - в конец,
@@ -223,7 +313,7 @@ class PlanDialog(Sheet):
         if target.parent() is None:
             if target is not folder:
                 return
-            index = folder.childCount() if where == QAbstractItemView.OnItem else 0    # на категорию - в конец
+            index = folder.childCount() if where == QAbstractItemView.OnItem else 0
         elif target.parent() is folder:
             index = folder.indexOfChild(target)
             if where == QAbstractItemView.BelowItem:
@@ -244,7 +334,7 @@ class PlanDialog(Sheet):
 
 
 class PlanMixin:
-    """Статусы глав и «План книги». Часть главного окна."""
+    """Статусы глав, «не в книгу», чей взгляд, год главы и «План книги». Часть главного окна."""
 
     def chapter_plan(self, path):
         return self.plan.get(self._position_key(path), {})
@@ -264,24 +354,80 @@ class PlanMixin:
         self.mark_tree_status()
 
     def plan_menu(self, menu, path):
-        """Пункты для главы в правом клике слева: статус и «о чём»."""
+        """Пункты для главы в правом клике слева: статус, чей взгляд, «не в книгу», год, «о чём»."""
+        entry = self.chapter_plan(path)
         statuses = self._submenu(menu, "Статус")
-        current = self.chapter_plan(path).get("status")
         for code, label in STATUSES + [(None, "Без статуса")]:
-            self._toggle(statuses, label, lambda _c=False, c=code: self.plan_set(path, "status", c), code == current)
-        menu.addAction("О чём глава…", lambda: self.edit_chapter_about(path))
+            self._toggle(statuses, label, lambda _c=False, c=code: self.plan_set(path, "status", c),
+                         code == entry.get("status"))
+        pov = self._submenu(menu, "Чей взгляд")
+        for name in dict.fromkeys(self.plan_people() + ([entry["pov"]] if entry.get("pov") else [])):
+            self._toggle(pov, name, lambda _c=False, n=name: self.plan_set(path, "pov", n), name == entry.get("pov"))
+        pov.addSeparator()
+        pov.addAction("Другое имя…", lambda: self.ask_plan_field(path, "pov"))
+        pov.addAction("Ничей", lambda: self.plan_set(path, "pov", ""))
+        self._toggle(menu, "Не в книгу", lambda _c=False: self.plan_set(
+            path, "skip", "" if self.chapter_plan(path).get("skip") else "yes"), bool(entry.get("skip")))
+        menu.addAction("Год главы…", lambda: self.ask_plan_field(path, "year"))
+        menu.addAction("О чём глава…", lambda: self.ask_plan_field(path, "about"))
 
     def edit_chapter_about(self, path):
-        text, ok = ask_text(self, "О чём глава", f"Коротко, о чём «{path.stem}» (пусто - убрать):",
-                            self.chapter_plan(path).get("about", ""))
-        if ok:
-            self.plan_set(path, "about", " ".join(text.split()))
+        self.ask_plan_field(path, "about")
+
+    def ask_plan_field(self, path, field):
+        title, label = {
+            "about": ("О чём глава", f"Коротко, о чём «{path.stem}» (пусто - убрать):"),
+            "pov": ("Чей взгляд", f"От чьего лица «{path.stem}»:"),
+            "year": ("Год главы", f"В каком году истории идёт «{path.stem}» (в летоисчислении книги; "
+                                  "пусто - убрать):"),
+        }[field]
+        text, ok = ask_text(self, title, label, self.chapter_plan(path).get(field, ""))
+        if not ok:
+            return
+        value = " ".join(text.split())
+        if field == "year" and value:
+            year = parse_year(value)
+            if year is None:
+                self.toast.show_message("Год - это число, например 1203 или -40")
+                return
+            value = year_label(year)
+        self.plan_set(path, field, value)
+
+    def plan_people(self):
+        """Кого предлагать в «Чей взгляд»: персонажи из списка и те, у кого в справочнике есть год рождения."""
+        born = [t.name for t in self.lore.terms if getattr(t, "born", None) is not None]
+        return list(dict.fromkeys(list(self.names) + born))
 
     def plan_categories(self):
         return [f for f in self.categories() if f.name not in self.lore_cfg["categories"]]
 
+    def timeline_years(self):
+        """{глава: год} из хронологий: год самого раннего события, связанного с главой."""
+        years = {}
+        for folder in self.categories():
+            for path in files_in(folder):
+                if not is_timeline(path):
+                    continue
+                try:
+                    events = load_events(read_text(path))
+                except (OSError, LockedFile):
+                    continue
+                for event in events:
+                    chapter, year = event.get("chapter"), parse_year(event.get("year", ""))
+                    if isinstance(chapter, str) and chapter and year is not None:
+                        years[chapter] = min(year, years.get(chapter, year))
+        return years
+
+    def story_year(self, path):
+        """В каком году истории идёт глава: из плана, иначе из хронологии; неизвестно - None."""
+        own = parse_year(self.chapter_plan(path).get("year", ""))
+        return own if own is not None else self.timeline_years().get(self._position_key(path))
+
+    def skipped_chapters(self):
+        return {C.ROOT / key for key, entry in self.plan.items() if entry.get("skip")}
+
     def mark_tree_status(self):
-        """Точки статуса у глав слева и подсказка с «о чём»."""
+        """Точки статуса у глав слева, бледные «не в книгу» и подсказка: статус, взгляд, год, о чём."""
         planned = {str(f) for f in self.plan_categories()}
         for i in range(self.tree.topLevelItemCount()):
             folder = self.tree.topLevelItem(i)
@@ -294,7 +440,10 @@ class PlanMixin:
                 entry = self.chapter_plan(path)
                 code = entry.get("status")
                 child.setData(0, STATUS_ROLE, code or "")
-                child.setToolTip(0, " · ".join(x for x in (STATUS_NAMES.get(code, ""), entry.get("about", "")) if x))
+                child.setData(0, Qt.ForegroundRole, QColor(C.DIM) if entry.get("skip") else None)
+                tip = [STATUS_NAMES.get(code, ""), entry.get("pov", ""), entry.get("year", "") and
+                       f"год {entry['year']}", "не в книгу" if entry.get("skip") else "", entry.get("about", "")]
+                child.setToolTip(0, " · ".join(x for x in tip if x))
 
     def plan_chapters(self):
         """[(категория, [(глава, слов)])] - без справочников мира, таблиц, досок и хронологий."""
@@ -320,8 +469,11 @@ class PlanMixin:
             save_order(folder, names)
             self.refresh_tree()
 
+        self.rebuild_lore()
+        born = {t.name: t.born for t in self.lore.terms if getattr(t, "born", None) is not None}
         dialog = PlanDialog(self, self.plan_chapters(), self.plan, self._position_key,
-                            lambda: (save_plan(self.plan), self.mark_tree_status()), reorder)
+                            lambda: (save_plan(self.plan), self.mark_tree_status()), reorder,
+                            self.plan_people(), self.timeline_years(), born)
         dialog.exec()
         if dialog.open_target is not None:
             self.open_path(dialog.open_target)

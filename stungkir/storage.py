@@ -942,15 +942,19 @@ def save_goals(goals):
         report_problem("Не сохранились цели глав", error)
 
 
+PLAN_FIELDS = ("status", "about", "pov", "year", "skip")
+
+
 def load_plan():
-    """{глава (путь внутри StungKir): {"status": код, "about": о чём глава}} - для «Плана книги»."""
+    """{глава (путь внутри StungKir): {"status": код, "about": о чём, "pov": чей взгляд, "year": год в истории,
+    "skip": "yes" - не в книгу}} - для «Плана книги». Всё строками; чужие поля и мусор пропускаются."""
     try:
         data = json.loads((C.service_path(C.PLAN_FILE)).read_text(encoding="utf-8"))
         plan = {}
         for key, value in data.items():
             if not isinstance(value, dict):
                 continue
-            entry = {k: str(value[k]).strip() for k in ("status", "about") if isinstance(value.get(k), str)}
+            entry = {k: str(value[k]).strip() for k in PLAN_FIELDS if isinstance(value.get(k), str)}
             entry = {k: v for k, v in entry.items() if v}
             if entry:
                 plan[str(key)] = entry
