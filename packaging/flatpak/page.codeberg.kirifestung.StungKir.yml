@@ -18,6 +18,8 @@ finish-args:
   - --filesystem=xdg-run/speech-dispatcher:ro
   # стук кубиков и звон монетки
   - --socket=pulseaudio
+  # «Выложить на сайт»: в интернет - только по этой кнопке, к GitHub
+  - --share=network
 cleanup-commands:
   - /app/cleanup-BaseApp.sh
 modules:
