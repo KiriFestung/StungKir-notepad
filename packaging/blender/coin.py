@@ -4,8 +4,7 @@
 по рисунку, поле - индиго-эмаль, свет и отражения настоящие. Запуск для обеих сторон:
 blender -b -P packaging/blender/coin.py -- packaging/art-src/coin-heads.png stungkir/art/coin-heads.png
 blender -b -P packaging/blender/coin.py -- packaging/art-src/coin-tails.png stungkir/art/coin-tails.png figure
-(figure - фигура в индиго тоже выпуклая, как ласка на решке; pin - иконка-значок:
-blender -b -P packaging/blender/coin.py -- packaging/art-src/app-icon.png stungkir/art/app-icon.png pin)."""
+(figure - фигура в индиго тоже выпуклая, как ласка на решке)."""
 import sys
 
 import bpy
@@ -14,7 +13,7 @@ from mathutils import Vector
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 SRC, OUT = argv[0], argv[1]
-MODE = argv[2] if len(argv) > 2 else ""                   # figure - ласка на решке выпуклая; pin - значок целиком
+MODE = argv[2] if len(argv) > 2 else ""                   # figure - ласка на решке тоже выпуклая
 N = 512
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -35,8 +34,6 @@ radius = np.hypot(xx - N / 2, yy - N / 2) / (N / 2)
 figure = gold.copy()
 if MODE == "figure":
     figure = np.maximum(figure, ((b > r) & (a > 0.5) & (radius < 0.84) & ((r + g + b) / 3 < 0.5)) * 0.85)
-if MODE == "pin":                                           # значок: вся фигура - эмаль, кант - золото повыше
-    figure = np.maximum(figure, (a > 0.5) * 0.7)
 height = np.clip(blur(figure, 2.6), 0, 1) ** 0.7              # мягкий скат края, как у чеканки
 # цвет без нарисованных бликов: золото - ровное, индиго - ровное, мелочь (глаз) - как в рисунке
 light = (r + g + b) / 3
@@ -87,7 +84,7 @@ metal = image_node("metal")
 nt.links.new(metal.outputs["Color"], bsdf.inputs["Metallic"])
 rough = nt.nodes.new("ShaderNodeMapRange")                  # золото 0.28, эмаль 0.12 (гладкая)
 rough.inputs["To Min"].default_value = 0.12
-rough.inputs["To Max"].default_value = 0.36 if MODE == "pin" else 0.3     # у иконки золото матовее: светлый кант виден и мелким
+rough.inputs["To Max"].default_value = 0.3
 nt.links.new(metal.outputs["Color"], rough.inputs["Value"])
 nt.links.new(rough.outputs["Result"], bsdf.inputs["Roughness"])
 noise = nt.nodes.new("ShaderNodeTexNoise")                  # чуть потёртый металл
