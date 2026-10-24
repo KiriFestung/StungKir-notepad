@@ -9,7 +9,7 @@ from PySide6.QtCore import QTimer
 
 from . import config as C
 from .textutil import plural, signed, words_label
-from .storage import load_stats, save_goals, save_marks, save_stats, streaks
+from .storage import load_stats, save_goals, save_marks, save_plan, save_stats, streaks
 from .dialogs import ask_int
 from .windows import StatsDialog
 
@@ -194,13 +194,14 @@ class ProgressMixin:
         self.update_status()
 
     def _move_keys(self, old, new):
-        """После переименования или переноса цели и позиции едут вместе с файлом."""
+        """После переименования или переноса цели, позиции и план главы едут вместе с файлом."""
         old_key, new_key = self._position_key(old), self._position_key(new)
-        for store in (self.chapter_goals, self.positions):
+        for store in (self.chapter_goals, self.positions, self.plan):
             for key in list(store):
                 if key == old_key or key.startswith(old_key + "/"):
                     store[new_key + key[len(old_key):]] = store.pop(key)
         save_goals(self.chapter_goals)
+        save_plan(self.plan)
         self.settings.setValue("positions", json.dumps(self.positions, ensure_ascii=False))
 
     def store_stats(self):

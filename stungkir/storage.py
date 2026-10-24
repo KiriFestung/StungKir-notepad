@@ -942,6 +942,35 @@ def save_goals(goals):
         report_problem("Не сохранились цели глав", error)
 
 
+def load_plan():
+    """{глава (путь внутри StungKir): {"status": код, "about": о чём глава}} - для «Плана книги»."""
+    try:
+        data = json.loads((C.service_path(C.PLAN_FILE)).read_text(encoding="utf-8"))
+        plan = {}
+        for key, value in data.items():
+            if not isinstance(value, dict):
+                continue
+            entry = {k: str(value[k]).strip() for k in ("status", "about") if isinstance(value.get(k), str)}
+            entry = {k: v for k, v in entry.items() if v}
+            if entry:
+                plan[str(key)] = entry
+        return plan
+    except FileNotFoundError:
+        return {}
+    except (OSError, ValueError, AttributeError) as error:
+        report_problem("Файл плана книги повреждён", error)
+        return {}
+
+
+def save_plan(plan):
+    clean = {key: entry for key, entry in plan.items() if entry}
+    try:
+        write_atomic(C.service_path(C.PLAN_FILE),
+                     json.dumps(clean, ensure_ascii=False, sort_keys=True, indent=1).encode("utf-8"))
+    except OSError as error:
+        report_problem("Не сохранился план книги", error)
+
+
 def load_names():
     try:
         names = json.loads((C.service_path(C.NAMES_FILE)).read_text(encoding="utf-8"))

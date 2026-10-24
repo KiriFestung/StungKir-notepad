@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QAbstractItemView, QApplication, QFileDialog, QMes
 
 from . import config as C
 from .style import fade, rounded_menu
-from .textutil import WORD_RE, is_board, is_table, is_timeline, table_to_text, words_label
+from .textutil import WORD_RE, is_board, is_prose, is_table, is_timeline, table_to_text, words_label
 from .trash import DAYS as TRASH_DAYS, TrashDialog, move_to_trash, restore as restore_from_trash
 from .conflicts import NOT_TEXT_HINT
 from .storage import bad_name_reason, conflict_original, is_text_file, keep_raw_copy, name_clash
@@ -260,6 +260,7 @@ class FilesMixin:
         self.watch_dirs()
         self.watch_current()
         self.rebuild_lore()
+        self.mark_tree_status()
         self.check_conflicts(quiet=first_run)        # новые конфликты - плашкой; при запуске - чуть позже
 
     def select_in_tree(self):
@@ -916,6 +917,10 @@ class FilesMixin:
             menu.addAction("Открыть рядом" + self.hk("side"), lambda: self.open_beside(path))
             menu.addAction("Версии…", lambda: self.show_versions(path))
             menu.addAction("Цель главы…", lambda: self.set_chapter_goal(path))
+            if is_prose(path) and path.parent.name not in self.lore_cfg["categories"]:
+                menu.addSeparator()
+                self.plan_menu(menu, path)
+                menu.addSeparator()
             if path.parent.name in self.lore_cfg["categories"] and path.suffix == ".txt":
                 menu.addAction("Сохранить как шаблон…", lambda: self.save_as_template(path))
         menu.addAction("Переименовать", lambda: self.rename(path))

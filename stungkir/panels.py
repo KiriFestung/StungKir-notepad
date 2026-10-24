@@ -20,6 +20,7 @@ from .storage import (
     lock_path,
 )
 from .windows import load_config_raw
+from .plan import StatusDelegate
 from .widgets import FileTree, FoxWheel, GoalStrip, SoftButton
 from .sample import has_sample
 
@@ -84,6 +85,8 @@ class PanelsMixin:
             ("Версии файла", self.show_versions, "Прошлые сохранения этой главы", "versions"),
             ("Сравнить с версией", lambda: self.compare_with_version(), "Прошлая версия рядом с текстом, "
              "ушедшее подсвечено" + self.hk("compare"), "split"),
+            ("План книги", lambda: self.show_plan(), "Статусы глав, о чём они и сколько слов" + self.hk("plan"),
+             "check"),
             ("Собрать книгу", self.compile_book, "В PDF, Word, EPUB или один текстовый файл", "book"),
         ]:
             self._button(text, callback, layout, tip, icon)
@@ -105,6 +108,7 @@ class PanelsMixin:
         layout.addSpacing(6)
         self._title("Категории", layout)
         self.tree = FileTree(self.on_drop)
+        self.tree.setItemDelegate(StatusDelegate(self.tree))      # точка статуса главы справа
         self.tree.setHeaderHidden(True)
         # стрелки рисуем сами, чтобы выделение было одной скруглённой плашкой
         self.tree.setRootIsDecorated(False)

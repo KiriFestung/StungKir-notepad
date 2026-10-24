@@ -553,6 +553,7 @@ def save_config(config):
 ORDER_FILE = ".order"
 STATS_FILE = ".stats.json"
 GOALS_FILE = ".goals.json"
+PLAN_FILE = ".plan.json"         # план книги: глава -> статус и о чём она
 MARKS_FILE = ".days.json"
 CRUTCHES_FILE = ".crutches.json"
 DEADLINES_FILE = ".deadlines.json"  # дедлайны книг: категория -> слов к дате   # мои штампы: слова-костыли автора          # дни, отмеченные «писал» вручную
@@ -563,7 +564,7 @@ LOCK_FILE = ".lock.json"
 # Имена слева - как было раньше (прямо в StungKir); так они и записываются в точки возврата
 SERVICE_DIR = ".stungkir"
 LEGACY_NAMES = {".stats.json": "stats.json", ".goals.json": "goals.json", ".days.json": "days.json",
-                ".crutches.json": "crutches.json", ".deadlines.json": "deadlines.json",
+                ".crutches.json": "crutches.json", ".plan.json": "plan.json", ".deadlines.json": "deadlines.json",
                 ".names.json": "names.json", ".lock.json": "lock.json", ".lore.json": "lore.json",
                 ".dictionary.txt": "dictionary.txt", ".sample.json": "sample.json", ".versions": "versions",
                 ".notes": "notes", ".trash": "trash", ".templates": "templates", ".covers": "covers"}

@@ -17,7 +17,7 @@ from .importers import (
 from .lore import load_lore_config
 from .snapshots import SnapshotError, delete_snapshot, make_snapshot, restore_snapshot
 from .storage import (
-    append_to_order, load_goals, load_names, load_order, notes_path, os_message, save_text, unique_path,
+    append_to_order, load_goals, load_names, load_order, load_plan, notes_path, os_message, save_text, unique_path,
 )
 from .textutil import plural
 
@@ -189,6 +189,7 @@ class ProjectMixin:
         self.highlighter.set_names(self.names)
         self.lore_cfg = load_lore_config()
         self.chapter_goals = load_goals()
+        self.plan = load_plan()
         current = self.path
         self.path = None
         self.set_modified(False)
