@@ -33,8 +33,13 @@ class Screens(WindowCase):
         create_sample()
         from stungkir.app import load_bundled_fonts
         load_bundled_fonts()                     # шрифты программы - как у человека, а не только системные
+        from datetime import date, timedelta
+        from stungkir.storage import save_stats
+        today = date.today()                     # пробная статистика за год - на диск: окно читает её оттуда
+        save_stats({(today - timedelta(days=n)).isoformat(): (n * 37) % 1400 for n in range(0, 365, 2)})
         w = self.window()
         w.resize(1280, 800)
+        w.choose_theme(C.DEFAULT_THEME)          # основная тема, как у человека (в проверках - своя)
         w.open_path(next(C.ROOT.rglob("Глава 1.txt")))          # первая глава пробной книги
         wait(0.5)
         number = iter(range(1, 100))
@@ -88,10 +93,6 @@ class Screens(WindowCase):
             return 0
 
         def stats_year():
-            from datetime import date, timedelta
-            today = date.today()
-            for n in range(0, 365, 2):
-                w.stats.setdefault((today - timedelta(days=n)).isoformat(), (n * 37) % 1400)
             dialogs.Sheet.exec = year
             w.show_stats()
         self.step("статистика за год", stats_year)
