@@ -1,6 +1,6 @@
 # StungKir - писательский блокнот. Copyright (C) 2026 KiriFesTung
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Кадры ласки из её же рисунка (art/weasel.png): лапы у рисунка срезаются, тело гнётся
+"""Кадры ласки из её же рисунка (packaging/art-src/weasel.png): лапы у рисунка срезаются, тело гнётся
 (спина дугой - вытянулась в струну), морда, уши и хвост - те же. Лапы дорисовываются в том же стиле
 и двигаются по-настоящему: бег прыжками, как у живых ласок, и прыжок радости.
 python3 packaging/anim/weasel.py [папка art] - перезаписывает anim/weasel-run/*, anim/weasel-cheer/*."""
@@ -9,6 +9,8 @@ import math
 import os
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtCore import QPointF, QRectF, Qt  # noqa: E402
@@ -247,18 +249,25 @@ def cheer_frames(body):
 
 
 def main(art):
+    """Кадры - из исходного плоского рисунка (packaging/art-src/weasel.png), потом объём (polish.py)."""
+    from PIL import Image
+    from polish import polish
     app = QGuiApplication.instance() or QGuiApplication([])
     art = Path(art)
-    sprite = QImage(str(art / "weasel.png"))
+    sprite = QImage(str(Path(__file__).resolve().parents[1] / "art-src" / "weasel.png"))
     body = body_image(sprite)
     run_dir, cheer_dir = art / "anim" / "weasel-run", art / "anim" / "weasel-cheer"
     for old in list(run_dir.glob("weasel-*.png")) + list(cheer_dir.glob("weasel-cheer_*.png")):
         old.unlink()
+
+    def save(image, path):
+        image.save(str(path))
+        polish(Image.open(path), 2 / 3).save(path, optimize=True)
     for i, image in enumerate(run_frames(body)):
-        image.save(str(run_dir / f"weasel-run_{i:02d}.png"))
-    stand_frame(sprite).save(str(run_dir / "weasel-stand.png"))
+        save(image, run_dir / f"weasel-run_{i:02d}.png")
+    save(stand_frame(sprite), run_dir / "weasel-stand.png")
     for i, image in enumerate(cheer_frames(body)):
-        image.save(str(cheer_dir / f"weasel-cheer_{i:02d}.png"))
+        save(image, cheer_dir / f"weasel-cheer_{i:02d}.png")
     del app
 
 
