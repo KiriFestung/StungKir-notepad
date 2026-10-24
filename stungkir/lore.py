@@ -7,7 +7,7 @@ import json
 import re
 
 from . import config as C
-from .textutil import CYR_PART, MARKER_RE, levenshtein, markup_html, name_key, parse_table
+from .textutil import CYR_PART, MARKER_RE, levenshtein, markup_html, name_key, parse_table, plural
 from .storage import report_problem, write_atomic
 
 
@@ -18,6 +18,9 @@ LORE_ENDINGS = frozenset("""
 """.split()) | {""}
 LORE_ALIASES_RE = re.compile(r"^\s*(?:также|ещё|еще|другие имена|синонимы)\s*:\s*(.+)$", re.IGNORECASE)
 LORE_ALIAS_COLUMNS = {"также", "другие имена", "синонимы"}
+# «Родилась: 1203» в заметке - год рождения в летоисчислении книги; по нему считается возраст в главе
+BIRTH_RE = re.compile(r"^\s*(?:родил(?:ся|ась|ось|ись)|год рождения|рождение)\s*:?\s*(-?\d+(?:[.,]\d+)?)",
+                      re.IGNORECASE)
 LORE_NOTE_LIMIT = 420
 LORE_GAP_RE = re.compile(r"[\s\-]+")
 # слово термина: буквы любого алфавита и цифры («Сектор-7», «X-17»), ударение внутри слова
@@ -70,6 +73,25 @@ def split_aliases(text):
     return [a.strip() for a in re.split(r"[,;]", text) if a.strip()]
 
 
+def birth_year(text):
+    """Год рождения из строки «Родился: 1203» (или «Год рождения: -40»); нет такой строки - None."""
+    for line in text.replace("\r\n", "\n").split("\n"):
+        found = BIRTH_RE.match(line)
+        if found:
+            return float(found.group(1).replace(",", "."))
+    return None
+
+
+def age_label(age):
+    """Сколько лет герою в главе: «17 лет» или «до рождения ещё 3 года»."""
+    import math
+    years = math.floor(age)
+    if years < 0:
+        later = -years
+        return f"до рождения ещё {later} {plural(later, 'год', 'года', 'лет')}"
+    return f"{years} {plural(years, 'год', 'года', 'лет')}"
+
+
 def lore_note(text):
     """Текст из справочника -> (короткая заметка, другие имена из строки «Также: …»)."""
     aliases, lines = [], []
@@ -89,11 +111,12 @@ def lore_note(text):
 class LoreTerm:
     """Термин мира: имя, другие имена, короткая заметка и откуда она."""
 
-    def __init__(self, name, note="", path=None, source="", aliases=()):
+    def __init__(self, name, note="", path=None, source="", aliases=(), born=None):
         self.name = name
         self.note = note
         self.path = path
         self.source = source
+        self.born = born        # год рождения из заметки или None
         self.aliases = [a for a in aliases if name_key(a) != name_key(name)]
 
 
@@ -119,13 +142,15 @@ def lore_terms_from_table(text, source, path):
     return terms
 
 
-def lore_tooltip(term, has_reference):
+def lore_tooltip(term, has_reference, age=None):
     head = f"<b>{html.escape(term.name)}</b>"
     if term.source:
         head += f"&nbsp;&nbsp;<span style='color:{C.DIM}'>{html.escape(term.source)}</span>"
     parts = [head]
     if term.note:
         parts.append("<br>".join(markup_html(line) for line in term.note.split("\n")))
+    if age is not None:
+        parts.append(f"<i>В этой главе: {html.escape(age_label(age))}</i>")
     if term.path is None:
         where = ("создай в справочнике файл с этим именем" if has_reference else
                  "сделай категорию справочником (правый клик по ней) и создай там файл с этим именем")

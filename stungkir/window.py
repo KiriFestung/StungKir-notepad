@@ -23,7 +23,7 @@ from .textutil import (
     WORD_RE, is_prose,
 )
 from .storage import (
-    MAIN_FILE, backup_path, files_in, load_goals, load_marks, load_names, load_stats, make_backup,
+    MAIN_FILE, backup_path, files_in, load_goals, load_marks, load_names, load_plan, load_stats, make_backup,
 )
 from .lore import Lore, load_lore_config
 from .dialogs import HotkeysDialog, show_error, show_warning
@@ -44,6 +44,7 @@ from .crutches import CrutchesMixin
 from .replace import ReplaceMixin
 from .presence import PresenceMixin
 from .deadline import DeadlineMixin
+from .plan import PlanMixin
 from .templates import TemplatesMixin
 from .rhythm import RhythmMixin
 from .timeline import TimelineView
@@ -59,7 +60,7 @@ from .speech import SpeechMixin
 
 # ---------------- главное окно ----------------
 class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin, ProjectMixin, CrutchesMixin,
-              ReplaceMixin, PresenceMixin, DeadlineMixin, TemplatesMixin, RhythmMixin, SpeechMixin,
+              ReplaceMixin, PresenceMixin, DeadlineMixin, PlanMixin, TemplatesMixin, RhythmMixin, SpeechMixin,
               SpeakersMixin, SafetyMixin, ConflictsMixin, SampleMixin, PanelsMixin, MarkupMixin, QMainWindow):
     def __init__(self):
         super().__init__()
@@ -87,6 +88,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         except ValueError:
             self.positions = {}
         self.chapter_goals = load_goals()
+        self.plan = load_plan()
         self._chapter_toasted = set()
         self.names = load_names()
         self.night_mode = self.settings.value("night_mode", "off")   # вечерние цвета теперь в «Цвета и темы»
@@ -274,7 +276,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
             "note": lambda: self.note_for_block(self.editor.textCursor().block()),
             "side": lambda: self.toggle_side(), "antistress": lambda: self.show_antistress(),
             "compare": lambda: self.compare_with_version(), "preview": lambda: self.show_preview(),
-            "lines": lambda: self.toggle_line_numbers(),
+            "lines": lambda: self.toggle_line_numbers(), "plan": lambda: self.show_plan(),
         }
         self.shortcuts = {}
         self.apply_hotkeys()

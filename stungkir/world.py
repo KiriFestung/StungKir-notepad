@@ -23,7 +23,7 @@ from .storage import (
     LockedFile, files_in, notes_path, read_text, report_problem, save_names,
     save_text,
 )
-from .lore import Lore, LoreTerm, lore_note, lore_terms_from_table, lore_tooltip, save_lore_config
+from .lore import Lore, LoreTerm, birth_year, lore_note, lore_terms_from_table, lore_tooltip, save_lore_config
 from .dialogs import NoteDialog, ask_text, show_warning
 
 
@@ -146,7 +146,7 @@ class WorldMixin:
                         add(term)
                 else:
                     note, aliases = lore_note(text)
-                    add(LoreTerm(f.stem, note, f, folder.name, aliases))
+                    add(LoreTerm(f.stem, note, f, folder.name, aliases, birth_year(text)))
         for name in self.names:
             add(LoreTerm(name))
         if self.lore.build(terms):
@@ -191,7 +191,10 @@ class WorldMixin:
 
     def _lore_tip(self, pos):
         term = self.lore_term_at(pos)
-        return lore_tooltip(term, bool(self.lore_categories())) if term else None
+        if term is None:
+            return None
+        year = self.story_year(self.path) if term.born is not None and self.path is not None else None
+        return lore_tooltip(term, bool(self.lore_categories()), None if year is None else year - term.born)
 
     def _lore_open(self, pos):
         term = self.lore_term_at(pos)

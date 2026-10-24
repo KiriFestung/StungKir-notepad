@@ -270,8 +270,9 @@ class CompileDialog(Sheet):
 
     SPACINGS = [1.0, 1.15, 1.25, 1.5, 2.0]
 
-    def __init__(self, parent, categories, current, author):
+    def __init__(self, parent, categories, current, author, skipped=()):
         super().__init__(parent, "Собрать книгу")
+        self.skipped = {str(p) for p in skipped}       # «не в книгу» из плана: сначала без галочки
         self.setMinimumSize(720, 600)
         self.store = QSettings(C.APP_ID, C.APP_ID)
         layout = self.content
@@ -398,7 +399,11 @@ class CompileDialog(Sheet):
             item = QListWidgetItem(f.stem)
             item.setData(Qt.UserRole, str(f))
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Checked)
+            if str(f) in self.skipped:
+                item.setCheckState(Qt.Unchecked)
+                item.setToolTip("В плане книги отмечена «не в книгу». Поставь галочку, если всё же нужна")
+            else:
+                item.setCheckState(Qt.Checked)
             self.chapters.addItem(item)
 
     def options(self):
