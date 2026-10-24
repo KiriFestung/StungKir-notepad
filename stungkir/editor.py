@@ -1038,7 +1038,7 @@ class LineNumbers(QWidget):
     """Номера строк слева от текста, как в обычном блокноте. Строка - это абзац (строка файла):
     номер стоит у первой строчки абзаца и не прыгает, когда меняется ширина окна или шрифт."""
 
-    GAP = 10    # от полосы с номерами до текста
+    GAP = 28    # от номеров до текста: подальше, чтобы не липли к буквам
     PAD = 8     # поля полосы по бокам от номера
 
     def __init__(self, editor):
@@ -1084,10 +1084,7 @@ class LineNumbers(QWidget):
         self.update()
 
     def paintEvent(self, _event):
-        painter = QPainter(self)
-        stripe = QColor(C.PANEL)
-        stripe.setAlphaF(0.6)       # своя картинка под текстом просвечивает
-        painter.fillRect(self.rect(), stripe)
+        painter = QPainter(self)      # без фона: только номера, под ними видно то же, что под текстом
         font = self._font()
         painter.setFont(font)
         metrics = QFontMetrics(font)
