@@ -241,7 +241,7 @@ class Die3D(QWidget):
         self.crits = True
         self.relabeled = 0               # сколько раз пришлось переписать грань (должно быть 0)
         self._bounces = 0
-        self.timer = QTimer(self)
+        self.timer = QTimer(self, timerType=Qt.PreciseTimer)
         self.timer.setInterval(self.FRAME_MS)
         self.timer.timeout.connect(self._frame)
 
@@ -614,7 +614,7 @@ class Shuffle(QLabel):
         font.setPointSize(22)
         font.setWeight(QFont.Black)
         self.setFont(font)
-        self.timer = QTimer(self)
+        self.timer = QTimer(self, timerType=Qt.PreciseTimer)
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self._step)
         self.options, self.final, self.steps, self.on_done = [], "", 0, None

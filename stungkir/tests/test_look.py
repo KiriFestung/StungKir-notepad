@@ -28,6 +28,23 @@ class FontsTest(unittest.TestCase):
             self.assertTrue(QFontDatabase.isSmoothlyScalable(family, "Regular") or
                             QFontDatabase.isSmoothlyScalable(family))
 
+    def test_windows_draws_letters_like_linux(self):
+        """На Windows - движок FreeType (мягкие буквы, как на Linux); заданный вручную QT_QPA_PLATFORM не трогается."""
+        import os
+        from unittest import mock
+        from stungkir.app import windows_font_engine
+        with mock.patch("sys.platform", "win32"), mock.patch.dict(os.environ, clear=False):
+            os.environ.pop("QT_QPA_PLATFORM", None)
+            windows_font_engine()
+            self.assertEqual(os.environ["QT_QPA_PLATFORM"], "windows:fontengine=freetype")
+            os.environ["QT_QPA_PLATFORM"] = "offscreen"
+            windows_font_engine()
+            self.assertEqual(os.environ["QT_QPA_PLATFORM"], "offscreen")
+        with mock.patch("sys.platform", "linux"), mock.patch.dict(os.environ, clear=False):
+            os.environ.pop("QT_QPA_PLATFORM", None)
+            windows_font_engine()
+            self.assertNotIn("QT_QPA_PLATFORM", os.environ)
+
 
 class LookWindowTest(WindowCase):
     def test_texture_applies_and_is_remembered(self):

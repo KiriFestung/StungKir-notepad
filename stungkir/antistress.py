@@ -36,7 +36,7 @@ class BubbleWrap(QWidget):
         self.popped_total = 0
         self.clock = time.monotonic
         self.popping = {}                       # пузырь -> когда лопнул (пока играет «лоп»)
-        self.pop_timer = QTimer(self)
+        self.pop_timer = QTimer(self, timerType=Qt.PreciseTimer)
         self.pop_timer.setInterval(33)
         self.pop_timer.timeout.connect(self._pop_tick)
         self.refill()
@@ -188,7 +188,7 @@ class SquishBall(QWidget):
         self.squash_axis = 1                   # 1 - сплющен сверху вниз (пол), 0 - с боков (стенка)
         self.press_point = QPointF()
         self.held = QElapsedTimer()
-        self.grow = QTimer(self, interval=16)
+        self.grow = QTimer(self, interval=16, timerType=Qt.PreciseTimer)
         self.grow.timeout.connect(self._grow)
         self.spring = QVariantAnimation(self)
         self.spring.setDuration(900)
@@ -203,7 +203,7 @@ class SquishBall(QWidget):
         self.grab_offset = QPointF()
         self.trail = []                        # последние точки мыши - из них скорость броска
         self.clock = QElapsedTimer()
-        self.physics = QTimer(self, interval=16)
+        self.physics = QTimer(self, interval=16, timerType=Qt.PreciseTimer)
         self.physics.timeout.connect(self._step)
 
     # ---- размеры ----
@@ -424,7 +424,7 @@ class Spinner(QWidget):
         self.clock = QElapsedTimer()
         self.hand = QElapsedTimer()
         self.since_sound = 0.0
-        self.timer = QTimer(self, interval=16)
+        self.timer = QTimer(self, interval=16, timerType=Qt.PreciseTimer)
         self.timer.timeout.connect(self._step)
 
     def rpm(self):
@@ -796,7 +796,7 @@ class StoneSkip(QWidget):
         self.clock = QElapsedTimer()
         self.clock.start()
         self._last = 0.0
-        self.timer = QTimer(self, interval=16)
+        self.timer = QTimer(self, interval=16, timerType=Qt.PreciseTimer)
         self.timer.timeout.connect(self._frame)
 
     # ---- перевод метров в точки экрана: вид из-за спины ----
@@ -1640,7 +1640,7 @@ class Blocks(QWidget):
         self.best = 0
         self.paused = True                      # стартует, когда окно с игрой открыли и нажали клавишу
         self.flash = {}                         # убранные линии вспыхивают
-        self.timer = QTimer(self)
+        self.timer = QTimer(self, timerType=Qt.PreciseTimer)
         self.timer.timeout.connect(self._tick)
 
     def start(self):

@@ -61,7 +61,7 @@ class Effects:
         self.widget = widget
         self.clock = clock or time.monotonic
         self.live = []
-        self.timer = QTimer(widget)
+        self.timer = QTimer(widget, timerType=Qt.PreciseTimer)
         self.timer.setInterval(1000 // self.FPS)
         self.timer.timeout.connect(self._tick)
 

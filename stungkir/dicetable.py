@@ -81,7 +81,7 @@ class DiceTable(QWidget):
         self.on_done = None
         self.on_sound = None                      # (имя, сила)
         self.relabeled = 0
-        self.timer = QTimer(self)
+        self.timer = QTimer(self, timerType=Qt.PreciseTimer)
         self.timer.setInterval(16)
         self.timer.timeout.connect(self._frame)
         from .artwork import Effects
