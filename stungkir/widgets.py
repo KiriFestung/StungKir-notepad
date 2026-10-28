@@ -265,7 +265,7 @@ class FoxWheel(QWidget):
         self.sparks = []         # [x, y, vx, vy, жизнь]
         self.clock = QElapsedTimer()
         self.clock.start()
-        self.frames = QTimer(self, interval=40)
+        self.frames = QTimer(self, interval=40, timerType=Qt.PreciseTimer)
         self.frames.timeout.connect(self._frame)
         self.frames.start()
 

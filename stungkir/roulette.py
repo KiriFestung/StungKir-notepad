@@ -244,7 +244,7 @@ class Revolver(QWidget):
         # нарисованные кадры: «бах» (art/anim/bang) и пыль из гнезда при щелчке (art/anim/dust)
         self.effect = None                         # (имя, кадров, номер кадра)
         self.effect_clock = QElapsedTimer()
-        self.effect_timer = QTimer(self, interval=16)
+        self.effect_timer = QTimer(self, interval=16, timerType=Qt.PreciseTimer)
         self.effect_timer.timeout.connect(self._effect_step)
         self.material = "metal"                    # барабан - металлический (дуб и кость ему не идут)
 

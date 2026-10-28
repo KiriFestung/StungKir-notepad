@@ -30,7 +30,15 @@ def load_bundled_fonts():
             QFontDatabase.addApplicationFont(str(font))
 
 
+def windows_font_engine():
+    """На Windows буквы рисует тот же FreeType, что и на Linux: мягче, без цветной каймы ClearType -
+    иначе шрифт выглядит резче и «плывёт». Если QT_QPA_PLATFORM задан вручную - не трогаем."""
+    if sys.platform == "win32" and not os.environ.get("QT_QPA_PLATFORM"):
+        os.environ["QT_QPA_PLATFORM"] = "windows:fontengine=freetype"
+
+
 def main():
+    windows_font_engine()
     if "--test" in sys.argv:
         from .tests.run import main as run_tests
         return run_tests("-v" in sys.argv)
