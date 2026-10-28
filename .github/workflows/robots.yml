@@ -82,6 +82,7 @@ jobs:
           FUZZ_STEPS=$(( ${{ steps.plan.outputs.steps }} * 2 )) python -m unittest stungkir.tests.test_fuzz 2>&1 | tee fuzz.log
       - uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
         with:
           name: robots-${{ steps.plan.outputs.seed }}
           path: "*.log"

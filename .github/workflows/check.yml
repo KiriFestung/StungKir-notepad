@@ -72,10 +72,11 @@ jobs:
           Get-Content screens\report.txt -ErrorAction SilentlyContinue
       - uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
         with:
           name: StungKir-Windows-screens
           path: screens/
-          retention-days: 30
+          retention-days: 7
           if-no-files-found: ignore
       - name: Отчёт проверок
         if: always()
@@ -96,10 +97,13 @@ jobs:
           $msg = ($lines -join "%0A") -replace "`r", ""
           Write-Output "::error title=Windows::$msg"
       - uses: actions/upload-artifact@v4
+        # место под артефакты у закрытого репозитория маленькое (~500 МБ), а готовые файлы и так в «Релизах»:
+        # держим недолго, и если места нет - сборка не падает
+        continue-on-error: true
         with:
           name: StungKir-Windows
           path: dist/StungKir-Setup-*.exe
-          retention-days: 30
+          retention-days: 3
       - name: Переносная версия для флешки
         shell: pwsh
         run: |

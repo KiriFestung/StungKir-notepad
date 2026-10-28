@@ -43,9 +43,13 @@ jobs:
       - name: Имя файла
         run: cp android/app/build/outputs/apk/release/app-release.apk StungKir-Android.apk
       - uses: actions/upload-artifact@v4
+        # место под артефакты у закрытого репозитория маленькое (~500 МБ), а готовые файлы и так в «Релизах»:
+        # держим недолго, и если места нет - сборка не падает
+        continue-on-error: true
         with:
           name: StungKir-Android
           path: StungKir-Android.apk
+          retention-days: 3
       - name: Выложить APK в «Релизы» (удобно качать прямо с телефона)
         if: github.ref == 'refs/heads/main'
         env:
@@ -64,6 +68,7 @@ jobs:
             --notes "Последняя сборка приложения для телефона. Как поставить и связать с компьютером: docs/ТЕЛЕФОН.md"
       - uses: actions/upload-artifact@v4
         if: failure()
+        continue-on-error: true
         with:
           name: android-test-report
           path: android/app/build/reports/
