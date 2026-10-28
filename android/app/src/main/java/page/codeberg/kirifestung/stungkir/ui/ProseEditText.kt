@@ -13,8 +13,11 @@ import android.text.TextWatcher
 import android.text.style.CharacterStyle
 import android.text.style.MetricAffectingSpan
 import android.util.TypedValue
+import android.view.GestureDetector
 import android.view.Gravity
+import android.view.MotionEvent
 import android.widget.EditText
+import android.widget.OverScroller
 import page.codeberg.kirifestung.stungkir.logic.TextRules
 import page.codeberg.kirifestung.stungkir.logic.TextRules.Kind
 import page.codeberg.kirifestung.stungkir.logic.UndoStack
@@ -66,6 +69,19 @@ class ProseEditText(context: Context) : EditText(context) {
     private var removed = ""
     private var oldParagraphWords = 0
     private var typedTo = -1
+
+    // Инерция прокрутки: у обычного поля Android её нет - текст едет только за пальцем.
+    // Быстрый свайп - текст катится дальше и плавно тормозит, как лента; касание - сразу стоп.
+    private val flinger = OverScroller(context)
+    private val swipes = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+        override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+            val bottom = maxScrollY()
+            if (bottom <= 0) return false
+            flinger.fling(scrollX, scrollY, 0, -velocityY.toInt(), 0, 0, 0, bottom)
+            postInvalidateOnAnimation()
+            return true
+        }
+    })
 
     init {
         inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or
@@ -195,6 +211,26 @@ class ProseEditText(context: Context) : EditText(context) {
             }
         }
         return super.onTextContextMenuItem(id)
+    }
+
+    private fun maxScrollY(): Int {
+        val l = layout ?: return 0
+        return (l.height + totalPaddingTop + totalPaddingBottom - height).coerceAtLeast(0)
+    }
+
+    @SuppressLint("ClickableViewAccessibility")      // касания идут дальше в само поле (super), щелчки работают как всегда
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) flinger.forceFinished(true)
+        swipes.onTouchEvent(event)
+        return super.onTouchEvent(event)
+    }
+
+    override fun computeScroll() {
+        super.computeScroll()
+        if (flinger.computeScrollOffset()) {
+            scrollTo(scrollX, flinger.currY.coerceIn(0, maxScrollY()))
+            postInvalidateOnAnimation()
+        }
     }
 
     override fun onSelectionChanged(selStart: Int, selEnd: Int) {
