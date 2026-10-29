@@ -116,4 +116,20 @@ class ConflictTest {
         assertEquals("с телефона", ch.readText())
         assertTrue(b.versions(ch).any { it.readText() == "лишнее" })
     }
+
+    @Test fun chapterGoesToTrashLikeOnDesktop() {
+        val b = Book(Files.createTempDirectory("stungkir").toFile())
+        val cat = b.createCategory("Тервена")
+        val ch = b.createChapter(cat, "Глава 1")
+        ch.writeText("Кев ушёл.")
+        val entry = b.moveToTrash(ch, LocalDateTime.of(2026, 10, 29, 9, 5, 0))
+        assertFalse(ch.exists())
+        assertEquals(File(b.root, ".stungkir/trash"), entry.parentFile)
+        assertTrue(entry.name.matches(Regex("20261029-090500-[0-9a-f]{6}")))
+        assertEquals("Кев ушёл.", File(entry, "Глава 1.txt").readText())
+        val meta = Json.parse(File(entry, "meta.json").readText()) as Map<*, *>
+        assertEquals("Тервена/Глава 1.txt", meta["from"] as String)
+        assertEquals("2026-10-29T09:05:00", meta["when"] as String)        // секунды всегда, как у компьютера
+        assertEquals("file", meta["kind"] as String)
+    }
 }

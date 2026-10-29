@@ -126,6 +126,28 @@ class Book(val root: File) {
         conflict.delete()
     }
 
+    /**
+     * Глава - в корзину, так же, как на компьютере: .stungkir/trash/<время>-<случайное>/глава.txt и meta.json
+     * (откуда и когда). Синхронизация привезёт её на компьютер - там она 30 дней лежит в «Корзине»
+     * и возвращается одной кнопкой. Версии главы остаются: вернулась глава - вернулась и история.
+     */
+    fun moveToTrash(file: File, now: LocalDateTime = LocalDateTime.now()): File {
+        val stamp = now.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
+        val tail = (1..6).map { "0123456789abcdef"[kotlin.random.Random.nextInt(16)] }.joinToString("")
+        val entry = File(File(service, "trash"), "$stamp-$tail")
+        if (!entry.mkdirs()) throw java.io.IOException("Не получилось создать папку в корзине")
+        val from = file.relativeTo(root).invariantSeparatorsPath
+        val whenText = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
+        File(entry, "meta.json").writeText(
+            "{\"from\": ${Json.quote(from)}, \"when\": \"$whenText\", \"kind\": \"file\"}", Charsets.UTF_8,
+        )
+        if (!file.renameTo(File(entry, file.name))) {
+            entry.deleteRecursively()
+            throw java.io.IOException("Не получилось перенести главу в корзину")
+        }
+        return entry
+    }
+
     // ---------------- чтение и запись ----------------
     sealed class Read {
         data class Text(val text: String) : Read()

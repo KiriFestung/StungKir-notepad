@@ -29,6 +29,22 @@ class TrashStoreTest(Sandbox):
         back = T.restore(entry)
         self.assertEqual(back.name, "Глава 1 (из корзины).txt")
 
+    def test_chapter_trashed_on_phone_comes_back(self):
+        """Телефон кладёт главу в корзину так же (Book.moveToTrash): компьютер её видит и возвращает."""
+        path = self.chapter("Тервена", "Глава 1", "Кев ушёл.")
+        S.snapshot(path, "До удаления")
+        entry = C.service_path(".trash") / "20261029-090500-a1b2c3"
+        entry.mkdir(parents=True)
+        (entry / T.META).write_text('{"from": "Тервена/Глава 1.txt", "when": "2026-10-29T09:05:00", "kind": "file"}',
+                                    encoding="utf-8", newline="\n")
+        path.replace(entry / path.name)
+        [(found, item, origin, when)] = T.trash_entries()
+        self.assertEqual((found, item.name, origin, when), (entry, "Глава 1.txt", "Тервена/Глава 1.txt",
+                                                            datetime(2026, 10, 29, 9, 5)))
+        self.assertEqual(T.restore(entry), path)
+        self.assertEqual(path.read_text(encoding="utf-8"), "Кев ушёл.")
+        self.assertTrue(S.versions_dir(path).exists())
+
     def test_folder_and_purge(self):
         self.chapter("Черновики", "Набросок", "…")
         T.move_to_trash(self.tmp / "StungKir" / "Черновики")
