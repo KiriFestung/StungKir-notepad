@@ -118,7 +118,7 @@ class ConflictTest {
     }
 
     @Test fun chapterGoesToTrashLikeOnDesktop() {
-        val b = book()
+        val b = Book(Files.createTempDirectory("stungkir").toFile())
         val cat = b.createCategory("Тервена")
         val ch = b.createChapter(cat, "Глава 1")
         ch.writeText("Кев ушёл.")
@@ -128,8 +128,8 @@ class ConflictTest {
         assertTrue(entry.name.matches(Regex("20261029-090500-[0-9a-f]{6}")))
         assertEquals("Кев ушёл.", File(entry, "Глава 1.txt").readText())
         val meta = Json.parse(File(entry, "meta.json").readText()) as Map<*, *>
-        assertEquals("Тервена/Глава 1.txt", meta["from"])
-        assertEquals("2026-10-29T09:05:00", meta["when"])                  // секунды всегда, как у компьютера
-        assertEquals("file", meta["kind"])
+        assertEquals("Тервена/Глава 1.txt", meta["from"] as String)
+        assertEquals("2026-10-29T09:05:00", meta["when"] as String)        // секунды всегда, как у компьютера
+        assertEquals("file", meta["kind"] as String)
     }
 }
