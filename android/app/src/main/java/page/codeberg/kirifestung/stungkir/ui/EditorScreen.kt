@@ -75,6 +75,8 @@ fun EditorScreen(state: AppState, file: File) {
     var canUndo by remember { mutableStateOf(false) }
     var canRedo by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
+    var askTrash by remember { mutableStateOf(false) }
+    val gone = remember(file) { booleanArrayOf(false) }      // глава ушла в корзину - больше не сохранять (иначе файл вернётся)
 
     val editor = remember(file) {
         ProseEditText(context).apply {
@@ -86,6 +88,7 @@ fun EditorScreen(state: AppState, file: File) {
     }
 
     fun flush(version: Boolean = false) {
+        if (gone[0]) return
         try {
             session.save(editor.text.toString(), session.edits(), version)
         } catch (e: Exception) {
@@ -129,6 +132,7 @@ fun EditorScreen(state: AppState, file: File) {
         while (true) {
             delay(500)
             ticks++
+            if (gone[0]) break
             if (session.dueSave()) {
                 val text = editor.text.toString()
                 val seen = session.edits()
@@ -174,6 +178,7 @@ fun EditorScreen(state: AppState, file: File) {
                         })
                         DropdownMenuItem(text = { Text("Статистика") }, onClick = { menu = false; state.open(Screen.Stats) })
                         DropdownMenuItem(text = { Text("Настройки") }, onClick = { menu = false; state.open(Screen.Settings) })
+                        DropdownMenuItem(text = { Text("Удалить главу…") }, onClick = { menu = false; askTrash = true })
                     }
                 }
             },
@@ -181,6 +186,18 @@ fun EditorScreen(state: AppState, file: File) {
         if (goal > 0) GoalBar(today / goal.toFloat(), Modifier.fillMaxWidth())
         AndroidView(factory = { editor }, modifier = Modifier.weight(1f).fillMaxWidth())
         SymbolRow(editor, canUndo, canRedo)
+    }
+    if (askTrash) {
+        TrashDialog(file.nameWithoutExtension, onDismiss = { askTrash = false }) {
+            askTrash = false
+            flush(version = true)                 // последние правки - в версии: вернётся глава, вернётся и текст
+            gone[0] = true
+            if (trashChapter(state, file, context)) {
+                state.back()
+            } else {
+                gone[0] = false                   // не вышло - глава на месте, сохраняем дальше
+            }
+        }
     }
 }
 

@@ -14,10 +14,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -127,4 +129,31 @@ fun days(n: Int): String {
         else -> "дней"
     }
     return "$n $word"
+}
+
+/** Спросить перед удалением главы: она уходит в корзину, вернуть можно на компьютере. */
+@Composable
+fun TrashDialog(name: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Удалить главу?") },
+        text = { Text("«$name» уйдёт в корзину. На компьютере она 30 дней лежит в корзине («Ещё» → «Файлы и импорт» → «Корзина»), оттуда её можно вернуть вместе с версиями.") },
+        confirmButton = { TextButton(onClick = onConfirm) { Text("В корзину") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } },
+    )
+}
+
+/** Глава - в корзину; «Продолжить» на главном экране о ней забывает. true - получилось. */
+fun trashChapter(state: AppState, file: java.io.File, context: android.content.Context): Boolean {
+    val book = state.book ?: return false
+    return try {
+        book.moveToTrash(file)
+        if (state.prefs.lastChapter == file.absolutePath) state.prefs.lastChapter = null
+        state.version++
+        toast(context, "«${file.nameWithoutExtension}» в корзине")
+        true
+    } catch (e: Exception) {
+        toast(context, "Не получилось удалить: ${e.message}")
+        false
+    }
 }

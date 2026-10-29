@@ -1,9 +1,11 @@
 // StungKir для Android. Copyright (C) 2026 KiriFesTung, GPL-3.0-or-later
 package page.codeberg.kirifestung.stungkir.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -201,12 +203,14 @@ fun LibraryScreen(state: AppState) {
 
 private data class Entry(val file: File, val kind: Book.Kind, val words: Int?, val locked: Boolean)
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CategoryScreen(state: AppState, folder: File) {
     val book = state.book ?: return
     val c = MaterialTheme.colorScheme
     val context = LocalContext.current
     var adding by remember { mutableStateOf(false) }
+    var trashing by remember { mutableStateOf<File?>(null) }      // долгое нажатие на главу - удалить
     val entries by produceState(initialValue = emptyList<Entry>(), folder, state.version) {
         value = withContext(Dispatchers.IO) {
             book.files(folder).map { file ->
@@ -234,14 +238,18 @@ fun CategoryScreen(state: AppState, folder: File) {
                 }
                 items(entries, key = { it.file.absolutePath }) { e ->
                     Row(
-                        Modifier.fillMaxWidth().clickable {
-                            when {
-                                e.kind == Book.Kind.CONFLICT -> state.open(Screen.Conflict(e.file))
-                                e.kind == Book.Kind.DESKTOP_ONLY -> toast(context, "Таблицы, доски и ленты времени пока открываются только на компьютере")
-                                e.locked -> toast(context, "Глава под паролем. Пароль на телефоне будет позже - пока открой её на компьютере")
-                                else -> state.open(Screen.Editor(e.file))
-                            }
-                        }.padding(horizontal = 16.dp, vertical = 13.dp),
+                        Modifier.fillMaxWidth().combinedClickable(
+                            onClick = {
+                                when {
+                                    e.kind == Book.Kind.CONFLICT -> state.open(Screen.Conflict(e.file))
+                                    e.kind == Book.Kind.DESKTOP_ONLY -> toast(context, "Таблицы, доски и ленты времени пока открываются только на компьютере")
+                                    e.locked -> toast(context, "Глава под паролем. Пароль на телефоне будет позже - пока открой её на компьютере")
+                                    else -> state.open(Screen.Editor(e.file))
+                                }
+                            },
+                            onLongClick = { if (e.kind == Book.Kind.CHAPTER) trashing = e.file },
+                            onLongClickLabel = "Удалить главу",
+                        ).padding(horizontal = 16.dp, vertical = 13.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
@@ -268,6 +276,12 @@ fun CategoryScreen(state: AppState, folder: File) {
                 onClick = { adding = true }, containerColor = c.primary, contentColor = c.onPrimary,
                 modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
             ) { Icon(Icons.Filled.Add, contentDescription = "Новая глава") }
+        }
+    }
+    trashing?.let { file ->
+        TrashDialog(file.nameWithoutExtension, onDismiss = { trashing = null }) {
+            trashing = null
+            trashChapter(state, file, context)
         }
     }
     if (adding) {
