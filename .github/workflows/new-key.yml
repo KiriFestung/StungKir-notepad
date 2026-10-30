@@ -1,0 +1,65 @@
+# Новый ключ подписи для телефона (Android). Запускается только кнопкой и только когда нужно сменить ключ:
+# 1) в Settings → Secrets and variables → Actions поменять ANDROID_KEYSTORE_PASSWORD на новый пароль
+#    (30+ случайных символов латиницей и цифрами; запоминать не надо, он нужен только GitHub);
+# 2) здесь Run workflow, в поле написать «да».
+# Ключ создаётся прямо на GitHub с этим паролем и кладётся в ветку new-signing-key, оттуда - запросом
+# на слияние в main. Пароль нигде не печатается. После смены ключа приложение на телефоне
+# нужно один раз удалить и поставить заново: Android не ставит обновление с другим ключом.
+name: Новый ключ подписи
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Точно сменить ключ? Напиши «да»"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  key:
+    name: Новый ключ
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Создать ключ
+        shell: bash
+        env:
+          CONFIRM: ${{ github.event.inputs.confirm }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          case "$(echo "$CONFIRM" | tr -d '[:space:]')" in
+            да|Да|ДА|дА) ;;
+            *) echo "::error::Ключ не тронут: в поле нужно написать «да»"; exit 1 ;;
+          esac
+          # пароль - как в build.gradle.kts (там он тоже без пробелов по краям)
+          KEY_PASSWORD="$(printf '%s' "$KEY_PASSWORD" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          export KEY_PASSWORD
+          if [ "${#KEY_PASSWORD}" -lt 20 ]; then
+            echo "::error::Пароль в ANDROID_KEYSTORE_PASSWORD короче 20 символов - смени его на длинный и запусти снова"; exit 1
+          fi
+          key=android/app/stungkir-release.keystore
+          rm -f "$key"
+          keytool -genkeypair -keystore "$key" -storetype PKCS12 -alias stungkir \
+            -keyalg RSA -keysize 4096 -validity 10000 -dname "CN=StungKir, O=KiriFesTung" \
+            -storepass:env KEY_PASSWORD -keypass:env KEY_PASSWORD -noprompt
+          fp=$(keytool -list -v -keystore "$key" -storepass:env KEY_PASSWORD -alias stungkir | grep -m1 "SHA256:" | sed 's/.*SHA256: *//')
+          [ -n "$fp" ] || { echo "::error::Ключ не создался"; exit 1; }
+          echo "::notice title=Новый ключ::Отпечаток SHA-256: $fp"
+          echo "Новый ключ подписи, отпечаток SHA-256: \`$fp\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "$fp" > fingerprint.txt
+      - name: В ветку new-signing-key
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B new-signing-key
+          git add android/app/stungkir-release.keystore
+          git commit -m "Новый ключ подписи Android (SHA-256 $(cat fingerprint.txt))"
+          git push --force origin new-signing-key
+          echo "::notice title=Готово::Ключ в ветке new-signing-key - её нужно влить в main"
