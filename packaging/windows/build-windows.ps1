@@ -24,4 +24,4 @@ if ($Run.ExitCode -ne 0) { throw "Тесты не прошли, установщ
 Write-Host "4/4  Установщик…"
 $Iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
 & $Iscc packaging\windows\installer.iss
-Write-Host "Готово: dist\StungKir-Setup-1.0.0.exe"
+Write-Host "Готово: установщик в папке dist"

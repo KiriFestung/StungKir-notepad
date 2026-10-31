@@ -86,6 +86,28 @@ class TestListTest(unittest.TestCase):
         self.assertEqual(sorted(p.stem for p in here.glob("test_*.py")), sorted(MODULES))
 
 
+class VersionTest(unittest.TestCase):
+    @unittest.skipIf(getattr(__import__("sys"), "frozen", False), "в готовой сборке исходников рядом нет")
+    def test_version_is_the_same_everywhere(self):
+        """Номер версии записан в пяти местах - при выпуске легко забыть одно из них."""
+        import re
+        from pathlib import Path
+        import stungkir
+        root = Path(__file__).resolve().parents[2]
+
+        def found(path, pattern):
+            match = re.search(pattern, (root / path).read_text(encoding="utf-8"), re.M)
+            return match.group(1) if match else None
+        version = stungkir.__version__
+        self.assertEqual(found("pyproject.toml", r'^version = "([^"]+)"'), version)
+        self.assertEqual(found("packaging/windows/installer.iss", r'^#define AppVersion "([^"]+)"'), version)
+        self.assertEqual(found("packaging/flatpak/page.codeberg.kirifestung.StungKir.metainfo.xml",
+                               r'<release version="([^"]+)"'), version)             # первый - самый новый
+        self.assertEqual(found("CHANGELOG.md", r"^## (\S+)"), version)
+        self.assertEqual(set(re.findall(r"StungKir-Setup-([\d.]+)\.exe", (root / "README.md").read_text(encoding="utf-8"))),
+                         {version})
+
+
 class PersonalDictionaryTest(unittest.TestCase):
     def test_added_words_count_everywhere(self):
         import tempfile

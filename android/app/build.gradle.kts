@@ -12,8 +12,8 @@ android {
         applicationId = "page.codeberg.kirifestung.stungkir"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.1.2"
+        versionCode = 4
+        versionName = "0.2.0"
     }
 
     // Ключ подписи лежит здесь же, но сам зашифрован паролем, а пароль - только в секретах GitHub
