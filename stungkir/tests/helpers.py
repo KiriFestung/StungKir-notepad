@@ -22,8 +22,9 @@ import stungkir  # noqa: E402
 from stungkir.core import config as C  # noqa: E402
 from stungkir.core import storage as S  # noqa: E402
 
-MODULES = [importlib.import_module(f"stungkir.{m.name}") for m in pkgutil.iter_modules(stungkir.__path__)
-           if m.name not in ("__main__", "tests")]
+# все модули пакета, со всех папок (core, ui, …): patch() подменяет имя в каждом, где оно есть
+MODULES = [importlib.import_module(m.name) for m in pkgutil.walk_packages(stungkir.__path__, "stungkir.")
+           if m.name != "stungkir.__main__" and not m.name.startswith("stungkir.tests")]
 _APP = None
 
 
