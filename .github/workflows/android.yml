@@ -51,8 +51,7 @@ jobs:
           fp=$("$signer" verify --print-certs StungKir-Android.apk | grep -m1 "SHA-256 digest" | sed 's/.*: *//')
           echo "::notice title=Подпись APK::SHA-256 $fp"
       - uses: actions/upload-artifact@v4
-        # место под артефакты у закрытого репозитория маленькое (~500 МБ), а готовые файлы и так в «Релизах»:
-        # держим недолго, и если места нет - сборка не падает
+        # готовые файлы и так в «Релизах»: здесь держим недолго, и если места нет - сборка не падает
         continue-on-error: true
         with:
           name: StungKir-Android

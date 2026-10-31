@@ -21,7 +21,7 @@ StungKir - писательский блокнот KiriFesTung: PySide6 (Linux, 
 - `check.yml`: проверки на Linux (PySide 6.8 и новый), на Windows - сборка, проверка готовой сборки, установщик и переносная версия; кладёт их в релиз `windows-latest`. Ещё снимает окна готовой сборки на Windows (`StungKir.exe --screens <папка>`, код - `stungkir/tests/screens.py`) в артефакт `StungKir-Windows-screens` - так видно вид на Windows без Windows.
 - `android.yml`: проверки и APK, релиз `android-latest`. Подпись: `android/app/stungkir-release.keystore`, пароль - секрет `ANDROID_KEYSTORE_PASSWORD` (есть только у автора). Без секрета APK в релиз не выкладывается. Сменить ключ - `new-key.yml` (кнопкой, после смены секрета), шаги в docs/ТЕЛЕФОН.md.
 - `build.yml`: Flatpak (KDE 6.8), сам при изменениях программы и по кнопке; релиз `linux-latest`.
-- `robots.yml`: каждую ночь обезьяна и фаззер с новым зерном (около 10 минут; репозиторий закрытый - минуты Actions считаются). Нашли ошибку - задача «Роботы нашли ошибку» (метка «роботы») с зерном и командой повтора.
+- `robots.yml`: каждую ночь обезьяна и фаззер с новым зерном (около 10 минут). Нашли ошибку - задача «Роботы нашли ошибку» (метка «роботы») с зерном и командой повтора.
 - Журналы Actions из сессии Claude не скачиваются: ошибки шагов выводятся заметками (`::error::`), их видно через API check-runs/annotations.
 - `packaging/windows/build-windows.ps1` - в UTF-8 с BOM (иначе PowerShell 5 ломает русский текст).
 
