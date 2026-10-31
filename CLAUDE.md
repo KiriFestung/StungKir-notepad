@@ -22,6 +22,7 @@ StungKir - писательский блокнот KiriFesTung: PySide6 (Linux, 
 - `android.yml`: проверки и APK, релиз `android-latest`. Подпись: `android/app/stungkir-release.keystore`, пароль - секрет `ANDROID_KEYSTORE_PASSWORD` (есть только у автора). Без секрета APK в релиз не выкладывается. Сменить ключ - `new-key.yml` (кнопкой, после смены секрета), шаги в docs/ТЕЛЕФОН.md.
 - `build.yml`: Flatpak (KDE 6.8), сам при изменениях программы и по кнопке; релиз `linux-latest`.
 - `robots.yml`: каждую ночь обезьяна и фаззер с новым зерном (около 10 минут). Нашли ошибку - задача «Роботы нашли ошибку» (метка «роботы») с зерном и командой повтора.
+- `release.yml`: выпуск «StungKir X.Y.Z» кнопкой - когда три «свежие сборки» собраны из того же коммита main. Номер версии - в `stungkir/__init__.py`, `pyproject.toml`, `installer.iss`, metainfo Flatpak, первом разделе CHANGELOG и ссылке на установщик в README (проверка `VersionTest` следит, чтобы совпадали); у Android свои `versionCode`/`versionName`.
 - Журналы Actions из сессии Claude не скачиваются: ошибки шагов выводятся заметками (`::error::`), их видно через API check-runs/annotations.
 - `packaging/windows/build-windows.ps1` - в UTF-8 с BOM (иначе PowerShell 5 ломает русский текст).
 

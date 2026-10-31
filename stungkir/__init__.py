@@ -36,8 +36,8 @@
   tests/  автотесты: python3 -m stungkir --test
 """
 
-__version__ = "1.0.0"
-BUILD = "2026-10-21.2"          # номер сборки: видно, какая именно версия стоит
+__version__ = "1.1.0"
+BUILD = "2026-10-31.1"          # номер сборки: видно, какая именно версия стоит
 AUTHORS = "KiriFesTung, вместе с Claude (Anthropic)"
 LICENSE = "GPL-3.0-or-later"
 COPYRIGHT = "Copyright (C) 2026 KiriFesTung"

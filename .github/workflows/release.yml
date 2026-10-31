@@ -1,0 +1,58 @@
+# Выпуск: настоящая версия (например, «StungKir 1.1.0») вместо «свежей сборки».
+# Запускается кнопкой Run workflow, когда в main уже всё собрано. Номер берётся из stungkir/__init__.py,
+# описание - из раздела этой версии в CHANGELOG.md, файлы - из «свежих сборок» windows-latest,
+# linux-latest и android-latest, если все три собраны из этого же коммита. Иначе - отказ: подожди сборки.
+name: Выпуск
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Выпуск
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Номер и описание
+        id: info
+        shell: bash
+        run: |
+          version=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' stungkir/__init__.py)
+          [ -n "$version" ] || { echo "::error::Нет __version__ в stungkir/__init__.py"; exit 1; }
+          # раздел версии в CHANGELOG: от «## 1.1.0» до следующего «## »
+          awk -v v="$version" '$0 ~ "^## " v "( |$)" {on=1; next} on && /^## / {exit} on' CHANGELOG.md > notes.md
+          [ -s notes.md ] || { echo "::error::В CHANGELOG.md нет раздела «## $version»"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Сборки готовы?
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for tag in windows-latest linux-latest android-latest; do
+            target=$(gh release view "$tag" --json targetCommitish --jq .targetCommitish 2>/dev/null || true)
+            if [ "$target" != "${{ github.sha }}" ]; then
+              echo "::error::«$tag» собран не из этого коммита (или ещё собирается) - подожди сборки и запусти снова"
+              exit 1
+            fi
+          done
+      - name: Выпустить
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=${{ steps.info.outputs.version }}
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "::error::Выпуск v$version уже есть - для нового подними номер версии"; exit 1
+          fi
+          mkdir files
+          gh release download windows-latest --dir files --pattern "StungKir-Setup-*.exe" --pattern "StungKir-Windows-portable.zip"
+          gh release download linux-latest --dir files --pattern "*.flatpak"
+          gh release download android-latest --dir files --pattern "*.apk"
+          ls -l files
+          [ "$(ls files | wc -l)" -ge 4 ] || { echo "::error::Не все файлы нашлись в свежих сборках"; exit 1; }
+          gh release create "v$version" files/* --target "${{ github.sha }}" --latest \
+            --title "StungKir $version" --notes-file notes.md
+          echo "::notice title=Выпуск::StungKir $version выпущен"

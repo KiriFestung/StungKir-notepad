@@ -26,7 +26,7 @@
 
 | Где | Что скачать | |
 |---|---|---|
-| **Windows 10 и 11** | [StungKir-Setup-1.0.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.0.0.exe) | установщик |
+| **Windows 10 и 11** | [StungKir-Setup-1.1.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.1.0.exe) | установщик |
 | **Windows, с флешки** | [StungKir-Windows-portable.zip](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Windows-portable.zip) | без установки и без прав администратора, тексты - на флешке |
 | **Linux** | [StungKir.flatpak](https://github.com/KiriFestung/StungKir-notepad/releases/download/linux-latest/StungKir.flatpak) | любой дистрибутив; для Debian и Ubuntu есть ещё `install.sh` (ниже) |
 | **Android** | [StungKir-Android.apk](https://github.com/KiriFestung/StungKir-notepad/releases/download/android-latest/StungKir-Android.apk) | пишет в ту же папку, что и компьютер; [как связать](docs/ТЕЛЕФОН.md) |
@@ -94,7 +94,7 @@
 
 ### Windows 10 и 11
 
-Скачать [StungKir-Setup-1.0.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.0.0.exe) и запустить. Словарь и шрифты уже внутри. Windows может предупредить «неизвестный издатель»: программа не подписана платным сертификатом. Нажми «Подробнее → Выполнить в любом случае».
+Скачать [StungKir-Setup-1.1.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.1.0.exe) и запустить. Словарь и шрифты уже внутри. Windows может предупредить «неизвестный издатель»: программа не подписана платным сертификатом. Нажми «Подробнее → Выполнить в любом случае».
 
 **С флешки, без установки и без прав администратора:** [StungKir-Windows-portable.zip](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Windows-portable.zip) - распаковать на флешку и запускать `StungKir.exe`. Тексты, копии и настройки хранятся там же, на флешке, на чужом компьютере ничего не остаётся.
 
