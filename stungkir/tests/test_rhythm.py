@@ -3,7 +3,7 @@
 """Ритм главы: предложения, сводка, переход к предложению."""
 import unittest
 
-from stungkir import rhythm as R
+from stungkir.text import rhythm as R
 from stungkir.tests.helpers import WindowCase
 
 TEXT = ("# Пролог\nУтро было серым. Туман стелился над рекой! — Лодки не будет, — сказала она… Да?\n"

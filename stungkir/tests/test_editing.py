@@ -4,9 +4,9 @@
 import time
 import unittest
 
-from stungkir import config as C
-from stungkir import storage as S
-from stungkir import textutil as T
+from stungkir.core import config as C
+from stungkir.core import storage as S
+from stungkir.core import textutil as T
 from stungkir.tests.helpers import Sandbox, WindowCase, app, crypto_available, wait
 
 
@@ -124,7 +124,7 @@ class TypewriterTest(WindowCase):
 
 class FlatWindowsTest(WindowCase):
     def test_flat_sheet_has_no_transparent_border(self):
-        from stungkir.dialogs import Sheet
+        from stungkir.ui.dialogs import Sheet
         self.addCleanup(setattr, C, "FLAT_WINDOWS", C.FLAT_WINDOWS)
         C.FLAT_WINDOWS = True
         sheet = Sheet(None, "Проба")
@@ -151,11 +151,11 @@ class PasswordBackoffTest(Sandbox):
         write_lock("секрет")
 
     def test_delay_grows(self):
-        from stungkir.dialogs import password_delay
+        from stungkir.ui.dialogs import password_delay
         self.assertEqual([password_delay(n) for n in range(1, 10)], [0, 0, 2, 4, 8, 16, 32, 60, 60])
 
     def test_wrong_passwords_slow_down_and_survive_restart(self):
-        from stungkir.dialogs import PasswordDialog
+        from stungkir.ui.dialogs import PasswordDialog
         dialog = PasswordDialog(None, "Вход", "Пароль", check=S.unlock)
         for _ in range(3):
             dialog.first.setText("не тот")
@@ -219,7 +219,7 @@ class PasteAndDayCountTest(WindowCase):
 
     def test_midnight_starts_a_new_day(self):
         from datetime import date, timedelta
-        from stungkir import progress
+        from stungkir.ui import progress
         w = self.window()
         path = self.chapter("Книга", "Глава", "Начало.")
         w.open_path(path)
@@ -265,7 +265,7 @@ class SwitchSavesQuietlyTest(WindowCase):
 class PhoneWordsTest(WindowCase):
     def test_phone_words_count_for_today_but_are_not_rewritten(self):
         import json
-        from stungkir import storage as S2
+        from stungkir.core import storage as S2
         w = self.window()
         phone = C.ROOT / C.SERVICE_DIR / "stats-phone.json"
         phone.parent.mkdir(parents=True, exist_ok=True)

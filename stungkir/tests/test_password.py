@@ -6,13 +6,13 @@ import json
 import os
 import unittest
 
-from stungkir import config as C
-from stungkir import storage as S
+from stungkir.core import config as C
+from stungkir.core import storage as S
 from stungkir.tests.helpers import Sandbox, WindowCase, crypto_available, wait
 
 
 def real_password_dialog():
-    from stungkir.dialogs import PasswordDialog
+    from stungkir.ui.dialogs import PasswordDialog
     return PasswordDialog
 
 
@@ -149,7 +149,7 @@ class PasswordWindowTest(WindowCase):
 class PasswordDialogTest(Sandbox):
     def test_dialog_tells_broken_key_from_wrong_password(self):
         from stungkir.tests.helpers import app
-        from stungkir.dialogs import PasswordDialog
+        from stungkir.ui.dialogs import PasswordDialog
         app()
         write_lock("секрет")
         dialog = PasswordDialog(None, "Вход", "Пароль", check=S.unlock)
@@ -233,7 +233,7 @@ class RecoveryTest(WindowCase):
         self.assertEqual(S.lock_version(), 1)
         self.assertFalse(S.unlock_recovery("ЧТО-УГОДНО"))                    # кода ещё нет
         self.assertTrue(S.unlock("старый пароль"))
-        from stungkir.security import offer_recovery_code
+        from stungkir.ui.security import offer_recovery_code
         self.assertTrue(offer_recovery_code(None, "старый пароль"))
         self.assertEqual(S.lock_version(), 2)
         S.CRYPTO = S.KEY = None
@@ -329,7 +329,7 @@ class EncryptionStressTest(WindowCase):
         self.check_all_readable()                                                # ни одна глава не потеряна
 
     def test_leftover_temp_files_are_cleaned(self):
-        from stungkir.safety import clean_temp_files
+        from stungkir.core.safety import clean_temp_files
         leftover = next(iter(self.texts)).with_name(".Глава 1.txt.tmp")
         leftover.write_bytes(b"\0\0")
         os.utime(leftover, (0, 0))

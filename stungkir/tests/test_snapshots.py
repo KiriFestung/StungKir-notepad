@@ -4,9 +4,9 @@
 import unittest
 import zipfile
 
-from stungkir import config as C
-from stungkir import snapshots as P
-from stungkir import storage as S
+from stungkir.core import config as C
+from stungkir.core import snapshots as P
+from stungkir.core import storage as S
 from stungkir.tests.helpers import Sandbox, WindowCase, crypto_available, wait
 
 
@@ -153,7 +153,7 @@ class SnapshotWindowTest(WindowCase):
         self.assertEqual(S.read_text(self.first), "Совсем другой текст, не сохранён.")
 
     def test_dialog_lists_snapshots(self):
-        from stungkir.windows import SnapshotsDialog
+        from stungkir.ui.windows import SnapshotsDialog
         self.w.take_snapshot()
         dialog = SnapshotsDialog(self.w)
         self.assertEqual(len(dialog.items), 1)

@@ -5,8 +5,8 @@ import shutil
 import zipfile
 from datetime import date, timedelta
 
-from stungkir import config as C
-from stungkir import storage as S
+from stungkir.core import config as C
+from stungkir.core import storage as S
 from stungkir.tests.helpers import Sandbox
 
 
@@ -153,7 +153,7 @@ class MigrationTest(Sandbox):
 class LauncherTest(Sandbox):
     def test_new_icon_gets_new_name_and_old_one_goes(self):
         import hashlib
-        from stungkir.icons import ICON_SVG
+        from stungkir.ui.icons import ICON_SVG
         icons = S.Path.home() / ".local" / "share" / "icons" / "hicolor" / "scalable" / "apps"
         icons.mkdir(parents=True, exist_ok=True)
         (icons / "stungkir.svg").write_text("<svg>старая лиса</svg>", encoding="utf-8", newline="\n")

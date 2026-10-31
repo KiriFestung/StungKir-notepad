@@ -3,8 +3,8 @@
 """Работа с текстом: разметка, таблицы, сравнение версий, привязка заметок к абзацам."""
 import unittest
 
-from stungkir import textutil as T
-from stungkir.export import book_paragraphs
+from stungkir.core import textutil as T
+from stungkir.books.export import book_paragraphs
 from stungkir.tests.helpers import app
 
 
@@ -90,7 +90,7 @@ class PersonalDictionaryTest(unittest.TestCase):
     def test_added_words_count_everywhere(self):
         import tempfile
         from pathlib import Path
-        from stungkir.editor import Speller
+        from stungkir.text.editor import Speller
         from stungkir.tests.helpers import speller_available
         if not speller_available():
             self.skipTest("нет словаря hunspell-ru")

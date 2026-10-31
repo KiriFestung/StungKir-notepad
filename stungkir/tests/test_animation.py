@@ -7,7 +7,7 @@ import unittest
 
 from PySide6.QtCore import QPointF, QSettings
 
-from stungkir import config as C
+from stungkir.core import config as C
 from stungkir.tests.helpers import WindowCase, app, wait
 
 # имя анимации -> сколько кадров должно быть
@@ -41,7 +41,7 @@ class FramesTest(unittest.TestCase):
         app()
 
     def test_all_frames_and_pictures_are_bundled(self):
-        from stungkir.artwork import frame_count, pixmap
+        from stungkir.fun.artwork import frame_count, pixmap
         for name, count in FRAMES.items():
             self.assertEqual(frame_count(name), count, name)
             first = pixmap(f"{name}_00")
@@ -52,7 +52,7 @@ class FramesTest(unittest.TestCase):
 
     def test_effects_play_once_and_stop(self):
         from PySide6.QtWidgets import QWidget
-        from stungkir.artwork import Effects
+        from stungkir.fun.artwork import Effects
         host = QWidget()
         host.resize(200, 200)
         clock = Clock()
@@ -138,7 +138,7 @@ class OverlaysTest(WindowCase):
         w.hide_global_search()
 
     def test_empty_trash_picture(self):
-        from stungkir.trash import TrashDialog
+        from stungkir.core.trash import TrashDialog
         w = self.window()
         dialog = TrashDialog(w, lambda *a: None)
         dialog.show()
@@ -150,7 +150,7 @@ class OverlaysTest(WindowCase):
 
 class ToyAnimationsTest(WindowCase):
     def test_bubble_pops_through_frames(self):
-        from stungkir.antistress import BubbleWrap
+        from stungkir.fun.antistress import BubbleWrap
         wrap = BubbleWrap()
         wrap.resize(500, 340)
         clock = Clock()
@@ -167,7 +167,7 @@ class ToyAnimationsTest(WindowCase):
         wrap.grab()
 
     def test_ball_raises_dust_on_hard_floor_hit(self):
-        from stungkir.antistress import SquishBall
+        from stungkir.fun.antistress import SquishBall
         ball = SquishBall()
         ball.resize(500, 340)
         ball.show()
@@ -185,7 +185,7 @@ class ToyAnimationsTest(WindowCase):
         self.assertEqual(len(ball.dust.live), 1)
 
     def test_lake_has_drawn_splashes_stone_and_shore(self):
-        from stungkir.antistress import StoneSkip
+        from stungkir.fun.antistress import StoneSkip
         lake = StoneSkip()
         lake.resize(700, 420)
         random.seed(3)
@@ -207,7 +207,7 @@ class ToyAnimationsTest(WindowCase):
         self.assertIsNot(lake._shore(700), shore)
 
     def test_sand_stones_and_rake_cursor(self):
-        from stungkir.antistress import ZenSand
+        from stungkir.fun.antistress import ZenSand
         sand = ZenSand()
         sand.resize(600, 400)
         self.assertEqual(len(sand.stone_kinds), len(sand.stones))
@@ -216,7 +216,7 @@ class ToyAnimationsTest(WindowCase):
         sand.grab()
 
     def test_puzzle_solved_burst_and_drawn_levers(self):
-        from stungkir.antistress import Toggles
+        from stungkir.fun.antistress import Toggles
         toggles = Toggles()
         toggles.resize(700, 400)
         toggles.grab()                                        # просто щёлкать: нарисованные тумблеры
@@ -228,8 +228,8 @@ class ToyAnimationsTest(WindowCase):
         toggles.grab()
 
     def test_table_dust_and_crits(self):
-        from stungkir.dice import COIN_EDGE
-        from stungkir.dicetable import DiceTable
+        from stungkir.fun.dice import COIN_EDGE
+        from stungkir.fun.dicetable import DiceTable
         table = DiceTable()
         table.resize(640, 290)
         table.throw(20, 20, "resin")
@@ -253,7 +253,7 @@ class ToyAnimationsTest(WindowCase):
         table.grab()
 
     def test_drum_is_metal_and_glints_after_loading(self):
-        from stungkir.dice import RandomDialog
+        from stungkir.fun.dice import RandomDialog
         settings = QSettings(C.APP_ID, C.APP_ID)
         dialog = RandomDialog(None, ["Кира"], [], settings, lambda *a: None)
         dialog.show()

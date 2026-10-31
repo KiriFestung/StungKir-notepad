@@ -5,8 +5,8 @@ import unittest
 import xml.etree.ElementTree as ET
 import zipfile
 
-from stungkir import config as C
-from stungkir import export as E
+from stungkir.core import config as C
+from stungkir.books import export as E
 from stungkir.tests.helpers import Sandbox, WindowCase, app
 
 CHAPTERS = [("Глава 1 <туман> & «ночь»", E.book_paragraphs("Абзац с *курсивом* и **жирным**.\n— Реплика\x0b!", True)),
@@ -82,7 +82,7 @@ class PicturesTest(WindowCase):
                 self.assertTrue(any(n.startswith("word/media/") for n in doc.namelist()))
 
     def test_insert_from_window_and_preview(self):
-        from stungkir import dialogs
+        from stungkir.ui import dialogs
         w = self.window()
         path = self.chapter("Книга", "Глава", "Первый абзац.")
         w.open_path(path)

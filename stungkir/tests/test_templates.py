@@ -3,9 +3,9 @@
 """Шаблоны карточек справочника: встроенные, свои из готовой карточки, выбор при создании."""
 import unittest
 
-from stungkir import config as C
-from stungkir import storage as S
-from stungkir import templates as T
+from stungkir.core import config as C
+from stungkir.core import storage as S
+from stungkir.world import templates as T
 from stungkir.tests.helpers import WindowCase
 
 

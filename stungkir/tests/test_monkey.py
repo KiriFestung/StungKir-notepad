@@ -30,9 +30,9 @@ from PySide6.QtWidgets import (
     QToolButton, QWidget,
 )
 
-from stungkir import config as C
-from stungkir import dialogs
-from stungkir import storage as S
+from stungkir.core import config as C
+from stungkir.ui import dialogs
+from stungkir.core import storage as S
 from stungkir.tests.helpers import WindowCase, wait
 from stungkir.tests.test_fuzz import TEXTS, WEIRD_NAMES, Robot
 
@@ -295,7 +295,7 @@ class MonkeyRobot(Robot):
         return True
 
     def restart_closed(self):
-        from stungkir.window import Notepad
+        from stungkir.ui.window import Notepad
         self.w.deleteLater()
         QApplication.processEvents()
         self.w = Notepad()

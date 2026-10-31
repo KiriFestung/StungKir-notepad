@@ -4,7 +4,7 @@
 import unittest
 from datetime import datetime, timedelta
 
-from stungkir import config as C
+from stungkir.core import config as C
 from stungkir.tests.helpers import WindowCase, app, wait
 
 DAY = {"theme": "Мох", "day_theme": "Дневная бумага", "day_from": 8 * 60, "day_to": 20 * 60,
@@ -42,8 +42,8 @@ class PaletteTest(unittest.TestCase):
         self.assertIn("IMPORTANT", themes["Моя"])
 
     def test_clock_and_buttons_follow_palette(self):
-        from stungkir.style import build_style
-        from stungkir.widgets import ClockFace
+        from stungkir.ui.style import build_style
+        from stungkir.ui.widgets import ClockFace
         C.set_palette({**C.THEMES["Графит"], "CLOCK_RING": "#00aa00", "IMPORTANT": "#123456"})
         self.assertEqual(ClockFace().RING, "#00aa00")
         style = build_style()
@@ -116,7 +116,7 @@ class PaletteTest(unittest.TestCase):
 
 class ColorsDialogTest(WindowCase):
     def dialog(self, config):
-        from stungkir.colors import ColorsDialog
+        from stungkir.ui.colors import ColorsDialog
         self.w = getattr(self, "w", None) or self.window()
         return ColorsDialog(self.w, config, self.w.editor.font())
 
@@ -197,10 +197,10 @@ class LiveApplyTest(WindowCase):
         w = self.window()
         C.save_config({"theme": "Мох", "custom_themes": {"Моя": {"BG": "#101010"}}})
         w.choose_theme("Сепия")
-        from stungkir.windows import load_config_raw
+        from stungkir.ui.windows import load_config_raw
         self.assertEqual(load_config_raw()["theme"], "Сепия")
         self.patch("ask_question", lambda *a, **k: None)
-        from stungkir import windows
+        from stungkir.ui import windows
 
         class Fake:
             def __init__(self, *a):

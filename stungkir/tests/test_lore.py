@@ -4,8 +4,8 @@
 import time
 import unittest
 
-from stungkir import lore as L
-from stungkir.editor import Speller
+from stungkir.world import lore as L
+from stungkir.text.editor import Speller
 from stungkir.tests.helpers import Sandbox, app, speller_available
 
 

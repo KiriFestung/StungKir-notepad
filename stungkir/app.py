@@ -9,16 +9,16 @@ from PySide6.QtGui import QFontDatabase, QIcon, QPixmap
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from . import config as C
-from .icons import ICON_SVG
-from .style import apply_theme
-from .storage import (
-    log_error, crypto_available, install_launcher, lock_path, lock_problem, lock_version, migrate_old_root, unlock,
-)
-from .dialogs import PasswordDialog, ask_question, show_error, show_warning
-from .sample import create_sample, is_fresh
-from .safety import clean_temp_files, crashed_last_time, enable_fault_log, install_crash_guard, mark_session, single_instance
-from .window import Notepad
+from .core import config as C
+from .ui.icons import ICON_SVG
+from .ui.style import apply_theme
+from .core.storage import (log_error, crypto_available, install_launcher, lock_path, lock_problem, lock_version,
+    migrate_old_root, unlock)
+from .ui.dialogs import PasswordDialog, ask_question, show_error, show_warning
+from .books.sample import create_sample, is_fresh
+from .core.safety import (clean_temp_files, crashed_last_time, enable_fault_log, install_crash_guard, mark_session,
+    single_instance)
+from .ui.window import Notepad
 
 
 def load_bundled_fonts():
@@ -66,7 +66,7 @@ def main():
     app.setDesktopFileName(os.environ.get("FLATPAK_ID") or C.APP_ID)
     load_bundled_fonts()
     icon = install_launcher()
-    from .icons import APP_ICON_PNG
+    from .ui.icons import APP_ICON_PNG
     if APP_ICON_PNG.is_file():
         app.setWindowIcon(QIcon(str(APP_ICON_PNG)))   # ласка: картинка в пакете, чёткая в любом размере
     elif icon:
@@ -80,7 +80,7 @@ def main():
         show_error(None, C.APP_NAME, f"Не всё перенеслось из «{C.OLD_ROOT}» в «{C.ROOT}». Старая папка "
                    f"осталась на месте, ничего не удалено.\n\n{migration_error}")
     if C.ROOT.is_dir():
-        from .storage import tidy_root
+        from .core.storage import tidy_root
         tidy_root()                     # служебные файлы прошлых версий - в одну скрытую папку .stungkir
     if lock_path().exists() and lock_problem() is not None:
         show_error(None, C.APP_NAME, f"Файл ключа {lock_path()} повреждён, без него зашифрованные тексты "
@@ -94,7 +94,7 @@ def main():
             show_error(None, C.APP_NAME, "Тексты зашифрованы, а библиотеки cryptography нет.\n"
                                  "Запусти install.sh ещё раз.")
             return 1
-        from .security import offer_recovery_code, recover_with_code
+        from .ui.security import offer_recovery_code, recover_with_code
         dialog = PasswordDialog(None, C.APP_NAME, "Введи пароль, чтобы открыть тексты.", check=unlock,
                                 recover=recover_with_code)
         if not dialog.exec():

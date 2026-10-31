@@ -6,9 +6,9 @@ import sys
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
-from stungkir import config as C
-from stungkir import safety
-from stungkir import storage as S
+from stungkir.core import config as C
+from stungkir.core import safety
+from stungkir.core import storage as S
 from stungkir.tests.helpers import Sandbox, WindowCase, app, wait
 
 LONG = "\n".join("Туман стелился над рекой, и лодка ждала у берега до самого утра." for _ in range(40))

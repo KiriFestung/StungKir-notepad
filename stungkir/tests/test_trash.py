@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 
 from PySide6.QtWidgets import QMessageBox
 
-from stungkir import config as C
-from stungkir import storage as S
-from stungkir import trash as T
+from stungkir.core import config as C
+from stungkir.core import storage as S
+from stungkir.core import trash as T
 from stungkir.tests.helpers import Sandbox, WindowCase
 
 
@@ -85,7 +85,7 @@ class TrashWindowTest(WindowCase):
 
 class SampleTest(WindowCase):
     def test_sample_appears_and_goes_to_trash(self):
-        from stungkir import sample
+        from stungkir.books import sample
         w = self.window()
         w.add_sample()
         self.assertFalse(sample.is_fresh())

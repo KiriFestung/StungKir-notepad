@@ -6,7 +6,7 @@ import unittest
 
 from PySide6.QtWidgets import QPushButton, QWidget
 
-from stungkir.dice import Die3D, RandomDialog, list_items, pick_number, shape
+from stungkir.fun.dice import Die3D, RandomDialog, list_items, pick_number, shape
 from stungkir.tests.helpers import WindowCase, app
 
 
@@ -67,7 +67,7 @@ class ShapesTest(unittest.TestCase):
         self.assertEqual(die.relabeled, 0)
 
     def test_d100_is_two_dice(self):
-        from stungkir.dice import d100_parts, d100_value
+        from stungkir.fun.dice import d100_parts, d100_value
         app()
         self.assertEqual(d100_parts(100), ("00", "0"))
         self.assertEqual(d100_parts(7), ("00", "7"))
@@ -86,8 +86,8 @@ class ShapesTest(unittest.TestCase):
     def test_fair(self):
         """Честность: монетка как в жизни (50,8% той стороной, что сверху, ребро раз из 6000),
         числа и рулетка - без перекоса."""
-        from stungkir.dice import toss_coin
-        from stungkir.roulette import CHAMBERS, Roulette
+        from stungkir.fun.dice import toss_coin
+        from stungkir.fun.roulette import CHAMBERS, Roulette
         rng = random.Random(2026)
         n = 200_000
         counts = {}
@@ -158,9 +158,9 @@ class RandomWindowTest(WindowCase):
         self.assertEqual(int(d.settings.value("random_high")), 5)
 
     def test_dice_pictures_follow_material(self):
-        from stungkir import config as C
-        from stungkir.artwork import pixmap
-        from stungkir.dicetable import MATERIALS
+        from stungkir.core import config as C
+        from stungkir.fun.artwork import pixmap
+        from stungkir.fun.dicetable import MATERIALS
         for material in MATERIALS:
             for sides in C.DICE:
                 self.assertFalse(pixmap(f"dice/{material}/d{sides}").isNull(), f"{material} d{sides}")
@@ -201,7 +201,7 @@ class RandomWindowTest(WindowCase):
         self.assertFalse(d.table.isVisible())
 
     def test_table_lands_every_number_honestly(self):
-        from stungkir.dicetable import DiceTable
+        from stungkir.fun.dicetable import DiceTable
         app()
         random.seed(3)
         table = DiceTable()
@@ -261,7 +261,7 @@ class RandomWindowTest(WindowCase):
         self.assertIn("Список пуст", d.note.text())
 
     def test_character_or_term(self):
-        from stungkir.lore import LoreTerm
+        from stungkir.world.lore import LoreTerm
         d = self.dialog(terms=[LoreTerm("Тервена"), LoreTerm("Кира")])      # «Кира» - и персонаж, и термин: один раз
         d.set_mode("cast")
         self.assertEqual(sorted(t for t, _ in d._pool()), ["Кира", "Ния", "Тервена"])
@@ -301,7 +301,7 @@ class SoundTest(unittest.TestCase):
         import shutil
         import sys
         from unittest import mock
-        from stungkir import sounds
+        from stungkir.fun import sounds
         if sys.platform.startswith("win"):
             self.skipTest("на Windows - winsound")
         found = {"pw-play": "/usr/bin/pw-play", "paplay": "/usr/bin/paplay"}
@@ -317,7 +317,7 @@ class SoundTest(unittest.TestCase):
         import shutil
         import sys
         from unittest import mock
-        from stungkir import sounds
+        from stungkir.fun import sounds
         app()
         if sys.platform.startswith("win") or not sounds.qt_audio_available():
             self.skipTest("на Windows - winsound; без QtMultimedia - тишина")
@@ -344,7 +344,7 @@ class SoundTest(unittest.TestCase):
         import tempfile
         import wave
         from array import array
-        from stungkir import sounds
+        from stungkir.fun import sounds
         folder = tempfile.mkdtemp()
         old = os.environ.get("XDG_CACHE_HOME")
         os.environ["XDG_CACHE_HOME"] = folder
@@ -363,7 +363,7 @@ class SoundTest(unittest.TestCase):
                 os.environ["XDG_CACHE_HOME"] = old
 
     def test_settings_volume_and_silence(self):
-        from stungkir.sounds import Sounds
+        from stungkir.fun.sounds import Sounds
         s = Sounds(volume="Тихо")
         s.play("coin_flick", 1.0)
         s.set_volume("Без звука")

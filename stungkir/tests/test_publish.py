@@ -10,8 +10,8 @@ import urllib.error
 
 from PySide6.QtCore import QSettings
 
-from stungkir import config as C
-from stungkir import publish as P
+from stungkir.core import config as C
+from stungkir.books import publish as P
 from stungkir.tests.helpers import Sandbox, WindowCase, wait
 
 
@@ -131,7 +131,7 @@ class PublishWindowTest(WindowCase):
         self.hub = FakeHub()
 
     def dialog(self):
-        from stungkir.storage import save_order
+        from stungkir.core.storage import save_order
         save_order(self.book, ["Пролог.txt", "Глава 1.txt", "Глава 2.txt"])
         dialog = P.PublishDialog(self.w, self.book, lambda: (
             P.local_files(self.book, P.ready_chapters(self.book, self.w.plan, self.w._position_key)), None), self.hub)

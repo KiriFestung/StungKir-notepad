@@ -9,7 +9,7 @@ import traceback
 import unittest
 from pathlib import Path
 
-from stungkir import config as C
+from stungkir.core import config as C
 from stungkir.tests.helpers import WindowCase, wait
 
 OUT = Path("screens")
@@ -28,13 +28,13 @@ class Screens(WindowCase):
             REPORT.append(f"FAIL {name}\n{traceback.format_exc()}")
 
     def test_screens(self):
-        from stungkir import dialogs
-        from stungkir.sample import create_sample
+        from stungkir.ui import dialogs
+        from stungkir.books.sample import create_sample
         create_sample()
         from stungkir.app import load_bundled_fonts
         load_bundled_fonts()                     # шрифты программы - как у человека, а не только системные
         from datetime import date, timedelta
-        from stungkir.storage import save_stats
+        from stungkir.core.storage import save_stats
         today = date.today()                     # пробная статистика за год - на диск: окно читает её оттуда
         save_stats({(today - timedelta(days=n)).isoformat(): (n * 37) % 1400 for n in range(0, 365, 2)})
         w = self.window()

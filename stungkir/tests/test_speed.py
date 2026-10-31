@@ -5,9 +5,9 @@
 import random
 import unittest
 
-from stungkir import config as C
+from stungkir.core import config as C
 from stungkir.tests.helpers import WindowCase, wait
-from stungkir.textutil import Crutches, WORD_RE, _crutch_word_ok, name_key, crutch_base, CRUTCH_GAP
+from stungkir.core.textutil import Crutches, WORD_RE, _crutch_word_ok, name_key, crutch_base, CRUTCH_GAP
 
 
 def big_text(paragraphs=600):

@@ -97,8 +97,7 @@ jobs:
           $msg = ($lines -join "%0A") -replace "`r", ""
           Write-Output "::error title=Windows::$msg"
       - uses: actions/upload-artifact@v4
-        # место под артефакты у закрытого репозитория маленькое (~500 МБ), а готовые файлы и так в «Релизах»:
-        # держим недолго, и если места нет - сборка не падает
+        # готовые файлы и так в «Релизах»: здесь держим недолго, и если места нет - сборка не падает
         continue-on-error: true
         with:
           name: StungKir-Windows

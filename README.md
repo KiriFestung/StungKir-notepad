@@ -8,6 +8,14 @@
 <a href="CHANGELOG.md">Что нового</a>
 </p>
 
+<p align="center">
+<a href="https://github.com/KiriFestung/StungKir-notepad/actions/workflows/check.yml"><img src="https://github.com/KiriFestung/StungKir-notepad/actions/workflows/check.yml/badge.svg" alt="Проверки"></a>
+<a href="https://github.com/KiriFestung/StungKir-notepad/actions/workflows/android.yml"><img src="https://github.com/KiriFestung/StungKir-notepad/actions/workflows/android.yml/badge.svg" alt="Android"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue" alt="GPL-3.0-or-later"></a>
+</p>
+
+> **In English:** StungKir is a free notepad for writing long fiction - chapters as plain `.txt` files, a world reference with hover hints, margin notes, chapter history, and export to PDF, Word and EPUB. Works offline on Windows, Linux and Android. The interface is in Russian.
+
 Блокнот для тех, кто пишет книгу, а не заметки: главы по папкам, справочник мира с подсказками прямо в тексте, заметки на полях, версии каждой главы и сборка книги в PDF, Word и EPUB. Тексты - обычные `.txt` в твоей папке: без аккаунтов и облаков; в интернет блокнот выходит, только если сам нажмёшь «Выложить на сайт». С телефоном - через Syncthing и своё приложение для Android.
 
 > **Ранняя версия.** Блокнот бережёт текст: автосохранение, версии глав, ежедневные копии, точки возврата. Но программа молодая, и ошибки возможны. Пока делай свои копии важных книг: на флешку, в облако или раз в неделю кнопкой «Копия раз в неделю». Нашёл ошибку - напиши в [Issues](https://github.com/KiriFestung/StungKir-notepad/issues).
@@ -35,10 +43,14 @@
 - **Отвлечься с пользой.** Кубики d4-d100 на столе для бросков (кость, металл, дуб, индиго), монетка «ворон или ласка», рулетка писательских вызовов, таймер с лаской в колесе, антистресс: пупырка, сад камней, головоломка из клавиш, блинчики по воде.
 - **Выглядеть по-своему.** Десять тем (основная - индиго и охра, днём - светлая «бумага»), своя картинка под текстом, шрифты Literata и PT Serif, свои горячие клавиши.
 
+<p align="center"><img src="docs/screenshots/dice.gif" alt="Кубики на столе: металл, дуб, индиго, кость" width="640"></p>
+
 | | |
 |---|---|
-| ![Дневная тема](docs/screenshots/main-day.png) | ![Кубики на столе](docs/screenshots/dice.png) |
-| ![Панели](docs/screenshots/panels.png) | ![Панель рядом](docs/screenshots/beside.png) |
+| ![Дневная тема](docs/screenshots/main-day.png) | ![Панель рядом: вторая глава для чтения сбоку](docs/screenshots/beside.png) |
+| ![План книги](docs/screenshots/plan.png) | ![Кто в какой главе](docs/screenshots/presence.png) |
+| ![Как увидит читатель](docs/screenshots/preview.png) | ![Цвета и темы](docs/screenshots/colors.png) |
+| ![Статистика за год](docs/screenshots/stats-year.png) | ![Антистресс](docs/screenshots/antistress.png) |
 
 <details>
 <summary><b>Всё по пунктам</b></summary>
@@ -71,7 +83,7 @@
 - **Дедлайн книги**: столько-то слов к дате - блокнот считает нужный темп.
 - Календарь письма: дни подряд и рекорд.
 - **Кто говорит**: длинные цепочки реплик без «сказала Кира» и непонятные «сказала она». **Реплики персонажей**: сколько говорит каждый - по книге и по главам.
-- Таймер с лаской, бегущей в колесе, **объёмные кубики** d4–d100 со стуком по столу (d100 - двумя костями), монетка «ворон или ласка» со звоном (и иногда на ребро) и **«Рандомайзеры»**: стол для бросков с кубиками из кости, металла, дуба и смолы, монетка на стол, число, вариант из списка, персонаж или термин, рулетка со ста писательскими вызовами от безобидных до адища. Антистресс по F12: пупырка, мячик, спиннер, сад камней, тумблеры с головоломкой на сотни уровней, блинчики по воде. Звук печатной машинки и напоминание дать отдых глазам - по желанию.
+- Таймер с лаской, бегущей в колесе, **объёмные кубики** d4–d100 со стуком по столу (d100 - двумя костями), монетка «ворон или ласка» со звоном (и иногда на ребро) и **«Рандомайзеры»**: стол для бросков с кубиками из кости, металла, дуба и индиго, монетка на стол, число, вариант из списка, персонаж или термин, рулетка со ста писательскими вызовами от безобидных до адища. Антистресс по F12: пупырка, мячик, спиннер, сад камней, тумблеры с головоломкой на сотни уровней, блинчики по воде. Звук печатной машинки и напоминание дать отдых глазам - по желанию.
 - Большие главы (сотни тысяч слов) открываются за пару секунд, смена темы - мгновенно.
 
 </details>
@@ -80,18 +92,15 @@
 
 ## Установка
 
-### Debian, Ubuntu и похожие
+### Windows 10 и 11
 
-```bash
-unzip StungKir.zip && cd StungKir
-bash install.sh
-```
+Скачать [StungKir-Setup-1.0.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.0.0.exe) и запустить. Словарь и шрифты уже внутри. Windows может предупредить «неизвестный издатель»: программа не подписана платным сертификатом. Нажми «Подробнее → Выполнить в любом случае».
 
-Скрипт поставит системные пакеты (попросит пароль sudo), положит программу в `~/.local/share/stungkir` с собственным окружением Python, добавит ярлык в меню и прогонит самопроверку. Обновления системы его не ломают: если окружение испортится, оно пересоберётся при запуске.
+**С флешки, без установки и без прав администратора:** [StungKir-Windows-portable.zip](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Windows-portable.zip) - распаковать на флешку и запускать `StungKir.exe`. Тексты, копии и настройки хранятся там же, на флешке, на чужом компьютере ничего не остаётся.
 
-### Flatpak (любой Linux)
+### Linux (любой дистрибутив)
 
-Готовый `.flatpak` лежит в [релизах](https://github.com/KiriFestung/StungKir-notepad/releases/tag/linux-latest):
+Скачать [StungKir.flatpak](https://github.com/KiriFestung/StungKir-notepad/releases/download/linux-latest/StungKir.flatpak) и поставить:
 
 ```bash
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
@@ -99,21 +108,9 @@ flatpak install --user StungKir.flatpak
 flatpak run page.codeberg.kirifestung.StungKir
 ```
 
-Собрать самому: `flatpak-builder --user --install build packaging/flatpak/page.codeberg.kirifestung.StungKir.yml`.
+### Android
 
-### Windows 10 и 11
-
-Скачать `StungKir-Setup-1.0.0.exe` из [релизов](https://github.com/KiriFestung/StungKir-notepad/releases/tag/windows-latest) и запустить. Словарь и шрифты уже внутри. Windows может предупредить «неизвестный издатель» - программа не подписана платным сертификатом; «Подробнее → Выполнить в любом случае».
-
-Переносная версия для флешки (без установки и без прав администратора): `StungKir-Windows-portable.zip` - распаковать на флешку и запускать `StungKir.exe`. Пока рядом с ним лежит `portable.txt`, тексты, копии и настройки хранятся там же, на флешке, а на чужом компьютере ничего не остаётся.
-
-Собрать установщик самому на Windows: `powershell -ExecutionPolicy Bypass -File packaging\windows\build-windows.ps1` (нужны Python 3.12 и Inno Setup 6). Без Windows - через GitHub, см. [docs/СБОРКА-WINDOWS.md](docs/СБОРКА-WINDOWS.md).
-
-### Через pip
-
-```bash
-pipx install git+https://github.com/KiriFestung/StungKir-notepad.git
-```
+Скачать [StungKir-Android.apk](https://github.com/KiriFestung/StungKir-notepad/releases/download/android-latest/StungKir-Android.apk) прямо с телефона. Как поставить и связать с компьютером - [docs/ТЕЛЕФОН.md](docs/ТЕЛЕФОН.md).
 
 macOS официально не поддерживается.
 
@@ -125,18 +122,30 @@ macOS официально не поддерживается.
 | Служебное книги: версии глав, заметки на полях, статистика, свой словарь, корзина, ключ пароля | `~/StungKir/.stungkir` (скрытая) | `StungKir\.stungkir` (скрытая) |
 | Настройки, копии, точки возврата, журнал ошибок | `~/.local/share/stungkir` | `%APPDATA%\StungKir` |
 
-Папку с текстами можно синхронизировать с телефоном через Syncthing: блокнот замечает изменения, сделанные снаружи. Для телефона есть своё приложение StungKir для Android, которое пишет прямо в эту папку - как поставить и связать, в [docs/ТЕЛЕФОН.md](docs/ТЕЛЕФОН.md). Служебное лежит внутри неё, поэтому синхронизируется вместе с текстами. В прошлых версиях служебные файлы лежали прямо в `StungKir` (`.stats.json`, `.versions` и т.п.) - при первом запуске они сами переезжают в `.stungkir`, перед этим делается резервная копия. Точные пути видны в «Ещё → О программе».
+Тексты - обычные `.txt`: папку можно копировать и синхронизировать, например с телефоном через Syncthing ([как связать](docs/ТЕЛЕФОН.md)). Служебное лежит внутри неё и едет вместе с текстами. Точные пути - в «Ещё → О программе».
 
-**Про пароль.** Когда ставишь пароль, блокнот один раз показывает код восстановления - им можно войти, если пароль забыт. Если потерять и пароль, и код, тексты не восстановить никак - ни автору программы, ни кому-то ещё.
+**Пароль.** Когда ставишь пароль, блокнот один раз показывает код восстановления - им можно войти, если пароль забыт. Если потерять и пароль, и код, тексты не восстановит никто, даже автор программы.
 
-## Самопроверка
+## Для разработчиков
+
+**Из исходников** (Python 3.11+, PySide6):
 
 ```bash
-stungkir --test              # после install.sh
-python3 -m stungkir --test   # из папки с исходниками
+git clone https://github.com/KiriFestung/StungKir-notepad.git && cd StungKir-notepad
+python3 -m stungkir            # запуск
+python3 -m stungkir --test     # больше трёхсот проверок во временной папке, тексты не трогают
 ```
 
-Больше трёхсот автотестов: сохранение, кодировки, шифрование, справочник, сборка книги, импорт, цвета, автосохранение, кубики. Тесты работают во временной папке и не трогают ваши тексты и настройки. На GitHub они запускаются при каждом изменении кода - на Linux и на Windows.
+Или одной командой через pip: `pipx install git+https://github.com/KiriFestung/StungKir-notepad.git`.
+
+**Debian, Ubuntu и похожие** - `bash install.sh` из папки с исходниками: поставит системные пакеты (попросит пароль sudo), положит программу в `~/.local/share/stungkir` со своим окружением Python, добавит ярлык в меню и прогонит проверки. Обновления системы его не ломают: испорченное окружение пересоберётся при запуске.
+
+**Сборки** собираются сами на GitHub Actions после каждого изменения: проверки на Linux (две версии PySide) и на Windows, установщик и переносная версия для Windows, Flatpak, APK для Android. Каждую ночь ещё и роботы: «обезьяна» жмёт по окну что попало, фаззер кормит блокнот битым текстом. Собрать самому:
+- Flatpak: `flatpak-builder --user --install build packaging/flatpak/page.codeberg.kirifestung.StungKir.yml`;
+- Windows: `powershell -ExecutionPolicy Bypass -File packaging\windows\build-windows.ps1` (нужны Python 3.12 и Inno Setup 6);
+- Android: см. [docs/ТЕЛЕФОН.md](docs/ТЕЛЕФОН.md).
+
+**Код** разложен по папкам в `stungkir/`: `core` - основа без окон (диск, настройки, защита текста), `text` - редактор и инструменты правки, `world` - справочник мира, `story` - план и доски, `books` - сборка, импорт и сайт, `fun` - кубики и антистресс, `ui` - окна. Подробная карта - в начале `stungkir/__init__.py`.
 
 ## Лицензия и авторы
 
