@@ -4,7 +4,7 @@
 import time
 import unittest
 
-from stungkir import speech as SP
+from stungkir.text import speech as SP
 from stungkir.tests.helpers import WindowCase, wait
 
 
@@ -85,7 +85,7 @@ class ReadingTest(WindowCase):
         self.assertIn("русского голоса", self.messages[-1][1])
 
     def test_choose_voice(self):
-        from stungkir.windows import SettingsDialog
+        from stungkir.ui.windows import SettingsDialog
         dialog = SettingsDialog(self.w, {}, 500)
         self.assertGreaterEqual(dialog.voice.count(), 1)
         if dialog.voice.count() > 1:

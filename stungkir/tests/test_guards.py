@@ -3,9 +3,9 @@
 """Чужие файлы в папках, конфликты синхронизации, отмена замены во всех главах."""
 from pathlib import Path
 
-from stungkir import config as C
-from stungkir import conflicts as K
-from stungkir import storage as S
+from stungkir.core import config as C
+from stungkir.core import conflicts as K
+from stungkir.core import storage as S
 from stungkir.tests.helpers import Sandbox, WindowCase
 
 PNG = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR" + b"\0" * 40
@@ -77,7 +77,7 @@ class GuardsWindowTest(WindowCase):
         w.open_path(copy)
         self.assertFalse(copy.exists())
         self.assertEqual(w.path, mine)
-        from stungkir.trash import trash_entries
+        from stungkir.core.trash import trash_entries
         self.assertEqual(len(trash_entries()), 1)                 # копия - в корзине, не пропала
 
     def test_undo_replace_everywhere(self):

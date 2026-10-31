@@ -19,8 +19,8 @@ if not os.environ.get("STUNGKIR_TEST_HOME"):
     atexit.register(shutil.rmtree, _home, ignore_errors=True)
 
 import stungkir  # noqa: E402
-from stungkir import config as C  # noqa: E402
-from stungkir import storage as S  # noqa: E402
+from stungkir.core import config as C  # noqa: E402
+from stungkir.core import storage as S  # noqa: E402
 
 MODULES = [importlib.import_module(f"stungkir.{m.name}") for m in pkgutil.iter_modules(stungkir.__path__)
            if m.name not in ("__main__", "tests")]
@@ -32,7 +32,7 @@ def app():
     global _APP
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6.QtWidgets import QApplication
-    from stungkir.style import apply_theme
+    from stungkir.ui.style import apply_theme
     _APP = QApplication.instance() or QApplication([])
     apply_theme(_APP)
     return _APP
@@ -45,8 +45,8 @@ def wait(seconds=0.05):
 
 
 def speller_available():
-    from stungkir import editor
-    from stungkir.editor import Speller
+    from stungkir.text import editor
+    from stungkir.text.editor import Speller
     source = Path(__file__).resolve().parents[2] / "packaging" / "dictionaries"
     if source.is_dir() and source not in editor.DICTIONARY_DIRS:   # из исходников: словарь лежит в packaging
         editor.DICTIONARY_DIRS.append(source)
@@ -112,7 +112,7 @@ class WindowCase(Sandbox):
         self.patch("ask_question", lambda *a, **k: self.answer)
 
     def window(self):
-        from stungkir.window import Notepad
+        from stungkir.ui.window import Notepad
         w = Notepad()
         w.resize(1300, 800)
         w.show()

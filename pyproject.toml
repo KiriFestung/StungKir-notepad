@@ -36,7 +36,8 @@ Homepage = "https://github.com/KiriFestung/StungKir-notepad"
 Issues = "https://github.com/KiriFestung/StungKir-notepad/issues"
 
 [tool.setuptools]
-packages = ["stungkir", "stungkir.tests"]
+packages = ["stungkir", "stungkir.core", "stungkir.text", "stungkir.world", "stungkir.story", "stungkir.books", "stungkir.fun",
+            "stungkir.ui", "stungkir.tests"]
 
 [tool.setuptools.package-data]
 stungkir = ["fonts/*.ttf", "fonts/*.txt", "sounds/*.wav", "art/*.png", "art/icons/*.png", "art/paper/*.png", "art/dice/*/*.png", "art/anim/*/*.png"]   # шрифты (OFL), звуки, рисунки

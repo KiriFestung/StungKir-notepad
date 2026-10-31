@@ -4,8 +4,8 @@
 import unittest
 from datetime import date
 
-from stungkir import deadline as D
-from stungkir import storage as S
+from stungkir.text import deadline as D
+from stungkir.core import storage as S
 from stungkir.tests.helpers import WindowCase
 
 

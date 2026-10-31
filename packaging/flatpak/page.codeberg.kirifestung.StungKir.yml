@@ -29,7 +29,7 @@ modules:
     build-commands:
       - mkdir -p /app/lib/stungkir-app
       - cp -r stungkir /app/lib/stungkir-app/
-      - rm -rf /app/lib/stungkir-app/stungkir/__pycache__ /app/lib/stungkir-app/stungkir/tests/__pycache__
+      - find /app/lib/stungkir-app/stungkir -name __pycache__ -prune -exec rm -rf {} +
       - install -Dm755 packaging/flatpak/stungkir.sh /app/bin/stungkir
       # русский словарь для проверки орфографии (через spylls) и шрифты DejaVu
       - install -Dm644 packaging/dictionaries/ru_RU.dic /app/share/hunspell/ru_RU.dic

@@ -5,10 +5,10 @@ import json
 import unittest
 from pathlib import Path
 
-from stungkir import config as C
-from stungkir import storage as S
-from stungkir import textutil as T
-from stungkir import timeline as TL
+from stungkir.core import config as C
+from stungkir.core import storage as S
+from stungkir.core import textutil as T
+from stungkir.world import timeline as TL
 from stungkir.tests.helpers import WindowCase, wait
 
 EVENTS = [{"when": "Весна 312 г.", "year": 312, "title": "Падение Лосса", "text": "Город сдан."},

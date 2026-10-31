@@ -3,8 +3,8 @@
 """Главное окно целиком: сохранение и версии, заметки на полях, справочник мира."""
 import json
 
-from stungkir import config as C
-from stungkir import storage as S
+from stungkir.core import config as C
+from stungkir.core import storage as S
 from stungkir.tests.helpers import WindowCase, speller_available, wait
 
 
@@ -28,7 +28,7 @@ class ChapterTest(WindowCase):
         w.save()
         w.editor.setPlainText("Раз.\nДва три.")
         w.save()
-        from stungkir.windows import VersionsDialog
+        from stungkir.ui.windows import VersionsDialog
         dialog = VersionsDialog(w, path, S.list_versions(path), w.editor.font(), w.current_text())
         dialog.mode.setCurrentIndex(1)
         dialog._show(0)
@@ -218,8 +218,8 @@ class HotkeysTest(WindowCase):
     def test_change_hotkey_and_conflicts(self):
         import json
         from PySide6.QtGui import QKeySequence
-        from stungkir import dialogs
-        from stungkir.dialogs import HotkeysDialog, hotkey_problems
+        from stungkir.ui import dialogs
+        from stungkir.ui.dialogs import HotkeysDialog, hotkey_problems
         w = self.window()
         self.assertEqual(w.shortcuts["antistress"].key().toString(), "F12")
         self.assertTrue(hotkey_problems({"save": "Ctrl+S", "new": "Ctrl+S"}))       # одна на два дела

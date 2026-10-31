@@ -8,9 +8,9 @@ from datetime import date, timedelta
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 
-from stungkir import config as C
-from stungkir import storage as S
-from stungkir import textutil as T
+from stungkir.core import config as C
+from stungkir.core import storage as S
+from stungkir.core import textutil as T
 from stungkir.tests.helpers import WindowCase, wait
 
 BLANK = {"columns": [{"title": t, "cards": []} for t in C.BOARD_COLUMNS]}
@@ -39,7 +39,7 @@ class BoardTest(WindowCase):
         self.path.write_text(json.dumps(BLANK), encoding="utf-8", newline="\n")
         self.w.open_path(self.path)
         self.board = self.w.board_view
-        from stungkir import board
+        from stungkir.story import board
         self.patch("CardDialog", FakeCard)
         self.assertTrue(board)
 
@@ -145,7 +145,7 @@ class StreakTest(unittest.TestCase):
 
 class YearTest(WindowCase):
     def test_year_heatmap_and_summary(self):
-        from stungkir.windows import StatsDialog, year_summary
+        from stungkir.ui.windows import StatsDialog, year_summary
         today = date.today()
         w = self.window()
         w.goal = 500
@@ -184,7 +184,7 @@ class CalendarTest(WindowCase):
         w = self.window()
         yesterday = date.today() - timedelta(days=1)
         w.stats[(yesterday - timedelta(days=1)).isoformat()] = 500
-        from stungkir.windows import StatsDialog
+        from stungkir.ui.windows import StatsDialog
         dialog = StatsDialog(w, w.stats, w.goal, w.day_marks, w.set_day_marks)
         if yesterday.month != date.today().month:
             dialog._shift(-1)
@@ -233,7 +233,7 @@ class RealCardDialogTest(WindowCase):
     """Настоящее окно карточки, без подмены: раньше «Готово» молча падало, и карточка не появлялась."""
 
     def test_card_dialog_returns_what_was_typed(self):
-        from stungkir.board import CardDialog
+        from stungkir.story.board import CardDialog
         dialog = CardDialog(None, {}, ["Книга/Глава.txt"], lambda: None, existing=False)
         dialog.title.setText("Встреча")
         dialog.text.setPlainText("Они видятся впервые")
@@ -246,7 +246,7 @@ class RealCardDialogTest(WindowCase):
         """Ни одно окно-карточка не называет свои функции так же, как детали самой карточки."""
         import inspect
         from PySide6.QtWidgets import QDialog
-        from stungkir import dialogs
+        from stungkir.ui import dialogs
         from stungkir.tests.helpers import MODULES
         sheet = dialogs.Sheet(None, "проба")
         parts = {name for name in vars(sheet) if not hasattr(QDialog, name)}    # content, flat, …

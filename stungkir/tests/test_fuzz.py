@@ -16,9 +16,9 @@ from PySide6.QtGui import QKeyEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from stungkir import config as C
-from stungkir import dialogs
-from stungkir import storage as S
+from stungkir.core import config as C
+from stungkir.ui import dialogs
+from stungkir.core import storage as S
 from stungkir.tests.helpers import WindowCase, wait
 
 WEIRD_NAMES = [
@@ -218,7 +218,7 @@ class Robot:
         if os.environ.get("FUZZ_TRACE"):
             for f in self.files():
                 print("     ", f.relative_to(C.ROOT), f.stat().st_size if f.exists() else "-", flush=True)
-        from stungkir.window import Notepad
+        from stungkir.ui.window import Notepad
         before = {f: S.read_text(f) for f in self.files(everything=False) if f.is_file() and S.is_text_file(f)
                   and f.suffix == ".txt"}
         unsaved = self.w.path if self.w.is_modified() else None

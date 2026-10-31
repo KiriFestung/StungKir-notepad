@@ -17,9 +17,10 @@ import traceback
 from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from stungkir import config as C
-from stungkir import conflicts, dialogs
-from stungkir import storage as S
+from stungkir.core import config as C
+from stungkir.core import conflicts
+from stungkir.ui import dialogs
+from stungkir.core import storage as S
 from stungkir.tests.helpers import WindowCase, wait
 
 CHAPTERS = ["Глава 1", "Глава 2", "Глава 3"]

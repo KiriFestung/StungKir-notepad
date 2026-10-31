@@ -7,10 +7,10 @@ import json
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QAbstractItemView
 
-from stungkir import config as C
-from stungkir import storage as S
-from stungkir.lore import birth_year, lore_tooltip
-from stungkir.plan import STATUS_ROLE, PlanDialog, parse_year, plan_summary
+from stungkir.core import config as C
+from stungkir.core import storage as S
+from stungkir.world.lore import birth_year, lore_tooltip
+from stungkir.story.plan import STATUS_ROLE, PlanDialog, parse_year, plan_summary
 from stungkir.tests.helpers import Sandbox, WindowCase, wait
 
 
@@ -109,7 +109,7 @@ class PlanWindowTest(WindowCase):
 
     def test_show_plan_opens_chapter_and_hotkey(self):
         self.assertEqual(self.w.shortcuts["plan"].key().toString(), "Ctrl+P")
-        from stungkir import dialogs
+        from stungkir.ui import dialogs
 
         def pick_second(dialog):
             dialog.open_target = self.second
@@ -175,7 +175,7 @@ class PlanWindowTest(WindowCase):
         self.assertEqual(S.load_plan()["Книга/Глава 1.txt"], {"pov": "Мира"})
 
     def test_not_in_book(self):
-        from stungkir.windows import CompileDialog
+        from stungkir.ui.windows import CompileDialog
         self.w.plan_set(self.second, "skip", "yes")
         self.assertEqual(self.child(self.second).foreground(0).color().name(), C.DIM.lower())
         self.assertIn("не в книгу", self.child(self.second).toolTip(0))

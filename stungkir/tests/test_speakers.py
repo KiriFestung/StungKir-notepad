@@ -3,7 +3,7 @@
 """Кто говорит: разбор реплик, длинные цепочки, непонятные «сказала она», реплики персонажей."""
 import unittest
 
-from stungkir.speakers import NARRATOR, ReplyStatsDialog, Speakers, reply_stats, segments
+from stungkir.text.speakers import NARRATOR, ReplyStatsDialog, Speakers, reply_stats, segments
 from stungkir.tests.helpers import WindowCase
 
 TALK = """Кира подошла к окну.
@@ -63,7 +63,7 @@ class ParseTest(unittest.TestCase):
 class SpeakersWindowTest(WindowCase):
     def setUp(self):
         super().setUp()
-        from stungkir import storage as S
+        from stungkir.core import storage as S
         S.save_names(["Кира", "Ния", "Кев"])
         self.one = self.chapter("Книга", "Глава 1", TALK)
         self.two = self.chapter("Книга", "Глава 2", "— Ещё раз, — сказала Ния.")

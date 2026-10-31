@@ -3,7 +3,7 @@
 """Внешний вид: новые темы, вложенные шрифты, фактура под текстом, «без отвлечений»."""
 import unittest
 
-from stungkir import config as C
+from stungkir.core import config as C
 from stungkir.tests.helpers import WindowCase, app, wait
 
 
@@ -100,7 +100,7 @@ class LookWindowTest(WindowCase):
 class IconsAndImportanceTest(WindowCase):
     def test_buttons_get_icons_by_text(self):
         from PySide6.QtWidgets import QPushButton, QWidget
-        from stungkir.icons import decorate, icon_for_text
+        from stungkir.ui.icons import decorate, icon_for_text
         self.assertEqual(icon_for_text("Сохранить"), "save")
         self.assertEqual(icon_for_text("Отмена"), "close")
         self.assertIsNone(icon_for_text("d20"))
@@ -117,8 +117,8 @@ class IconsAndImportanceTest(WindowCase):
         self.assertFalse(bool(save.property("minor")))
 
     def test_menu_icons_leave_checkmarks_alone(self):
-        from stungkir.icons import decorate_menu
-        from stungkir.style import rounded_menu
+        from stungkir.ui.icons import decorate_menu
+        from stungkir.ui.style import rounded_menu
         w = self.window()
         menu = rounded_menu(w)
         plain = menu.addAction("Статистика")
@@ -201,7 +201,7 @@ class ScreenItemsTest(WindowCase):
 
 class GoalColorsTest(WindowCase):
     def test_bars_are_bright_and_distinct_in_every_theme(self):
-        from stungkir.widgets import GoalStrip
+        from stungkir.ui.widgets import GoalStrip
         strip = GoalStrip()
         for theme in C.THEMES:
             C.set_palette(C.THEMES[theme])
@@ -240,8 +240,8 @@ class CoverAndBackdropTest(WindowCase):
 
     def test_category_cover_everywhere(self):
         import zipfile
-        from stungkir import covers
-        from stungkir.windows import CoverDialog
+        from stungkir.books import covers
+        from stungkir.ui.windows import CoverDialog
         w = self.window()
         chapter = self.chapter("Книга", "Глава", "Текст главы.")
         w.refresh_tree()
@@ -255,7 +255,7 @@ class CoverAndBackdropTest(WindowCase):
         self.assertFalse(w.tree.topLevelItem(0).icon(0).isNull())          # значок в списке слева
         data = covers.cover_bytes(folder)
         self.assertTrue(data.startswith(b"\xff\xd8"))                        # JPEG
-        from stungkir.export import export_epub, export_pdf
+        from stungkir.books.export import export_epub, export_pdf
         options = {"headings": True, "new_page": True, "layout": {}, "cover": data}
         epub = self.tmp / "книга.epub"
         export_epub(epub, "Книга", "Автор", [("Глава", ["Текст."])], options)
@@ -265,24 +265,24 @@ class CoverAndBackdropTest(WindowCase):
         pdf = self.tmp / "книга.pdf"
         export_pdf(pdf, "Книга", "Автор", [("Глава", ["Текст."])], options)
         self.assertGreater(pdf.stat().st_size, len(data) // 3)
-        from stungkir import storage as S
+        from stungkir.core import storage as S
         self.assertIn(covers.cover_path(folder), S.content_files())          # с паролем шифруется
         dialog._remove()
         self.assertFalse(covers.has_cover(folder))
 
     def test_cover_moves_with_renamed_category(self):
-        from stungkir import covers
+        from stungkir.books import covers
         w = self.window()
         chapter = self.chapter("Книга", "Глава", "Текст.")
         covers.save_cover(chapter.parent, self._picture())
         self.answer_text = "Роман"
         self.patch("ask_text", lambda *a, **k: ("Роман", True))
         w.rename(chapter.parent)
-        from stungkir import config as C
+        from stungkir.core import config as C
         self.assertTrue(covers.has_cover(C.ROOT / "Роман"))
 
     def test_own_picture_under_text(self):
-        from stungkir import config as C
+        from stungkir.core import config as C
         w = self.window()
         w.resize(900, 600)
         w.show()
@@ -316,13 +316,13 @@ class CoverAndBackdropTest(WindowCase):
 
 class ReaderPreviewTest(WindowCase):
     def test_book_phone_and_reader(self):
-        from stungkir import dialogs
+        from stungkir.ui import dialogs
         w = self.window()
         path = self.chapter("Книга", "Глава 1", "\n".join(f"Абзац номер {i}, *с курсивом*, длинный - чтобы "
                                                           "строк хватило на несколько страниц." for i in range(80))
                             + "\n* * *\n# Конец\nПоследний.")
         self.chapter("Книга", "Вторая", "Вторая глава.\n" * 20)
-        from stungkir import storage
+        from stungkir.core import storage
         storage.save_order(path.parent, ["Глава 1.txt", "Вторая.txt"])
         w.open_path(path)
         self.patch_exec = dialogs.Sheet.exec
@@ -369,7 +369,7 @@ class ReaderPreviewTest(WindowCase):
         self.assertEqual(ribbon.parts[1][0], "Вторая")
         dialog.view.grab()
         self.assertIn("из 2", dialog.counter.text())
-        from stungkir.preview import chapter_html
+        from stungkir.books.preview import chapter_html
         markup = chapter_html("Глава", "Раз *курсив*.\n* * *\n# Конец\n[пометка для себя]Текст.")
         self.assertIn("<i>курсив</i>", markup)
         self.assertIn('class="scene"', markup)

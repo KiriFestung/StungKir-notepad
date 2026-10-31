@@ -4,10 +4,10 @@
 import json
 import unittest
 
-from stungkir import config as C
-from stungkir import importers as I
-from stungkir import storage as S
-from stungkir.export import docx_available
+from stungkir.core import config as C
+from stungkir.books import importers as I
+from stungkir.core import storage as S
+from stungkir.books.export import docx_available
 from stungkir.tests.helpers import Sandbox, WindowCase
 
 
@@ -273,7 +273,7 @@ class MoreFormatsTest(Sandbox):
         self.assertEqual([name for name, _ in I.split_chapters(paragraphs, "книга")], ["Глава 1. Туман", "Глава 2"])
 
     def test_epub_and_fb2_from_our_own_export(self):
-        from stungkir.export import export_epub, export_fb2
+        from stungkir.books.export import export_epub, export_fb2
         chapters = [("Пролог", ["Первый *абзац*.", "Второй **абзац**."]), ("Глава 1", ["Текст главы."])]
         options = {"headings": True, "new_page": True, "layout": {}, "genre": "sf_fantasy"}
         export_epub(self.tmp / "к.epub", "Книга", "Автор", chapters, options)
@@ -306,7 +306,7 @@ class MoreFormatsTest(Sandbox):
 class ImportWindowTest(WindowCase):
     def test_add_files_of_every_kind(self):
         from PySide6.QtWidgets import QFileDialog
-        from stungkir.textutil import parse_table
+        from stungkir.core.textutil import parse_table
         w = self.window()
         category = C.ROOT / "Мир"
         category.mkdir()
@@ -328,8 +328,8 @@ class ImportWindowTest(WindowCase):
 
 class WorldKitTest(WindowCase):
     def test_world_kit(self):
-        from stungkir import worldkit
-        from stungkir.textutil import parse_table
+        from stungkir.world import worldkit
+        from stungkir.core.textutil import parse_table
         w = self.window()
         category = C.ROOT / "Мир"
         category.mkdir()

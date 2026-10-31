@@ -4,8 +4,8 @@
 import unittest
 import zipfile
 
-from stungkir import config as C
-from stungkir import export as E
+from stungkir.core import config as C
+from stungkir.books import export as E
 from stungkir.tests.helpers import Sandbox, WindowCase, app, wait
 
 CHAPTERS = [("Глава 1", ["Первый абзац.", "Второй абзац с *курсивом*.", "* * *", "После разрыва."]),
@@ -68,7 +68,7 @@ class TemplatesTest(Sandbox):
         except ImportError:
             self.skipTest("нет модуля QtPdf")
         from PySide6.QtWidgets import QApplication
-        from stungkir.style import apply_theme
+        from stungkir.ui.style import apply_theme
         C.set_palette(C.THEMES["Мох"])
         apply_theme(QApplication.instance())
         target = self.tmp / "book.pdf"
@@ -119,7 +119,7 @@ class TemplatesTest(Sandbox):
 
 class CompileDialogTest(WindowCase):
     def test_template_sets_format_and_layout(self):
-        from stungkir.windows import CompileDialog
+        from stungkir.ui.windows import CompileDialog
         self.chapter("Книга", "Глава", "Текст.")
         w = self.window()
         dialog = CompileDialog(w, w.categories(), None, "Автор")

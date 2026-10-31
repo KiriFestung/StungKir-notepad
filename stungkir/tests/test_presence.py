@@ -3,7 +3,7 @@
 """Кто в какой главе: счёт упоминаний по главам, пропажи, переход к месту."""
 import unittest
 
-from stungkir import presence as P
+from stungkir.world import presence as P
 from stungkir.tests.helpers import WindowCase
 
 

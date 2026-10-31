@@ -4,8 +4,8 @@
 import unittest
 from pathlib import Path
 
-from stungkir import storage as S
-from stungkir import replace as R
+from stungkir.core import storage as S
+from stungkir.text import replace as R
 from stungkir.tests.helpers import WindowCase, app, speller_available, wait
 
 TEXT = "Кира пришла. Киры не было. С Кирой. Кирилл и кира."
@@ -29,7 +29,7 @@ class ReplaceLogicTest(unittest.TestCase):
     @unittest.skipUnless(speller_available(), "нет словаря hunspell-ru")
     def test_all_forms(self):
         app()
-        from stungkir.editor import Speller
+        from stungkir.text.editor import Speller
         import tempfile
         speller = Speller(Path(tempfile.mkdtemp()) / "p.txt")
         places = R.find_places([(Path("К/Г.txt"), TEXT)], "Кира", forms=True, speller=speller)

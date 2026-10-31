@@ -8,13 +8,13 @@ from datetime import date, timedelta
 from PySide6.QtCore import QPoint, QSettings, Qt
 from PySide6.QtTest import QTest
 
-from stungkir import config as C
+from stungkir.core import config as C
 from stungkir.tests.helpers import WindowCase, app, wait
 
 
 class RouletteLogicTest(unittest.TestCase):
     def test_one_bullet_in_six_and_chance_grows(self):
-        from stungkir.roulette import CHAMBERS, Roulette
+        from stungkir.fun.roulette import CHAMBERS, Roulette
         for seed in range(40):
             r = Roulette(random.Random(seed))
             r.spin()
@@ -28,7 +28,7 @@ class RouletteLogicTest(unittest.TestCase):
             self.assertEqual(chances, [(1, n) for n in range(CHAMBERS, CHAMBERS - len(chances), -1)])
 
     def test_loads(self):
-        from stungkir.roulette import CHAMBERS, LOADS, Roulette
+        from stungkir.fun.roulette import CHAMBERS, LOADS, Roulette
         self.assertEqual([key for key, *_ in LOADS], ["1", "2", "3", "4", "5", "6"])   # «6 и холостой» убран
         for key, _title, live in LOADS:
             r = Roulette(random.Random(3), load=key)
@@ -40,7 +40,7 @@ class RouletteLogicTest(unittest.TestCase):
         self.assertEqual(Roulette(load="ерунда").load, "1")
 
     def test_challenges_by_level(self):
-        from stungkir.roulette import CHALLENGES, LEVEL_CHALLENGES, LEVELS, Roulette, level_pool
+        from stungkir.fun.roulette import CHALLENGES, LEVEL_CHALLENGES, LEVELS, Roulette, level_pool
         self.assertEqual(len(CHALLENGES), 340)
         self.assertEqual(len(set(CHALLENGES)), 340)                 # без повторов
         self.assertEqual(len(LEVELS), 7)
@@ -54,7 +54,7 @@ class RouletteLogicTest(unittest.TestCase):
         self.assertEqual({r.challenge(["своё"], True, 3) for _ in range(10)}, {"своё"})
 
     def test_challenges_own_and_builtin(self):
-        from stungkir.roulette import CHALLENGES, Roulette, own_list
+        from stungkir.fun.roulette import CHALLENGES, Roulette, own_list
         self.assertGreaterEqual(len(set(CHALLENGES)), 15)
         for text in CHALLENGES:
             self.assertNotIn("—", text)                 # внутри текста - короткое тире
@@ -70,8 +70,8 @@ class RouletteLogicTest(unittest.TestCase):
 
 class RouletteDialogTest(WindowCase):
     def test_drawn_bang_and_dust_frames_play_and_end(self):
-        from stungkir.artwork import frame_count, pixmap
-        from stungkir.roulette import Revolver
+        from stungkir.fun.artwork import frame_count, pixmap
+        from stungkir.fun.roulette import Revolver
         for name, frames in Revolver.EFFECTS.items():
             count = frame_count(frames)
             self.assertGreaterEqual(count, 8, name)
@@ -97,7 +97,7 @@ class RouletteDialogTest(WindowCase):
         revolver.grab()
 
     def _dialog(self):
-        from stungkir.dice import RandomDialog
+        from stungkir.fun.dice import RandomDialog
         results = []
         settings = QSettings(C.APP_ID, C.APP_ID)
         dialog = RandomDialog(None, ["Кира"], [], settings, results.append)
@@ -160,7 +160,7 @@ class RouletteDialogTest(WindowCase):
         dialog.close()
 
     def test_level_and_own_challenges(self):
-        from stungkir.roulette import level_pool
+        from stungkir.fun.roulette import level_pool
         dialog, results, settings = self._dialog()
         dialog.load_box.setCurrentIndex(dialog.load_box.findData("6"))
         self.assertEqual(settings.value("roulette_load"), "6")
@@ -180,7 +180,7 @@ class RouletteDialogTest(WindowCase):
 
 class AntistressTest(WindowCase):
     def test_bubbles_pop_once_and_sheet_refills(self):
-        from stungkir.antistress import COLUMNS, ROWS, StressDialog
+        from stungkir.fun.antistress import COLUMNS, ROWS, StressDialog
         dialog = StressDialog(None)
         dialog.resize(700, 520)
         dialog.show()
@@ -206,7 +206,7 @@ class AntistressTest(WindowCase):
         dialog.close()
 
     def test_ball_squeezes_and_springs_back(self):
-        from stungkir.antistress import StressDialog
+        from stungkir.fun.antistress import StressDialog
         dialog = StressDialog(None)
         dialog.show()
         dialog._show_page(1)
@@ -228,7 +228,7 @@ class AntistressTest(WindowCase):
 
     def test_sand_rake_goes_around_stones(self):
         from PySide6.QtCore import QPointF
-        from stungkir.antistress import StressDialog
+        from stungkir.fun.antistress import StressDialog
         heard = []
         dialog = StressDialog(None)
         dialog.resize(760, 560)
@@ -255,7 +255,7 @@ class AntistressTest(WindowCase):
         dialog.close()
 
     def test_toggles_click_and_guarded_switch(self):
-        from stungkir.antistress import StressDialog, Toggles
+        from stungkir.fun.antistress import StressDialog, Toggles
         heard = []
         dialog = StressDialog(None)
         dialog.show()
@@ -278,7 +278,7 @@ class AntistressTest(WindowCase):
         dialog.close()
 
     def test_toggle_puzzles_are_solvable_and_levels_go_on(self):
-        from stungkir.antistress import PUZZLES, StressDialog, make_puzzle, puzzle_flip
+        from stungkir.fun.antistress import PUZZLES, StressDialog, make_puzzle, puzzle_flip
         for kind, (_t, cols, rows, pattern, _r) in PUZZLES.items():
             for level in (1, 2, 17, 250):
                 state, solution = make_puzzle(kind, level)
@@ -318,7 +318,7 @@ class AntistressTest(WindowCase):
 
     def test_stone_skipping(self):
         import random
-        from stungkir.antistress import StoneSkip, StressDialog
+        from stungkir.fun.antistress import StoneSkip, StressDialog
         self.assertEqual(StoneSkip.skip_chance(0.9, 20), 0.0)              # отвесно - бульк
         self.assertEqual(StoneSkip.skip_chance(0.2, 2), 0.0)               # медленно - бульк
         self.assertGreater(StoneSkip.skip_chance(0.2, 20), 0.9)
@@ -357,7 +357,7 @@ class AntistressTest(WindowCase):
 
     def test_spinner_follows_hand_and_spins_long(self):
         import math
-        from stungkir.antistress import StressDialog
+        from stungkir.fun.antistress import StressDialog
         dialog = StressDialog(None)
         dialog.resize(760, 520)
         dialog.show()
@@ -388,7 +388,7 @@ class AntistressTest(WindowCase):
         dialog.close()
 
     def test_blocks_game_rules(self):
-        from stungkir.antistress import SHAPES, BlocksGame
+        from stungkir.fun.antistress import SHAPES, BlocksGame
         game = BlocksGame(random.Random(3))
         first_seven = [game.kind, game.next] + [game._take() for _ in range(5)]
         self.assertEqual(sorted(first_seven), sorted(SHAPES))      # мешок: все семь по разу
@@ -417,7 +417,7 @@ class AntistressTest(WindowCase):
         self.assertLess(BlocksGame().interval(), 800)
 
     def test_blocks_page_plays_with_keys(self):
-        from stungkir.antistress import StressDialog
+        from stungkir.fun.antistress import StressDialog
         dialog = StressDialog(self.window())
         dialog.show()
         dialog._show_page(6)
@@ -443,7 +443,7 @@ class AntistressTest(WindowCase):
     def test_f12_opens_it(self):
         w = self.window()
         seen = []
-        from stungkir import dialogs
+        from stungkir.ui import dialogs
         original = dialogs.Sheet.exec
         dialogs.Sheet.exec = lambda dialog: seen.append(type(dialog).__name__) or 0
         self.addCleanup(setattr, dialogs.Sheet, "exec", original)
@@ -477,7 +477,7 @@ class StreakPopTest(WindowCase):
         self.assertFalse(w.streak_pop.isVisible())
 
     def test_flame_grows_and_talks(self):
-        from stungkir.widgets import STREAK_LINES, StreakPop, streak_line
+        from stungkir.ui.widgets import STREAK_LINES, StreakPop, streak_line
         self.assertEqual([StreakPop.stage(n) for n in (1, 9, 10, 25, 49, 50, 300)], [0, 0, 1, 2, 4, 5, 5])
         self.assertIn(streak_line(4, "cheer"), STREAK_LINES["cheer"])
         self.assertIn(streak_line(4, "roast"), STREAK_LINES["roast"])
@@ -533,7 +533,7 @@ class BarColorsTest(WindowCase):
         palette = dict(C.palette())
         palette["BAR_DAY"] = "#00ff00"
         C.set_palette(palette)
-        from stungkir.widgets import GoalStrip
+        from stungkir.ui.widgets import GoalStrip
         self.assertEqual(GoalStrip().color("day").name(), "#00ff00")
         for name, theme in C.THEMES.items():
             for key in C.BAR_KEYS:
@@ -542,7 +542,7 @@ class BarColorsTest(WindowCase):
         for key in C.BAR_KEYS:                           # своя тема без цветов полосок - подобраны
             self.assertGreaterEqual(C.contrast(custom[key], "#ffffff"), 2.9)
         from PySide6.QtGui import QFont
-        from stungkir.colors import ColorsDialog
+        from stungkir.ui.colors import ColorsDialog
         dialog = ColorsDialog(None, {}, QFont("DejaVu Sans", 12))
         dialog.preview.strip.grab()
         self.assertEqual(dialog.preview.strip.colors["BAR_BOOK"], dialog.colors()["BAR_BOOK"])
@@ -550,7 +550,7 @@ class BarColorsTest(WindowCase):
 
 class ArtworkTest(WindowCase):
     def test_pictures_are_bundled(self):
-        from stungkir import artwork
+        from stungkir.fun import artwork
         for name in ("weasel", "coin-heads", "coin-tails", "drum", "round-live", "round-blank", "round-spent",
                      "ball", "cork", "pin-indigo", "pin-ochre", "about", "empty", "bubble-0", "bubble-popped-0"):
             picture = artwork.pixmap(name)
@@ -564,7 +564,7 @@ class ArtworkTest(WindowCase):
     def test_wheel_rungs_are_visible(self):
         """Перекладины колеса должны быть охристыми, а не залиты серединой (была такая ошибка)."""
         from PySide6.QtGui import QColor
-        from stungkir.widgets import FoxWheel
+        from stungkir.ui.widgets import FoxWheel
         wheel = FoxWheel()
         wheel.setFixedHeight(220)
         wheel.resize(300, 220)
@@ -581,7 +581,7 @@ class ArtworkTest(WindowCase):
             wheel.grab()
 
     def test_coin_sides_are_pictures(self):
-        from stungkir.dice import COIN_SIDES, Die3D
+        from stungkir.fun.dice import COIN_SIDES, Die3D
         self.assertEqual(set(COIN_SIDES), {"Ворон", "Ласка"})
         for side in COIN_SIDES:
             die = Die3D(150)
@@ -593,7 +593,7 @@ class ArtworkTest(WindowCase):
 
 class DrawnLookTest(WindowCase):
     def test_drawn_icons_follow_theme_color(self):
-        from stungkir import icons
+        from stungkir.ui import icons
         self.assertTrue((icons.DRAWN / "check.png").is_file())
         for color in ("#ff0000", "#00ff00"):
             image = icons.make_icon("check", color).pixmap(48, 48).toImage()
@@ -616,7 +616,7 @@ class DrawnLookTest(WindowCase):
         self.assertFalse(w.empty_hint.isVisible())
 
     def test_about_has_header_and_full_text(self):
-        from stungkir import dialogs
+        from stungkir.ui import dialogs
         w = self.window()
         seen = {}
 
@@ -635,8 +635,8 @@ class DrawnLookTest(WindowCase):
         self.assertEqual(seen, {"header": True, "fits": True})
 
     def test_corkboard_and_bubbles_paint(self):
-        from stungkir.antistress import StressDialog
-        from stungkir.corkboard import cork_tile
+        from stungkir.fun.antistress import StressDialog
+        from stungkir.story.corkboard import cork_tile
         self.assertFalse(cork_tile().isNull())
         dialog = StressDialog(None)
         dialog.show()
@@ -649,8 +649,8 @@ class DrawnLookTest(WindowCase):
 class CompareWithVersionTest(WindowCase):
     def test_old_version_beside_text(self):
         import time
-        from stungkir import storage as S
-        from stungkir.textutil import old_side_html
+        from stungkir.core import storage as S
+        from stungkir.core.textutil import old_side_html
         html, summary = old_side_html("Раз два три.\n\nКонец.", "Раз два.\n\nСередина.\n\nКонец.")
         self.assertIn("три", html)
         self.assertIn("чего теперь нет: 1 слово", summary)

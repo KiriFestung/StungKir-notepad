@@ -3,9 +3,9 @@
 """Мои штампы: формы слова, обороты, вырезание без следов, замена по всем главам с версиями."""
 import unittest
 
-from stungkir import config as C
-from stungkir import storage as S
-from stungkir import textutil as T
+from stungkir.core import config as C
+from stungkir.core import storage as S
+from stungkir.core import textutil as T
 from stungkir.tests.helpers import WindowCase, wait
 
 
@@ -50,7 +50,7 @@ class CleanupTest(unittest.TestCase):
         self.assertEqual(T.replace_span("Он вдруг ушёл.", 3, 8, "резко")[0], "Он резко ушёл.")
 
     def test_parse_entries(self):
-        from stungkir.crutches import parse_entries
+        from stungkir.text.crutches import parse_entries
         self.assertEqual(parse_entries("вдруг\n\n Вдруг \nвнезапно,\n---\nпочувствовал, как"),
                          ["вдруг", "внезапно", "почувствовал, как"])
 
@@ -83,7 +83,7 @@ class CrutchWindowTest(WindowCase):
         self.assertEqual(self.w.global_results.count(), 2)
 
     def test_replace_everywhere_only_checked_and_versions_kept(self):
-        from stungkir import crutches as module
+        from stungkir.text import crutches as module
         self.w.add_crutch("вдруг")
 
         class Pick:
@@ -105,7 +105,7 @@ class CrutchWindowTest(WindowCase):
         self.assertTrue(module)
 
     def test_dialog_counts_by_chapter(self):
-        from stungkir.crutches import CrutchesDialog
+        from stungkir.text.crutches import CrutchesDialog
         dialog = CrutchesDialog(self.w, ["вдруг"], self.w.crutch_texts(), self.w._position_key)
         self.assertEqual(dialog.table.item(0, 0).text(), "Книга · Глава 2")   # больше всех
         self.assertEqual(dialog.table.item(0, 2).text(), "2")

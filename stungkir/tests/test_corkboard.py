@@ -5,8 +5,8 @@ import json
 
 from PySide6.QtCore import QPointF
 
-from stungkir import config as C
-from stungkir import storage as S
+from stungkir.core import config as C
+from stungkir.core import storage as S
 from stungkir.tests.helpers import WindowCase
 from stungkir.tests.test_board import FakeCard
 
