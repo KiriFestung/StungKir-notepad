@@ -205,6 +205,26 @@ class WindowSeasonTest(WindowCase):
         w.update_palette()
         self.assertEqual(COIN_SIDES, PLAIN_SIDES)
 
+    def test_ornament_bubble_wrap_at_christmas(self):
+        from stungkir.fun.antistress import BubbleWrap
+        from stungkir.fun.artwork import pixmap
+        self.season(season="xmas")
+        w = self.window()
+        w.update_palette()
+        names = BubbleWrap.pictures()
+        self.assertEqual(names, BubbleWrap.FESTIVE)
+        for k in range(3):
+            for key in ("whole", "popped"):
+                self.assertFalse(pixmap(names[key].format(k=k)).isNull())
+        wrap = BubbleWrap()
+        wrap.resize(400, 300)
+        wrap.show()
+        self.assertTrue(wrap.pop((0, 0)))
+        self.assertFalse(wrap.grab().isNull())                       # кадр «лопа» шарика рисуется
+        self.season(season="off")
+        w.update_palette()
+        self.assertEqual(BubbleWrap.pictures(), BubbleWrap.PLAIN)
+
     def test_settings_dialog(self):
         from stungkir.fun.season_settings import SeasonDialog
         w = self.window()

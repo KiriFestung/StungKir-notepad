@@ -19,6 +19,7 @@ FRAMES = {
     "anim/table/felt-dust": 8, "anim/table/crit-high": 16, "anim/table/crit-low": 16,
     "anim/coin/coin-edge-shine": 12, "anim/roulette/drum-glint": 8,
     **{f"anim/bubble-pop/bubble-{k}-pop": 6 for k in range(3)},
+    **{f"anim/ornament-pop/ornament-{k}-pop": 6 for k in range(3)},          # шарики (Рождество)
     "anim/ball/ball-dust": 8, "anim/lake/skip-splash": 8, "anim/lake/skip-plunk": 12,
     "anim/toggle/puzzle-solved": 12, "anim/bang/bang": 16, "anim/dust/dust": 8,
 }
