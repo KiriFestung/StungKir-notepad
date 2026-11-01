@@ -124,8 +124,8 @@ def paws(turn, legs, keys):
     return [turn.map(legs[key][1]).y() for key in keys]
 
 
-def render(body, bend, turn, legs, lift, height=H):
-    """Кадр: дальние лапы, тело (изогнутое полосками по 1 точке), контур живота, ближние лапы."""
+def canvas(turn, lift, height):
+    """Холст кадра и кисть с теми же сдвигами и поворотом, что у тела."""
     image = QImage(W * SS, height * SS, QImage.Format_ARGB32_Premultiplied)
     image.fill(Qt.transparent)
     p = QPainter(image)
@@ -134,6 +134,18 @@ def render(body, bend, turn, legs, lift, height=H):
     p.scale(SS, SS)
     p.translate(0, lift + height - H)
     p.setTransform(turn, True)
+    return image, p
+
+
+def shrink(image, height):
+    return image.scaled(W * 2 // 3, height * 2 // 3, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
+
+def render(body, bend, turn, legs, lift, height=H, overlay=None):
+    """Кадр: дальние лапы, тело (изогнутое полосками по 1 точке), контур живота, ближние лапы.
+    overlay(painter, bend) - что дорисовать поверх (шапка к празднику): отдельным слоем, его отдают вторым,
+    чтобы чистка белой каймы (polish.py) не тронула белое у этой дорисовки."""
+    image, p = canvas(turn, lift, height)
     pen = QPen(OCHRE, LINE * 2)
     pen.setJoinStyle(Qt.RoundJoin)
 
@@ -176,7 +188,12 @@ def render(body, bend, turn, legs, lift, height=H):
     draw_leg(("near", "front"), BODY)
     p.restore()
     p.end()
-    return image.scaled(W * 2 // 3, height * 2 // 3, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+    if overlay is None:
+        return shrink(image, height)
+    layer, q = canvas(turn, lift, height)
+    overlay(q, bend)
+    q.end()
+    return shrink(image, height), shrink(layer, height)
 
 
 def gallop(t):
@@ -206,7 +223,7 @@ def gallop(t):
     return bend, turn, legs, stance
 
 
-def run_frames(body):
+def run_frames(body, overlay=None):
     shapes = [gallop(i / RUN_FRAMES) for i in range(RUN_FRAMES)]
     known = [GROUND - max(paws(turn, legs, stance)) if stance else None for _b, turn, legs, stance in shapes]
     images = []
@@ -216,7 +233,7 @@ def run_frames(body):
             before = next(known[(i - k) % RUN_FRAMES] for k in range(1, RUN_FRAMES) if known[(i - k) % RUN_FRAMES] is not None)
             after = next(known[(i + k) % RUN_FRAMES] for k in range(1, RUN_FRAMES) if known[(i + k) % RUN_FRAMES] is not None)
             lift = (before + after) / 2 - 16
-        images.append(render(body, bend, turn, legs, lift))
+        images.append(render(body, bend, turn, legs, lift, overlay=overlay and (lambda q, b, i=i: overlay(q, b, i))))
     return images
 
 
@@ -232,7 +249,7 @@ def stand_frame(sprite):
     return image
 
 
-def cheer_frames(body):
+def cheer_frames(body, overlay=None):
     """Прыжок радости: присела, свечой вверх носом к небу, приземлилась."""
     images = []
     for i in range(CHEER_FRAMES):
@@ -244,7 +261,8 @@ def cheer_frames(body):
                                  ((0.45 * crouch - 0.6 * air, 1 - 0.25 * crouch), (0.4 * crouch - 0.65 * air, 1 - 0.25 * crouch)),
                                  ((0.9 * air - 0.15 * crouch, 1 - 0.3 * air), (1.1 * air, 1 - 0.32 * air)))
         lowest = max(paws(turn, legs, list(legs)))
-        images.append(render(body, bend, turn, legs, GROUND - lowest - 80 * air, 400))   # выше - есть куда прыгать
+        images.append(render(body, bend, turn, legs, GROUND - lowest - 80 * air, 400,   # выше - есть куда прыгать
+                             overlay=overlay and (lambda q, b, i=i: overlay(q, b, i))))
     return images
 
 

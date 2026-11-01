@@ -337,16 +337,23 @@ class FoxWheel(QWidget):
         """Нарисованный кадр ласки (art/anim/weasel-run, weasel-cheer) или None, если кадров нет.
         Стоит - weasel-stand; бежит прыжками - кадр по фазе шага; радуется - кадры прыжка за 0,6 с."""
         from ..fun.artwork import scaled
+
+        def picture_of(folder, name):                    # в Рождество - кадры в шапке, если они есть
+            if C.SEASON == "xmas":
+                festive = scaled(f"anim/{folder}-xmas/{name}", wide, ratio)
+                if not festive.isNull():
+                    return festive
+            return scaled(f"anim/{folder}/{name}", wide, ratio)
         if self.jump is not None and self.jump < 0.6:
             frame = min(self.CHEER_FRAMES - 1, int(self.jump / 0.6 * self.CHEER_FRAMES))
-            picture = scaled(f"anim/weasel-cheer/weasel-cheer_{frame:02d}", wide, ratio)
+            picture = picture_of("weasel-cheer", f"weasel-cheer_{frame:02d}")
             if not picture.isNull():
                 return picture, True
         if self.speed > 0.05:
             frame = int(self.phase / (2 * math.pi) * self.RUN_FRAMES) % self.RUN_FRAMES
-            picture = scaled(f"anim/weasel-run/weasel-run_{frame:02d}", wide, ratio)
+            picture = picture_of("weasel-run", f"weasel-run_{frame:02d}")
         else:
-            picture = scaled("anim/weasel-run/weasel-stand", wide, ratio)
+            picture = picture_of("weasel-run", "weasel-stand")
         return (picture, False) if not picture.isNull() else None
 
     def _geometry(self):
