@@ -1,7 +1,7 @@
 ﻿; Установщик StungKir для Windows (Inno Setup 6). Файл в UTF-8 с BOM: в нём есть русские имена файлов.
 ; Собирается скриптом build-windows.ps1 после PyInstaller: берёт папку dist\StungKir.
 #define AppName "StungKir"
-#define AppVersion "1.1.0"
+#define AppVersion "1.2.0"
 #define AppPublisher "KiriFesTung"
 
 [Setup]

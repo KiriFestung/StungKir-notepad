@@ -2564,4 +2564,85 @@ EN = {
         "I (narrator)",
     "Имя - русскими или латинскими буквами, не вперемешку":
         "A name must be in Russian or Latin letters, not mixed",
+    # «Цвета и темы», статистика
+    "30 дней":
+        "30 days",
+    "тяжело читать: текст сливается с фоном":
+        "hard to read: the text blends into the background",
+    "читается, но для долгой работы бледновато":
+        "readable, but a bit pale for long work",
+    "удобно для долгого чтения":
+        "comfortable for long reading",
+    "контрастно: можно чуть мягче":
+        "high contrast: could be a little softer",
+    "слишком резко: глаза быстро устанут":
+        "too harsh: eyes will tire quickly",
+    "Подсветка":
+        "Highlighting",
+    "Окно и кнопки":
+        "Window and buttons",
+    "Кубики и колесо таймера":
+        "Dice and timer wheel",
+    "Часы":
+        "Clock",
+    "Полоски цели":
+        "Goal bars",
+    "Фон":
+        "Background",
+    "Реплики":
+        "Dialogue",
+    "Знаки препинания":
+        "Punctuation",
+    "Ошибки":
+        "Mistakes",
+    "Повторы (подложка)":
+        "Repeats (background)",
+    "Мои штампы (подложка)":
+        "My clichés (background)",
+    "Пометки [ ]":
+        "Marks [ ]",
+    "Пометки (подложка)":
+        "Marks (background)",
+    "Термины мира (подчёркивание)":
+        "World terms (underline)",
+    "Найденное":
+        "Found",
+    "Выделение":
+        "Selection",
+    "Приглушённое":
+        "Dimmed",
+    "Панели":
+        "Panels",
+    "Рамки":
+        "Borders",
+    "Под мышкой":
+        "Under the mouse",
+    "Акцент (кнопки, полоски)":
+        "Accent (buttons, bars)",
+    "Важное (главные кнопки, режимы)":
+        "Important (main buttons, modes)",
+    "Неважное (Отмена, Стереть…)":
+        "Minor (Cancel, Clear…)",
+    "Кубик":
+        "Die",
+    "Числа на кубике":
+        "Numbers on the die",
+    "Колесо: обод и спицы":
+        "Wheel: rim and spokes",
+    "Колесо: перекладины и круг таймера":
+        "Wheel: rungs and timer ring",
+    "Циферблат":
+        "Clock face",
+    "Ободок":
+        "Rim",
+    "Часовая стрелка и риски":
+        "Hour hand and ticks",
+    "Минутная стрелка":
+        "Minute hand",
+    "Цель дня":
+        "Daily goal",
+    "Глава 1":
+        "Chapter 1",
+    "Глава 2":
+        "Chapter 2",
 }

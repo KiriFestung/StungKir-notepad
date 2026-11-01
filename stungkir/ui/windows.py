@@ -351,7 +351,7 @@ class StatsDialog(Sheet):
         switch = QHBoxLayout()
         self.period = QButtonGroup(self)
         for index, text in enumerate(("30 дней", "Год")):
-            button = QPushButton(text)
+            button = QPushButton(tr(text))
             button.setCheckable(True)
             button.setAutoDefault(False)
             button.setProperty("noIcon", True)

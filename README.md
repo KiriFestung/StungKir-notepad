@@ -5,7 +5,8 @@
 <a href="https://github.com/KiriFestung/StungKir-notepad/releases/tag/linux-latest"><b>Linux (Flatpak)</b></a> ·
 <a href="https://github.com/KiriFestung/StungKir-notepad/releases/tag/android-latest"><b>Android</b></a> ·
 <a href="docs/РУКОВОДСТВО.md">Руководство</a> ·
-<a href="CHANGELOG.md">Что нового</a>
+<a href="CHANGELOG.md">Что нового</a> ·
+<a href="README.en.md">English</a>
 </p>
 
 <p align="center">
@@ -14,9 +15,11 @@
 <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue" alt="GPL-3.0-or-later"></a>
 </p>
 
-> **In English:** StungKir is a free notepad for writing long fiction - chapters as plain `.txt` files, a world reference with hover hints, margin notes, chapter history, and export to PDF, Word and EPUB. Works offline on Windows, Linux and Android. The interface is in Russian.
+> **In English:** StungKir is a free notepad for writing long fiction - chapters as plain `.txt` files, a world reference with hover hints, margin notes, chapter history, and export to PDF, Word and EPUB. Works offline on Windows, Linux and Android. The interface is in English (US/UK) and Russian. **[Read in English →](README.en.md)**
 
 Блокнот для тех, кто пишет книгу, а не заметки: главы по папкам, справочник мира с подсказками прямо в тексте, заметки на полях, версии каждой главы и сборка книги в PDF, Word и EPUB. Тексты - обычные `.txt` в твоей папке: без аккаунтов и облаков; в интернет блокнот выходит, только если сам нажмёшь «Выложить на сайт». С телефоном - через Syncthing и своё приложение для Android.
+
+Язык интерфейса - русский или английский (US и UK), выбирается при первом запуске и в «Настройках». Английский текст блокнот тоже понимает: реплики в кавычках, орфография по словарям US и UK, повторы, штампы и «кто говорит».
 
 > **Ранняя версия.** Блокнот бережёт текст: автосохранение, версии глав, ежедневные копии, точки возврата. Но программа молодая, и ошибки возможны. Пока делай свои копии важных книг: на флешку, в облако или раз в неделю кнопкой «Копия раз в неделю». Нашёл ошибку - напиши в [Issues](https://github.com/KiriFestung/StungKir-notepad/issues).
 
@@ -26,12 +29,12 @@
 
 | Где | Что скачать | |
 |---|---|---|
-| **Windows 10 и 11** | [StungKir-Setup-1.1.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.1.0.exe) | установщик |
+| **Windows 10 и 11** | [StungKir-Setup-1.2.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.2.0.exe) | установщик |
 | **Windows, с флешки** | [StungKir-Windows-portable.zip](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Windows-portable.zip) | без установки и без прав администратора, тексты - на флешке |
 | **Linux** | [StungKir.flatpak](https://github.com/KiriFestung/StungKir-notepad/releases/download/linux-latest/StungKir.flatpak) | любой дистрибутив; для Debian и Ubuntu есть ещё `install.sh` (ниже) |
 | **Android** | [StungKir-Android.apk](https://github.com/KiriFestung/StungKir-notepad/releases/download/android-latest/StungKir-Android.apk) | пишет в ту же папку, что и компьютер; [как связать](docs/ТЕЛЕФОН.md) |
 
-Сборки обновляются сами после каждого изменения и перед выкладкой проходят больше трёхсот проверок - и на Linux, и на Windows.
+Сборки обновляются сами после каждого изменения и перед выкладкой проходят больше четырёхсот проверок - и на Linux, и на Windows.
 
 ## Что умеет
 
@@ -94,7 +97,7 @@
 
 ### Windows 10 и 11
 
-Скачать [StungKir-Setup-1.1.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.1.0.exe) и запустить. Словарь и шрифты уже внутри. Windows может предупредить «неизвестный издатель»: программа не подписана платным сертификатом. Нажми «Подробнее → Выполнить в любом случае».
+Скачать [StungKir-Setup-1.2.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.2.0.exe) и запустить. Словарь и шрифты уже внутри. Windows может предупредить «неизвестный издатель»: программа не подписана платным сертификатом. Нажми «Подробнее → Выполнить в любом случае».
 
 **С флешки, без установки и без прав администратора:** [StungKir-Windows-portable.zip](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Windows-portable.zip) - распаковать на флешку и запускать `StungKir.exe`. Тексты, копии и настройки хранятся там же, на флешке, на чужом компьютере ничего не остаётся.
 
@@ -133,7 +136,7 @@ macOS официально не поддерживается.
 ```bash
 git clone https://github.com/KiriFestung/StungKir-notepad.git && cd StungKir-notepad
 python3 -m stungkir            # запуск
-python3 -m stungkir --test     # больше трёхсот проверок во временной папке, тексты не трогают
+python3 -m stungkir --test     # больше четырёхсот проверок во временной папке, тексты не трогают
 ```
 
 Или одной командой через pip: `pipx install git+https://github.com/KiriFestung/StungKir-notepad.git`.

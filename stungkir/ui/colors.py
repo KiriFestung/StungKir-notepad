@@ -18,12 +18,18 @@ from ..text.editor import ProseHighlighter
 from ..world.lore import Lore, LoreTerm
 from .style import build_style
 from .widgets import ClockFace, FoxWheel, GoalStrip
+from ..core import i18n
 from ..core.i18n import tr
 
 SAMPLE = ("Утро было серым. Туман стелился над рекой, и туман пах тиной.\n"
           "— Лодки не будет, - сказала Тервена.\n"
           "В Давне звонили колокола [проверить сезон], и *никто* не ждал **гостей** с юга.\n"
           "Здесь ашибка, а тут выделенное слово.")
+# образец для английского интерфейса: те же подсветки, но по-английски
+SAMPLE_EN = ("The morning was dull. The fog lay on the river, and the fog smelled of mud.\n"
+             "“There will be no boat,” said Tervena.\n"
+             "The bells were ringing in Davn [check the season], and *nobody* expected **guests** from the south.\n"
+             "Here is a mistaek, and here is a highlighted word.")
 SLOTS = {"night": "Ночная (основная)", "day": "Дневная"}
 
 
@@ -31,7 +37,10 @@ class _SampleSpeller:
     available = True
 
     def ok(self, word):
-        return word.lower() != "ашибка"
+        return word.lower() not in ("ашибка", "mistaek")
+
+    def ok_english(self, word):
+        return self.ok(word)
 
 
 class _InPreview:
@@ -88,7 +97,7 @@ class ColorPreview(QFrame):
         self.checked.setCheckable(True)
         self.checked.setChecked(True)
         self.listing = QListWidget()
-        self.listing.addItems(["Глава 1", "Глава 2"])
+        self.listing.addItems([tr("Глава 1"), tr("Глава 2")])
         for i in range(self.listing.count()):        # строки не наезжают друг на друга
             self.listing.item(i).setSizeHint(QSize(0, 32))
         self.listing.item(1).setSelected(True)     # без прокрутки списка
@@ -101,7 +110,7 @@ class ColorPreview(QFrame):
         layout.addWidget(self.panel)
         self.text = QTextEdit()
         self.text.setReadOnly(True)
-        self.text.setPlainText(SAMPLE)
+        self.text.setPlainText(SAMPLE if i18n.LANG == i18n.DEFAULT else SAMPLE_EN)
         self.text.document().setDocumentMargin(16)
         self.text.setMinimumHeight(190)
         layout.addWidget(self.text, 1)
@@ -148,14 +157,14 @@ class ColorPreview(QFrame):
             mark.format = QTextCharFormat()
             mark.format.setBackground(QColor(C.FOUND))
             self.text.setExtraSelections([mark])
-            chosen = doc.find("выделенное")
+            chosen = doc.find("выделенное" if i18n.LANG == i18n.DEFAULT else "highlighted")
             self.text.setTextCursor(chosen)
         ratio = C.contrast(colors["BG"], colors["TEXT"])
         dialogue = C.contrast(colors["BG"], colors["DIALOGUE"])
         def number(x):
-            return f"{x:.1f}".replace(".", ",")
+            return f"{x:.1f}".replace(".", ",") if i18n.LANG == i18n.DEFAULT else f"{x:.1f}"
         self.contrast.setText(tr("Контраст текста {n}:1 - {n2}.\nРеплики {n3}:1. Для долгого чтения удобно "
-                                 "примерно 7–12.").format(n=number(ratio), n2=C.contrast_hint(ratio), n3=number(dialogue)))
+                                 "примерно 7–12.").format(n=number(ratio), n2=tr(C.contrast_hint(ratio)), n3=number(dialogue)))
 
 
 class ColorRow:
@@ -163,7 +172,7 @@ class ColorRow:
 
     def __init__(self, dialog, key, grid, row):
         self.dialog, self.key = dialog, key
-        grid.addWidget(QLabel(C.COLOR_NAMES[key]), row, 0)
+        grid.addWidget(QLabel(tr(C.COLOR_NAMES[key])), row, 0)
         self.swatch = QPushButton("")
         self.swatch.setFixedSize(38, 24)
         self.swatch.setCursor(Qt.PointingHandCursor)
@@ -190,7 +199,7 @@ class ColorRow:
         self.slider.blockSignals(False)
 
     def _pick(self):
-        color = QColorDialog.getColor(QColor(self.code.text()), self.dialog, C.COLOR_NAMES[self.key],
+        color = QColorDialog.getColor(QColor(self.code.text()), self.dialog, tr(C.COLOR_NAMES[self.key]),
                                       QColorDialog.DontUseNativeDialog)
         if color.isValid():
             self.dialog.set_color(self.key, color.name())
@@ -277,7 +286,7 @@ class ColorsDialog(Sheet):
         self.rows = {}
         line = 0
         for title, keys in C.COLOR_GROUPS:
-            section = QLabel(title)
+            section = QLabel(tr(title))
             section.setObjectName("Section")
             grid.addWidget(section, line, 0, 1, 4)
             line += 1
