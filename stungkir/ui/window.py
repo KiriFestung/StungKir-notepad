@@ -16,6 +16,8 @@ from PySide6.QtWidgets import (
 )
 
 from ..core import config as C
+from ..core import i18n
+from ..core.i18n import tr
 from ..core import storage as S
 from .icons import decorate, make_icon
 from .style import TEXTURES, apply_theme, fade
@@ -849,6 +851,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
             return
         changes, goal = dialog.values()
         config = load_config_raw()      # темы и цвета живут в отдельном окне, их не трогаем
+        language_changed = "LANGUAGE" in changes and changes["LANGUAGE"] != config.get("LANGUAGE", i18n.LANG)
         config.update(changes)
         C.save_config(config)
         self.goal = goal
@@ -856,7 +859,10 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         if config.get("FONT_SIZE"):
             self.font_size = config["FONT_SIZE"]
         self.apply_settings(config)
-        self.toast.show_message("Настройки применены")
+        if language_changed:            # на ходу не меняем: окна стали бы наполовину на другом языке
+            self.toast.show_message(tr("Язык поменяется после перезапуска", changes["LANGUAGE"]), 4000)
+        else:
+            self.toast.show_message(tr("Настройки применены"))
         QTimer.singleShot(800, self, self.weekly_backup)          # новая папка недельной копии - сразу
 
     def apply_settings(self, config):

@@ -396,6 +396,37 @@ def password_delay(failures):
     return 0 if failures < 3 else min(60, 2 ** (failures - 2))
 
 
+class LanguageDialog(Sheet):
+    """Самый первый запуск: на каком языке интерфейс. Надписи на обоих языках - какой понятнее,
+    тот и прочтут. Закрыли окно, не выбрав, - русский."""
+
+    def __init__(self, parent=None):
+        from ..core.i18n import DEFAULT, LANGUAGES
+        super().__init__(parent, "Язык · Language")
+        self.setMinimumWidth(420)
+        self.code = DEFAULT
+        text = QLabel("Выбери язык интерфейса. Его можно поменять потом в «Настройках».\n\n"
+                      "Choose the interface language. You can change it later in Settings.")
+        text.setWordWrap(True)
+        self.content.addWidget(text)
+        buttons = QHBoxLayout()
+        self.buttons = {}
+        for code, name in LANGUAGES.items():
+            button = QPushButton(name)
+            button.setMinimumHeight(40)
+            if code == DEFAULT:
+                button.setObjectName("Primary")
+                button.setDefault(True)
+            button.clicked.connect(lambda _=False, code=code: self._choose(code))
+            buttons.addWidget(button)
+            self.buttons[code] = button
+        self.content.addLayout(buttons)
+
+    def _choose(self, code):
+        self.code = code
+        self.accept()
+
+
 class PasswordDialog(Sheet):
     """Ввод пароля: для входа (check) или новый пароль с повтором (confirm).
     Неверные пароли подряд запоминаются (и между запусками): перебирать их руками становится долго."""

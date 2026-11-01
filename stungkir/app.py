@@ -37,6 +37,35 @@ def windows_font_engine():
         os.environ["QT_QPA_PLATFORM"] = "windows:fontengine=freetype"
 
 
+def choose_language_once(ask=None):
+    """Язык интерфейса - один раз, при самом первом запуске. Установщик для Windows уже спрашивал -
+    берём его ответ. Кто уже пишет в блокноте (тексты есть), остаётся на русском без вопроса.
+    ask() -> код языка: окошко выбора (в проверках - подмена). Возвращает выбранный код."""
+    from PySide6.QtCore import QSettings
+    from .core.i18n import DEFAULT, LANGUAGES, set_language
+    from .ui.windows import load_config_raw
+    config = load_config_raw()
+    if config.get("LANGUAGE") in LANGUAGES:
+        return config["LANGUAGE"]
+    preset = QSettings(C.APP_ID, C.APP_ID).value("installer_language", "")
+    if preset in LANGUAGES:
+        code = preset
+    elif not is_fresh():
+        code = DEFAULT
+    else:
+        if ask is None:
+            def ask():
+                from .ui.dialogs import LanguageDialog
+                dialog = LanguageDialog()
+                dialog.exec()
+                return dialog.code
+        code = ask()
+    config["LANGUAGE"] = code if code in LANGUAGES else DEFAULT
+    C.save_config(config)
+    set_language(config["LANGUAGE"])
+    return config["LANGUAGE"]
+
+
 def main():
     windows_font_engine()
     if "--test" in sys.argv:
@@ -76,6 +105,7 @@ def main():
         pixmap.loadFromData(ICON_SVG.encode("utf-8"), "SVG")
         app.setWindowIcon(QIcon(pixmap))
     apply_theme(app)
+    choose_language_once()
     if migration_error is not None:
         show_error(None, C.APP_NAME, f"Не всё перенеслось из «{C.OLD_ROOT}» в «{C.ROOT}». Старая папка "
                    f"осталась на месте, ничего не удалено.\n\n{migration_error}")
