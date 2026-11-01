@@ -122,6 +122,11 @@ class GoalStrip(QWidget):
             painter.drawText(int(x), top + self.HEIGHT, caption)
             bar_x = x + metrics.horizontalAdvance(caption) + 8
             painter.setPen(Qt.NoPen)
+            bar_painter = getattr(self, "bar_painter", None)        # праздник: полоска заполняется снегом
+            if bar_painter is not None:
+                bar_painter(painter, QRectF(bar_x, top, bar_len, self.HEIGHT), item["value"], item["done"])
+                x += width + gap
+                continue
             # дорожка заметна на любом фоне, заполнение - ярче, чтобы не сливалось
             painter.setBrush(C.mix(C.DIM, C.BG, 0.55))
             painter.drawRoundedRect(QRectF(bar_x, top, bar_len, self.HEIGHT), 3, 3)

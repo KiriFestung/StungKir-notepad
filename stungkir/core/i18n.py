@@ -11,7 +11,7 @@ LANGUAGES = {"ru": "Русский", "en": "English (US)", "en-GB": "English (UK
 DEFAULT = "ru"
 LANG = DEFAULT
 # британский - американский перевод с британским написанием: слово -> слово (заглавная буква сохраняется)
-BRITISH = {"color": "colour", "colors": "colours", "colored": "coloured", "neighbor": "neighbour",
+BRITISH = {"color": "colour", "colors": "colours", "colored": "coloured", "multicolored": "multicoloured", "neighbor": "neighbour",
            "neighbors": "neighbours", "favorite": "favourite", "favorites": "favourites", "gray": "grey",
            "center": "centre", "centered": "centred", "canceled": "cancelled", "minimized": "minimised",
            "maximized": "maximised", "recognized": "recognised", "organize": "organise", "organized": "organised",

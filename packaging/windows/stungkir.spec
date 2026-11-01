@@ -30,6 +30,11 @@ datas = [
 for folder in sorted((ROOT / "stungkir" / "art" / "anim").iterdir()):
     if folder.is_dir():
         datas.append((str(folder / "*.png"), f"stungkir/art/anim/{folder.name}"))
+# праздники: картинки SVG и scene.json (где огоньки, где огонь) - каждый праздник своей папкой
+for folder in sorted((ROOT / "stungkir" / "art" / "seasons").iterdir()):
+    if folder.is_dir():
+        datas.append((str(folder / "*.svg"), f"stungkir/art/seasons/{folder.name}"))
+        datas.append((str(folder / "scene.json"), f"stungkir/art/seasons/{folder.name}"))
 # шаблоны Word (колонтитулы, стили) лежат внутри python-docx файлами - без них сборка в .docx падает
 datas += collect_data_files("docx", include_py_files=True)   # и .py: шаблоны ищутся через docx/parts/../templates
 

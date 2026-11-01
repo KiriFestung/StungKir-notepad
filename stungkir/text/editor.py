@@ -628,7 +628,7 @@ class Editor(QTextEdit):
         self.backdrop_dim = max(0.0, min(0.95, float(dim)))
         self._backdrop_scaled = None
         if not getattr(self, "_backdrop_hooked", False):
-            self.verticalScrollBar().valueChanged.connect(lambda _v: self.backdrop and self.viewport().update())
+            self.verticalScrollBar().valueChanged.connect(lambda _v: self.has_backdrop() and self.viewport().update())
             self._backdrop_hooked = True
         self.viewport().update()
         margin = getattr(self, "margin_widget", None)
@@ -642,10 +642,14 @@ class Editor(QTextEdit):
         central = window.centralWidget() if hasattr(window, "centralWidget") else None
         return central if central is not None else self
 
-    def paint_backdrop(self, painter, widget):
+    def paint_backdrop(self, painter, widget, region=None):
         """Нарисовать свою картинку на widget: картинка растянута на всё окно, каждый кусок
         рисует свою часть - получается одна картинка без стыков. Масштаб - в настоящих точках
         экрана (на экранах с увеличением картинка не мылится)."""
+        scene = getattr(self, "scene", None)
+        if scene is not None:                     # праздник: комната под текстом (fun/season_scene.py)
+            scene.paint(painter, widget, self.backdrop_canvas(), region)
+            return
         backdrop = getattr(self, "backdrop", None)
         if backdrop is None:
             return
@@ -667,10 +671,13 @@ class Editor(QTextEdit):
         veil.setAlphaF(self.backdrop_dim)
         painter.fillRect(widget.rect(), veil)
 
+    def has_backdrop(self):
+        return getattr(self, "backdrop", None) is not None or getattr(self, "scene", None) is not None
+
     def paintEvent(self, event):
-        if getattr(self, "backdrop", None) is not None:
+        if self.has_backdrop():
             painter = QPainter(self.viewport())
-            self.paint_backdrop(painter, self.viewport())
+            self.paint_backdrop(painter, self.viewport(), event.region())
             painter.end()
         super().paintEvent(event)
 
@@ -1043,11 +1050,11 @@ class NotesMargin(QWidget):
                 high = middle - 1
         return text[:low].rstrip() + "…"
 
-    def paintEvent(self, _event):
+    def paintEvent(self, event):
         self._cards = []
-        if getattr(self.editor, "backdrop", None) is not None:      # своя картинка - и под заметками
+        if self.editor.has_backdrop():                              # своя картинка - и под заметками
             backdrop_painter = QPainter(self)
-            self.editor.paint_backdrop(backdrop_painter, self)
+            self.editor.paint_backdrop(backdrop_painter, self, event.region())
             backdrop_painter.end()
         if not self.notes or not self.shown:
             return
@@ -1398,7 +1405,7 @@ class BackdropLayer(QWidget):
             self.lower()
         return False
 
-    def paintEvent(self, _event):
+    def paintEvent(self, event):
         painter = QPainter(self)
-        self.editor.paint_backdrop(painter, self)
+        self.editor.paint_backdrop(painter, self, event.region())
         painter.end()

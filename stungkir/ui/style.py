@@ -93,7 +93,8 @@ def check_icon(color, shape="check"):
 
 
 def _texture_rule():
-    if C.TEXTURE == "picture":                 # своя картинка рисуется самим полем (Editor.paintEvent)
+    if C.TEXTURE == "picture" or getattr(C, "SEASON_ROOM", False):   # своя картинка или праздничная комната
+        # рисуются самим полем (Editor.paintEvent)
         return "QTextEdit#Editor { background: transparent; }"
     tile = texture_tile(C.TEXTURE)
     if tile is None:

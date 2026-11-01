@@ -104,6 +104,19 @@ class Screens(WindowCase):
             self.shot(w, name("дневная-тема"))
         self.step("дневная тема", day)
 
+        def season():                            # Рождество: комната под текстом, гирлянда, венок, снег
+            from stungkir.ui.windows import load_config_raw
+            config = load_config_raw()
+            config["season"] = "xmas"
+            C.save_config(config)
+            w.update_palette()
+            wait(1.0)
+            self.shot(w, name("рождество"))
+            config["season"] = "off"
+            C.save_config(config)
+            w.update_palette()
+        self.step("рождество", season)
+
 
 def main(out):
     global OUT

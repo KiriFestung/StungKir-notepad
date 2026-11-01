@@ -21,6 +21,9 @@ if not os.environ.get("STUNGKIR_TEST_HOME"):
 import stungkir  # noqa: E402
 from stungkir.core import config as C  # noqa: E402
 from stungkir.core import storage as S  # noqa: E402
+from stungkir.core import seasons as _seasons  # noqa: E402
+
+_seasons.FIXED_TODAY = __import__("datetime").date(2026, 7, 1)   # праздник «по датам» в проверках не включается
 
 # все модули пакета, со всех папок (core, ui, …): patch() подменяет имя в каждом, где оно есть
 MODULES = [importlib.import_module(m.name) for m in pkgutil.walk_packages(stungkir.__path__, "stungkir.")
