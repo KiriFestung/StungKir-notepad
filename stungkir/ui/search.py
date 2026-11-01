@@ -110,10 +110,10 @@ class SearchMixin:
     def _open_overlay(self, mode):
         self.overlay_mode = mode
         is_search = mode == "search"
-        self.global_title.setText({"search": "Поиск по всем файлам", "markers": "Пометки во всех файлах",
+        self.global_title.setText(tr({"search": "Поиск по всем файлам", "markers": "Пометки во всех файлах",
                                    "variants": "Имена, написанные иначе",
                                    "crutches": "Мои штампы во всех главах",
-                                   "speakers": "Кто говорит: реплики, где легко запутаться"}[mode])
+                                   "speakers": "Кто говорит: реплики, где легко запутаться"}[mode]))
         self.global_edit.setVisible(is_search)
         self.replace_button.setVisible(is_search)
         if not self.global_search.isVisible():

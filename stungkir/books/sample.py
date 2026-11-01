@@ -8,6 +8,7 @@ import json
 from ..core import config as C
 from ..world.lore import load_lore_config, save_lore_config
 from ..core.storage import save_order, save_text
+from ..core import i18n
 from ..core.i18n import tr
 
 BOOK = "Пример · Туман над рекой"
@@ -83,27 +84,40 @@ def has_sample():
     return (C.service_path(MARK)).exists()
 
 
-def create_sample():
-    """Кладёт пример в папку с текстами. Возвращает путь к «Прочитай меня»."""
-    book, world = C.ROOT / BOOK, C.ROOT / WORLD
-    book.mkdir(parents=True, exist_ok=True)
-    world.mkdir(parents=True, exist_ok=True)
+def _content():
+    """Пример на языке интерфейса: (книга, мир, [(файл, текст)], заметки мира)."""
+    if i18n.LANG != i18n.DEFAULT:
+        from . import sample_en as E
+        files = [(E.README_NAME, E.README), (E.CHAPTER_1_NAME, E.CHAPTER_1), (E.CHAPTER_2_NAME, E.CHAPTER_2),
+                 (E.BOARD_NAME, json.dumps(E.PLAN, ensure_ascii=False, indent=1) + "\n"),
+                 (E.TIMELINE_NAME, json.dumps(E.TIMELINE, ensure_ascii=False, indent=1) + "\n")]
+        return E.BOOK, E.WORLD, files, E.WORLD_NOTES
     files = [("Прочитай меня.txt", README), ("Глава 1.txt", CHAPTER_1), ("Глава 2.txt", CHAPTER_2),
              ("План.board", json.dumps(PLAN, ensure_ascii=False, indent=1) + "\n"),
              ("Хронология.timeline", json.dumps(TIMELINE, ensure_ascii=False, indent=1) + "\n")]
+    return BOOK, WORLD, files, WORLD_NOTES
+
+
+def create_sample():
+    """Кладёт пример в папку с текстами. Возвращает путь к «Прочитай меня»."""
+    book_name, world_name, files, notes = _content()
+    book, world = C.ROOT / book_name, C.ROOT / world_name
+    book.mkdir(parents=True, exist_ok=True)
+    world.mkdir(parents=True, exist_ok=True)
     for name, text in files:
         if not (book / name).exists():
             save_text(book / name, text)
     save_order(book, [name for name, _t in files])
-    for name, note in WORLD_NOTES.items():
+    for name, note in notes.items():
         if not (world / f"{name}.txt").exists():
             save_text(world / f"{name}.txt", note)
     config = load_lore_config()
-    if WORLD not in config["categories"]:
-        config["categories"].append(WORLD)
+    if world_name not in config["categories"]:
+        config["categories"].append(world_name)
         save_lore_config(config)
-    (C.service_path(MARK)).write_text(json.dumps({"folders": [BOOK, WORLD]}, ensure_ascii=False), encoding="utf-8")
-    return book / "Прочитай меня.txt"
+    (C.service_path(MARK)).write_text(json.dumps({"folders": [book_name, world_name]}, ensure_ascii=False),
+                                      encoding="utf-8")
+    return book / files[0][0]
 
 
 def sample_folders():
@@ -116,11 +130,14 @@ def sample_folders():
 
 def remove_sample(to_trash):
     """Пример - в корзину (вдруг там уже что-то своё дописано)."""
-    for folder in sample_folders():
+    folders = sample_folders()
+    for folder in folders:
         to_trash(folder)
+    from .sample_en import WORLD as WORLD_EN
     config = load_lore_config()
-    if WORLD in config["categories"]:
-        config["categories"].remove(WORLD)
+    gone = [name for name in config["categories"] if name in (WORLD, WORLD_EN) or name in [f.name for f in folders]]
+    if gone:
+        config["categories"] = [name for name in config["categories"] if name not in gone]
         save_lore_config(config)
     (C.service_path(MARK)).unlink(missing_ok=True)
 

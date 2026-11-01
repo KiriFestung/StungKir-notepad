@@ -114,3 +114,44 @@ class SettingsLanguageTest(WindowCase):
         self.assertEqual(json.loads(QSettings(C.APP_ID, C.APP_ID).value("config"))["LANGUAGE"], "en")
         self.assertEqual(i18n.LANG, "ru")                                  # на ходу не меняется
         self.assertEqual(w.toast.text(), "The language will change after a restart")
+
+
+class EnglishIconsTest(Sandbox):
+    def test_icons_follow_translated_text(self):
+        """Значки подбираются по русским словам - на английском надпись сначала переводится обратно."""
+        from stungkir.ui.icons import icon_for_text
+        self.addCleanup(i18n.set_language, i18n.LANG)
+        for lang in ("ru", "en", "en-GB"):
+            i18n.set_language(lang)
+            self.assertEqual(icon_for_text(i18n.tr("Сохранить")), "save", lang)
+            self.assertEqual(icon_for_text(i18n.tr("Цвета и темы…")), "palette", lang)
+            self.assertEqual(icon_for_text(i18n.tr("Режим фокуса") + "   F8"), "focus", lang)
+
+
+class EnglishSampleTest(Sandbox):
+    def test_sample_follows_language(self):
+        import shutil
+        from stungkir.books import sample
+        from stungkir.world.lore import load_lore_config
+        self.addCleanup(i18n.set_language, i18n.LANG)
+        i18n.set_language("en")
+        readme = sample.create_sample()
+        self.assertEqual(readme.name, "Read me.txt")
+        self.assertIn("practice book", readme.read_text(encoding="utf-8"))
+        self.assertTrue((C.ROOT / "Sample · World" / "Tervena.txt").is_file())
+        self.assertIn("Sample · World", load_lore_config()["categories"])
+        sample.remove_sample(lambda path: shutil.rmtree(path))
+        self.assertFalse(sample.has_sample())
+        self.assertNotIn("Sample · World", load_lore_config()["categories"])
+        self.assertEqual([p.name for p in C.ROOT.iterdir() if not p.name.startswith(".")], [])
+
+    def test_world_kit_in_english(self):
+        from stungkir.world.worldkit import create_kit
+        self.addCleanup(i18n.set_language, i18n.LANG)
+        i18n.set_language("en")
+        folder = C.ROOT / "World"
+        folder.mkdir()
+        [table, card] = create_kit(folder, ["Бестиарий", "Магия"])
+        self.assertEqual((table.name, card.name), ("Bestiary.csv", "_Magic.txt"))
+        self.assertIn("Creature", table.read_text(encoding="utf-8"))
+        self.assertIn("Source:", card.read_text(encoding="utf-8"))

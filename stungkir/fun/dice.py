@@ -671,7 +671,7 @@ class RandomDialog(Sheet):
         self.group = QButtonGroup(self)
         self.tab_buttons = {}
         for key, title in MODES:
-            button = QPushButton(title)
+            button = QPushButton(tr(title))
             button.setCheckable(True)
             button.setCursor(Qt.PointingHandCursor)
             button.setStyleSheet(f"QPushButton:checked {{ background: {C.IMPORTANT}; "
@@ -719,13 +719,13 @@ class RandomDialog(Sheet):
         row.addWidget(QLabel(tr("Из чего:")))
         self.material = QComboBox()
         for key, (title, *_rest) in MATERIALS.items():
-            self.material.addItem(title, key)
+            self.material.addItem(tr(title), key)
         self.material.setCurrentIndex(max(0, self.material.findData(settings.value("dice_material", "bone"))))
         self.material.hide()
         self.material_group = QButtonGroup(self)
         for index, (key, (title, *_rest)) in enumerate(MATERIALS.items()):
             button = QToolButton()
-            button.setText(title)
+            button.setText(tr(title))
             button.setIcon(dice_icon(key, 20))
             button.setIconSize(QSize(30, 30))
             button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
@@ -808,7 +808,7 @@ class RandomDialog(Sheet):
         row.addWidget(QLabel(tr("Заряжено:")))
         self.load_box = QComboBox()
         for key, title, _live in LOADS:
-            self.load_box.addItem(title, key)
+            self.load_box.addItem(tr(title), key)
         load = settings.value("roulette_load", "1") or "1"
         self.load_box.setCurrentIndex(max(0, self.load_box.findData(load)))
         self.load_box.currentIndexChanged.connect(self._load_changed)
@@ -816,7 +816,7 @@ class RandomDialog(Sheet):
         row.addWidget(QLabel(tr("Вызовы:")))
         self.level_box = QComboBox()
         for key, title in LEVELS:
-            self.level_box.addItem(title, key)
+            self.level_box.addItem(tr(title), key)
         level = int(settings.value("roulette_level", 0) or 0)
         self.level_box.setCurrentIndex(max(0, self.level_box.findData(level)))
         self.level_box.setToolTip(tr("Насколько жёсткие вызовы выпадают: от безобидных до адища"))
@@ -880,15 +880,16 @@ class RandomDialog(Sheet):
         self.coin_note.setText(
             tr("Сейчас сверху - {n}. Как в жизни: монетка чуть чаще падает той стороной, что лежала сверху "
                "(50,8 на 49,2 - опыт на 350 757 бросках), а на ребро встаёт примерно раз из 6000. Подлетит, "
-               "покрутится и упадёт на стол.").format(n=self.coin_up.lower()))
+               "покрутится и упадёт на стол.").format(n=tr(self.coin_up).lower()))
 
     def _coin_landed(self, side):
         if side in COIN_SIDES:                    # подняли - и она лежит той же стороной вверх
             self.coin_up = side
             self.settings.setValue("coin_up", side)
             self._coin_text()
-        self._done_big("Монетка: на ребро! Такое бывает раз из 6000" if side == COIN_EDGE
-                       else f"Монетка: {side.lower()}", tr("На ребро!") if side == COIN_EDGE else side)
+        self._done_big(tr("Монетка: на ребро! Такое бывает раз из 6000") if side == COIN_EDGE
+                       else tr("Монетка: {side}").format(side=tr(side).lower()),
+                       tr("На ребро!") if side == COIN_EDGE else tr(side))
 
     def _material_changed(self, index):
         button = self.material_group.button(index)
@@ -919,8 +920,8 @@ class RandomDialog(Sheet):
         self.shuffle.setText("")
         self.note.setText("")
         self.open_button.setVisible(False)
-        self.go.setText({"dice": "Бросить", "coin": "Подбросить", "number": "Бросить",
-                         "roulette": "Спуск"}.get(mode, "Выбрать"))
+        self.go.setText(tr({"dice": "Бросить", "coin": "Подбросить", "number": "Бросить",
+                         "roulette": "Спуск"}.get(mode, "Выбрать")))
         QTimer.singleShot(0, self, self.adjustSize)     # окно по размеру вкладки
 
     # ---- бросок ----
@@ -938,7 +939,7 @@ class RandomDialog(Sheet):
             self.note.setText("")
             span = range(low, high + 1) if high - low < 400 else [pick_number(low, high) for _ in range(40)]
             self.shuffle.run([str(n) for n in span], str(value),
-                             lambda v: self._done(f"Число {low}–{high}: {v}"))
+                             lambda v: self._done(tr("Число {low}–{high}: {v}").format(low=low, high=high, v=v)))
         elif self.mode == "roulette":
             self.pull()
         elif self.mode == "dice":
@@ -979,7 +980,7 @@ class RandomDialog(Sheet):
                 return
             title, term = random.choice(pool)
             self.picked_term = term
-            kind = "Термин" if term is not None else "Персонаж"
+            kind = tr("Термин") if term is not None else tr("Персонаж")
             self.shuffle.run([t for t, _ in pool], title, lambda v: self._done(f"{kind}: {v}"))
 
     # ---- рулетка ----
@@ -1062,13 +1063,13 @@ class RandomDialog(Sheet):
         if result == "live":
             self._sound("bang")
             self.revolver.boom(self.roulette.chambers)
-            challenge = self._challenge()
+            challenge = tr(self._challenge())          # свои вызовы перевода не имеют - остаются как есть
             self.shuffle.setStyleSheet(f"color: {C.IMPORTANT};")
             self.shuffle.setText(challenge)
             self.note.setText(tr("Бах! Вот твой вызов. Барабан перезаряжен - крутани заново"))
             self.roulette.reload()
             self.needs_load = True
-            self._result(f"Рулетка: {challenge}")
+            self._result(tr("Рулетка: {challenge}").format(challenge=challenge))
             QTimer.singleShot(0, self, self.adjustSize)      # вызов в две строки - окно подрастает
             return
         self._sound("trigger_click")

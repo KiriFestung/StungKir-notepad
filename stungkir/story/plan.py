@@ -56,10 +56,11 @@ def plan_summary(rows, plan, key):
         if code in counts:
             counts[code] += 1
     total = sum(words for _path, words in book)
-    parts = [f"Готово {counts['done']} из {len(book)} {plural(len(book), 'главы', 'глав', 'глав')}"]
+    parts = [tr("Готово {done} из {total} {chapters}").format(done=counts['done'], total=len(book),
+                                                              chapters=plural(len(book), 'главы', 'глав', 'глав'))]
     for code, label in (("edit", "в правке"), ("draft", "в черновике"), ("idea", "в идеях")):
         if counts[code]:
-            parts.append(f"{label} {counts[code]}")
+            parts.append(f"{tr(label)} {counts[code]}")
     parts.append(f"{thousands(total)} {plural(total, 'слово', 'слова', 'слов')}")
     if len(book) < len(rows):
         parts.append(f"не в книгу {len(rows) - len(book)}")
@@ -192,7 +193,7 @@ class PlanDialog(Sheet):
         pov_text = pov
         if pov and year is not None and self.born.get(pov) is not None:
             pov_text = f"{pov} ({age_label(year - self.born[pov])})"
-        item = QTreeWidgetItem([path.stem, STATUS_NAMES.get(code, "-"), pov_text or "-",
+        item = QTreeWidgetItem([path.stem, tr(STATUS_NAMES.get(code, "-")), pov_text or "-",
                                 "" if year is None else year_label(year), thousands(words), entry.get("about", "")])
         item.setData(0, Qt.UserRole, str(path))
         item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsDragEnabled | Qt.ItemIsEditable)
@@ -242,7 +243,7 @@ class PlanDialog(Sheet):
         current = self.entry(path).get("status")
         for code, label in STATUSES + [(None, "Без статуса")]:
             # первым Qt может передать «отмечено ли» - его в _c, чтобы не попал в код статуса
-            action = menu.addAction(label, lambda _c=False, c=code: self.choose(path, "status", c))
+            action = menu.addAction(tr(label), lambda _c=False, c=code: self.choose(path, "status", c))
             action.setCheckable(True)
             action.setChecked(code == current)
         menu.addSeparator()
@@ -357,11 +358,11 @@ class PlanMixin:
     def plan_menu(self, menu, path):
         """Пункты для главы в правом клике слева: статус, чей взгляд, «не в книгу», год, «о чём»."""
         entry = self.chapter_plan(path)
-        statuses = self._submenu(menu, "Статус")
+        statuses = self._submenu(menu, tr("Статус"))
         for code, label in STATUSES + [(None, "Без статуса")]:
-            self._toggle(statuses, label, lambda _c=False, c=code: self.plan_set(path, "status", c),
+            self._toggle(statuses, tr(label), lambda _c=False, c=code: self.plan_set(path, "status", c),
                          code == entry.get("status"))
-        pov = self._submenu(menu, "Чей взгляд")
+        pov = self._submenu(menu, tr("Чей взгляд"))
         for name in dict.fromkeys(self.plan_people() + ([entry["pov"]] if entry.get("pov") else [])):
             self._toggle(pov, name, lambda _c=False, n=name: self.plan_set(path, "pov", n), name == entry.get("pov"))
         pov.addSeparator()
@@ -442,7 +443,7 @@ class PlanMixin:
                 code = entry.get("status")
                 child.setData(0, STATUS_ROLE, code or "")
                 child.setData(0, Qt.ForegroundRole, QColor(C.DIM) if entry.get("skip") else None)
-                tip = [STATUS_NAMES.get(code, ""), entry.get("pov", ""), entry.get("year", "") and
+                tip = [tr(STATUS_NAMES.get(code, "")), entry.get("pov", ""), entry.get("year", "") and
                        f"год {entry['year']}", "не в книгу" if entry.get("skip") else "", entry.get("about", "")]
                 child.setToolTip(0, " · ".join(x for x in tip if x))
 

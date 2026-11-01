@@ -109,7 +109,7 @@ class GoalStrip(QWidget):
         painter.setFont(font)
         metrics = painter.fontMetrics()
         gap = 32
-        captions = [self.CAPTIONS[n] + (" ✓" if item["done"] else "") for n, item in shown]
+        captions = [tr(self.CAPTIONS[n]) + (" ✓" if item["done"] else "") for n, item in shown]
         text_width = sum(metrics.horizontalAdvance(c) + 8 for c in captions) + gap * (len(shown) - 1)
         bar_len = max(40.0, min(float(self.BAR), (self.width() - 24 - text_width) / len(shown)))  # узкое окно
         widths = [metrics.horizontalAdvance(c) + 8 + bar_len for c in captions]

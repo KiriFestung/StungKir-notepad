@@ -339,7 +339,7 @@ class HotkeysDialog(Sheet):
             grid.addWidget(edit, row, 0)
             grid.addWidget(QLabel(tr(what)), row, 1)
         for row, (keys_text, what) in enumerate(KEY_TRICKS, len(KEY_ACTIONS)):
-            key = QLabel(keys_text)
+            key = QLabel(tr(keys_text))
             key.setObjectName("Section")
             grid.addWidget(key, row, 0)
             grid.addWidget(QLabel(tr(what)), row, 1)
