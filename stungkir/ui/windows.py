@@ -14,6 +14,8 @@ from PySide6.QtWidgets import (
 )
 
 from ..core import config as C
+from ..core import i18n
+from ..core.i18n import LANGUAGES, tr
 from ..core.textutil import WORD_RE, diff_html, is_prose, words_label
 from ..core.storage import LockedFile, files_in, read_text, version_label
 from .dialogs import Sheet, show_warning
@@ -610,6 +612,12 @@ class SettingsDialog(Sheet):
         colors.setToolTip("Все цвета, свои темы, дневная тема по времени, теплота - с образцом")
         colors.clicked.connect(lambda: parent.show_colors() if parent else None)
         add("Цвета", colors)
+        self.language = QComboBox()
+        for code, name in LANGUAGES.items():
+            self.language.addItem(name, code)
+        self.language.setCurrentIndex(max(0, self.language.findData(self.config.get("LANGUAGE", i18n.LANG))))
+        self.language.setToolTip("Меняется после перезапуска. Нет перевода - надпись остаётся русской")
+        add(tr("Язык"), self.language)
 
         section("Текст")
         self.font = QFontComboBox()
@@ -787,7 +795,8 @@ class SettingsDialog(Sheet):
                   "ONLY_RUSSIAN": self.russian.isChecked(), "AUTOSAVE": self.autosave.isChecked(),
                   "FLAT_WINDOWS": self.flat.isChecked(),
                   "NIGHT_FROM": self.night_from.value(),
-                  "NIGHT_TO": self.night_to.value(), "BACKUP_DIR": self.backup.text().strip()}
+                  "NIGHT_TO": self.night_to.value(), "BACKUP_DIR": self.backup.text().strip(),
+                  "LANGUAGE": self.language.currentData()}
         return config, self.goal.value()
 
 

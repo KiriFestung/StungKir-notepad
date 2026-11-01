@@ -41,6 +41,12 @@ Source: "..\..\docs\ПРАВОВОЕ.md"; DestDir: "{app}\licenses"; DestName: "
 Source: "..\..\packaging\fonts\LICENSE-DejaVu.txt"; DestDir: "{app}\licenses"; Flags: ignoreversion
 Source: "..\..\packaging\dictionaries\LICENSE-ru_RU.txt"; DestDir: "{app}\licenses"; Flags: ignoreversion
 
+[Registry]
+; язык, выбранный в установщике, - программе (QSettings stungkir/stungkir): при первом запуске она не спросит
+; второй раз. Выбор в «Настройках» программы важнее; при удалении подсказка убирается
+Root: HKCU; Subkey: "Software\stungkir\stungkir"; ValueType: string; ValueName: "installer_language"; ValueData: "ru"; Languages: russian; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\stungkir\stungkir"; ValueType: string; ValueName: "installer_language"; ValueData: "en"; Languages: english; Flags: uninsdeletevalue
+
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\StungKir.exe"
 Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"

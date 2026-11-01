@@ -320,6 +320,8 @@ def load_config():
     except ValueError:
         config = {}
     apply_config(config)
+    from .i18n import set_language
+    set_language(config.get("LANGUAGE"))     # язык - только при запуске: на ходу окна стали бы наполовину чужими
     return config
 
 
