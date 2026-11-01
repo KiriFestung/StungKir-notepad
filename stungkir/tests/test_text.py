@@ -104,8 +104,9 @@ class VersionTest(unittest.TestCase):
         self.assertEqual(found("packaging/flatpak/page.codeberg.kirifestung.StungKir.metainfo.xml",
                                r'<release version="([^"]+)"'), version)             # первый - самый новый
         self.assertEqual(found("CHANGELOG.md", r"^## (\S+)"), version)
-        self.assertEqual(set(re.findall(r"StungKir-Setup-([\d.]+)\.exe", (root / "README.md").read_text(encoding="utf-8"))),
-                         {version})
+        for readme in ("README.md", "README.en.md"):
+            self.assertEqual(set(re.findall(r"StungKir-Setup-([\d.]+)\.exe", (root / readme).read_text(encoding="utf-8"))),
+                             {version}, readme)
 
 
 class PersonalDictionaryTest(unittest.TestCase):

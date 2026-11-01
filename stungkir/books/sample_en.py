@@ -25,7 +25,7 @@ F8 - focus mode, F9 - typewriter, F10 - no distractions, F1 - all keys.
 """
 
 CHAPTER_1 = """# Chapter 1
-The morning was grey. Tervena stood at the window and watched the fog settle on the river and hide the far bank.
+The morning was dull. Tervena stood at the window and watched the fog settle on the river and hide the far bank.
 — There will be no boat, - she said. - Not today.
 The innkeeper shrugged and went back to the hearth. The bells were already ringing in Davn [check how many], and *nobody* expected **guests** from the south.
 — And if the fog lifts by noon?
