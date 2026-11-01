@@ -34,6 +34,7 @@ modules:
       # русский словарь для проверки орфографии (через spylls) и шрифты DejaVu
       - install -Dm644 packaging/dictionaries/ru_RU.dic /app/share/hunspell/ru_RU.dic
       - install -Dm644 packaging/dictionaries/ru_RU.aff /app/share/hunspell/ru_RU.aff
+      - install -Dm644 -t /app/share/hunspell packaging/dictionaries/en_US.dic packaging/dictionaries/en_US.aff packaging/dictionaries/en_GB.dic packaging/dictionaries/en_GB.aff
       - install -Dm644 -t /app/share/fonts/dejavu packaging/fonts/*.ttf
       - install -Dm644 packaging/flatpak/page.codeberg.kirifestung.StungKir.desktop /app/share/applications/page.codeberg.kirifestung.StungKir.desktop
       - install -Dm644 packaging/flatpak/page.codeberg.kirifestung.StungKir.svg /app/share/icons/hicolor/scalable/apps/page.codeberg.kirifestung.StungKir.svg

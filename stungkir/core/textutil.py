@@ -33,6 +33,11 @@ MARKER_FILLED_RE = re.compile(r"\[[^\S\n]*[^\s\[\]][^\[\]\n]{0,119}\]")
 # знаки препинания; дефис внутри слова («кто-то») не трогаем
 PUNCT_RE = re.compile(r"[.,!?;:…«»„“”\"'’()—–]|(?<!\w)-|-(?!\w)")
 # **жирный** и *курсив*: в файле остаются звёздочки, на экране - настоящее начертание
+# реплики в кавычках - так пишут по-английски: “No,” Kira said. / "No," / британские ‘No,’ (апостроф в «don’t»
+# реплику не обрывает). Незакрытая кавычка в конце абзаца - реплика продолжается в следующем абзаце
+QUOTED_RE = re.compile(r"“[^”\n]*(?:”|$)|(?<!\w)\"[^\"\n]*(?:\"|$)|(?<!\w)‘(?:[^’\n]|’(?=\w))*(?:’|$)")
+CYRILLIC_RE = re.compile("[а-яёА-ЯЁ]")
+LATIN_WORD = re.compile(r"[A-Za-z]+(?:['’][A-Za-z]+)*")     # английское слово: don’t, Tervena's
 EMPH_RE = re.compile(r"\*\*(?=\S)(.+?)(?<=\S)\*\*|(?<![*\w])\*(?=\S)([^*\n]+?)(?<=\S)\*(?![*\w])")
 
 
@@ -760,3 +765,11 @@ def replace_span(line, start, end, replacement):
     if line[start:end][:1].isupper():
         replacement = replacement[0].upper() + replacement[1:]
     return line[:start] + replacement + line[end:], start + len(replacement)
+
+
+def quoted_spans(text):
+    """Реплики в кавычках в абзаце: [(начало, конец)]. Только для текста без русских букв: по-русски
+    реплика начинается с тире, а «ёлочки» и кавычки - это цитаты, их репликой не красим."""
+    if '"' not in text and "“" not in text and "‘" not in text or CYRILLIC_RE.search(text):
+        return []
+    return [(m.start(), m.end()) for m in QUOTED_RE.finditer(text) if m.end() - m.start() > 1]
