@@ -123,9 +123,15 @@ def tree(rng):
             body += (f'<ellipse cx="{x:.1f}" cy="{base - 3:.1f}" rx="{rng.uniform(5, 8):.1f}" ry="3.6" '
                      f'fill="#ffffff"/>')
         _ = n
-    for y0, half in [(315, 110), (245, 88), (178, 64), (110, 40)]:   # нитки гирлянды
-        x0, x1, sag = 150 - half, 150 + half, 26
-        body += (f'<path d="M{x0},{y0 - 12} Q150,{y0 - 12 + 2 * sag} {x1},{y0 - 12}" stroke="#1b3322" '
+    def width_at(y):
+        """Полуширина ёлки на высоте y - по самому широкому ярусу там (лапы с зубцами чуть уже)."""
+        return max((half * (y - top) / (base - top) for top, base, half, _ in tiers if top <= y <= base), default=0)
+    for y0 in (315, 245, 178, 110):                                   # нитки гирлянды - не шире веток
+        sag = 26
+        y = y0 - 12
+        half = 0.86 * min(width_at(y), width_at(y + sag))
+        x0, x1 = 150 - half, 150 + half
+        body += (f'<path d="M{x0:.1f},{y} Q150,{y + 2 * sag} {x1:.1f},{y}" stroke="#1b3322" '
                  f'stroke-width="1.1" fill="none"/>')
         n = int(half / 11)
         for t in range(1, n):
