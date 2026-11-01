@@ -132,8 +132,9 @@ def tree(rng):
                        (150, 100, 5, "blue"), (70, 345, 7, "white"), (230, 342, 7, "blue")]:
         body += ball(x, y, r, c)
     body += '<circle cx="150" cy="22" r="40" fill="url(#star-glow)"/>' + star(150, 22, 20, 8.5, "url(#star-fill)")
-    SCENE["tree"] = {"size": [300, 405], "lights": lights, "star": [150, 22]}
-    return svg(300, 405, defs, body)
+    top = 24                                     # место над звездой: её свечение не обрезается краем картинки
+    SCENE["tree"] = {"size": [300, 405 + top], "lights": [[x, y + top] for x, y in lights], "star": [150, 22 + top]}
+    return svg(300, 405 + top, defs, f'<g transform="translate(0,{top})">{body}</g>')
 
 
 # ---------- подарки ----------

@@ -188,10 +188,10 @@ class Room:
         floor_h = max(34, min(84, h * 0.085))
         floor_top = h - floor_h
         items = {"floor_top": floor_top}
-        fh = max(120, min(330, h * 0.36))
+        fh = max(120, min(300, h * 0.32))
         fw = self.art.width_for("fireplace", fh)
         items["fireplace"] = QRectF((w - fw) / 2, floor_top + floor_h * 0.25 - fh, fw, fh)
-        th = max(150, min(430, h * 0.46))
+        th = max(150, min(420, h * 0.44))
         tree = QRectF(8, floor_top + floor_h * 0.35 - th, self.art.width_for("tree", th), th)
         items["tree"] = tree
         ph = th * 0.24
@@ -200,24 +200,27 @@ class Room:
         wh = max(180, min(380, h * 0.42))                     # окно на стене справа, за ним - улица
         ww = self.art.width_for("window-back", wh)
         items["window"] = QRectF(w - ww - 6, max(40.0, floor_top - h * 0.14 - wh), ww, wh)
-        sleep_h = th * 0.36                                   # ласка спит на коврике у ёлки
-        sleep_w = self.art.width_for("weasel-sleep", sleep_h)
-        rug_w = sleep_w * 1.4
-        rug_h = min(rug_w * 92 / 320, floor_h * 1.1)
-        center = tree.right() + rug_w * 0.12
-        items["rug"] = QRectF(center - rug_w / 2, h - rug_h - floor_h * 0.06, rug_w, rug_h)
-        items["weasel"] = QRectF(center - sleep_w / 2, items["rug"].center().y() + rug_h * 0.18 - sleep_h,
-                                 sleep_w, sleep_h)
-        ch = fh * 0.6
+        ch = fh * 0.56
         cw = self.art.width_for("chair", ch)
         fire = items["fireplace"]
-        # кресла стоят перед камином, чуть заходя на его края
-        left = QRectF(fire.left() - cw * 0.62, floor_top + floor_h * 0.45 - ch, cw, ch)
-        right = QRectF(fire.right() - cw * 0.38, left.top(), cw, ch)
-        if left.left() > tree.right() - tree.width() * 0.2:
+        # кресла стоят перед камином, заходя на его края; друг на друга вещи не налезают
+        left = QRectF(fire.left() - cw * 0.45, floor_top + floor_h * 0.45 - ch, cw, ch)
+        right = QRectF(fire.right() - cw * 0.55, left.top(), cw, ch)
+        if left.left() > tree.right() + 6:
             items["chair_left"] = left
-        if right.right() < items["window"].center().x():
+        if right.right() < items["window"].left() - 6:
             items["chair_right"] = right
+        # ласка с ковриком - в промежутке между ёлкой и креслом (или камином), сколько влезет
+        gap_right = items["chair_left"].left() if "chair_left" in items else fire.left()
+        rug_w = min(th * 0.5, gap_right - tree.right() - 10)
+        if rug_w >= 90:
+            rug_h = min(rug_w * 92 / 320, floor_h * 0.9)
+            center = (tree.right() + gap_right) / 2
+            items["rug"] = QRectF(center - rug_w / 2, h - rug_h - floor_h * 0.08, rug_w, rug_h)
+            sleep_w = rug_w * 0.88
+            sleep_h = sleep_w / max(0.1, self.art.width_for("weasel-sleep", 1.0))
+            items["weasel"] = QRectF(center - sleep_w / 2, items["rug"].center().y() + rug_h * 0.2 - sleep_h,
+                                     sleep_w, sleep_h)
         if w < 700:                              # узкое окно: только ёлка и камин
             for key in ("window", "rug", "weasel", "chair_left", "chair_right"):
                 items.pop(key, None)
