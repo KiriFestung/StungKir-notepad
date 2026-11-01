@@ -1846,7 +1846,7 @@ class StressDialog(Sheet):
         self.blocks.best = int(self.settings.value("blocks_best", 0) or 0)
         for index, (title, page) in enumerate(zip(PAGES, (self.wrap, self.ball, self.spinner, self.sand,
                                                           toggles_page, self.skip, self.blocks))):
-            button = QPushButton(title)
+            button = QPushButton(tr(title))
             button.setCheckable(True)
             button.setAutoDefault(False)                 # иначе первая вкладка выглядит нажатой всегда
             button.setProperty("noIcon", True)

@@ -40,7 +40,7 @@ class Screens(WindowCase):
         w = self.window()
         w.resize(1280, 800)
         w.choose_theme(C.DEFAULT_THEME)          # основная тема, как у человека (в проверках - своя)
-        w.open_path(next(C.ROOT.rglob("Глава 1.txt")))          # первая глава пробной книги
+        w.open_path(next(p for p in C.ROOT.rglob("*.txt") if p.stem in ("Глава 1", "Chapter 1")))  # пробная книга
         wait(0.5)
         number = iter(range(1, 100))
 

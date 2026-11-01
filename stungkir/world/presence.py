@@ -42,9 +42,10 @@ class PresenceDialog(Sheet):
         self.counts, self.first = presence(lore, texts)
         row = QHBoxLayout()
         self.kind = QComboBox()
-        self.kind.addItems(["Все", "Персонажи", "Справочник мира"])
+        self.kind.addItems([tr(name) for name in ("Все", "Персонажи", "Справочник мира")])     # по номеру
         self.order = QComboBox()
-        self.order.addItems(["По первому появлению", "Сначала самые частые", "Сначала надолго пропавшие"])
+        self.order.addItems([tr(name) for name in ("По первому появлению", "Сначала самые частые",
+                                                   "Сначала надолго пропавшие")])
         for combo in (self.kind, self.order):
             combo.currentIndexChanged.connect(self.fill)
             row.addWidget(combo)
@@ -110,7 +111,7 @@ class PresenceDialog(Sheet):
             total.setTextAlignment(Qt.AlignCenter)
             self.table.setItem(r, chapters, total)
             gap = longest_gap(row)
-            missing = QTableWidgetItem(f"{gap} гл." if gap else "")
+            missing = QTableWidgetItem(tr("{gap} гл.").format(gap=gap) if gap else "")
             missing.setTextAlignment(Qt.AlignCenter)
             if gap >= 3:
                 missing.setForeground(QColor(C.SPELL))

@@ -1604,4 +1604,945 @@ EN = {
         "The conflict copy is gone: the sync sorted it out by itself",
     " (и ещё {n})":
         " (and {n} more)",
+    # вкладки, размеры экранов, заготовки мира
+    "Книга":
+        "Book",
+    "Телефон":
+        "Phone",
+    "Планшет":
+        "Tablet",
+    "Читалка":
+        "E-reader",
+    "Карманная 110×170":
+        "Pocket 110×170",
+    "Обычная A5":
+        "Regular A5",
+    "Большая 170×240":
+        "Large 170×240",
+    "Маленький 5,4\"":
+        "Small 5.4\"",
+    "Обычный 6,1\"":
+        "Regular 6.1\"",
+    "Большой 6,7\"":
+        "Large 6.7\"",
+    "Планшет 8\"":
+        "Tablet 8\"",
+    "Планшет 11\"":
+        "Tablet 11\"",
+    "Читалка 6\"":
+        "E-reader 6\"",
+    "Читалка 7\"":
+        "E-reader 7\"",
+    "Читалка 10\"":
+        "E-reader 10\"",
+    "Кубики":
+        "Dice",
+    "Монетка":
+        "Coin",
+    "Число":
+        "Number",
+    "Из списка":
+        "From a list",
+    "Рулетка":
+        "Roulette",
+    "Подбросить":
+        "Flip",
+    "Спуск":
+        "Trigger",
+    "Выбрать":
+        "Pick",
+    "Ночная (основная)":
+        "Night (main)",
+    "Дневная":
+        "Day",
+    "# в начале строки":
+        "# at the start of a line",
+    "Ctrl+колесо":
+        "Ctrl+wheel",
+    "Ctrl+клик по имени":
+        "Ctrl+click on a name",
+    "Пометки во всех файлах":
+        "Marks in all files",
+    "Имена, написанные иначе":
+        "Names spelled differently",
+    "Мои штампы во всех главах":
+        "My clichés in all chapters",
+    "Кто говорит: реплики, где легко запутаться":
+        "Who speaks: lines where it is easy to get lost",
+    "Бестиарий":
+        "Bestiary",
+    "Государства":
+        "States",
+    "Народы и расы":
+        "Peoples and races",
+    "Места":
+        "Places",
+    "Магия":
+        "Magic",
+    "Веры и культы":
+        "Faiths and cults",
+    "Языки":
+        "Languages",
+    "Хронология мира":
+        "World timeline",
+    "Источник: \nКто может: \nЦена: \nОграничения: \nКак выглядит со стороны: \nЧем опасна: \nКак к ней относятся: \n":
+        "Source: \nWho can use it: \nCost: \nLimits: \nWhat it looks like from outside: \nWhat makes it dangerous: \nHow people see it: \n",
+    "Во что верят: \nБоги или силы: \nОбряды: \nСлужители: \nЗапреты: \nКто не верит и что с ними: \n":
+        "What they believe in: \nGods or powers: \nRites: \nServants: \nTaboos: \nThose who do not believe and what happens to them: \n",
+    "Кто говорит: \nКак звучит: \nПисьменность: \nЧастые слова: \nКак ругаются: \n":
+        "Who speaks it: \nHow it sounds: \nWriting: \nCommon words: \nHow they swear: \n",
+    "Существо":
+        "Creature",
+    "Где водится":
+        "Where it lives",
+    "Как выглядит":
+        "What it looks like",
+    "Повадки":
+        "Habits",
+    "Чем опасно":
+        "Why it is dangerous",
+    "Слабости":
+        "Weaknesses",
+    "Заметки":
+        "Notes",
+    "Название":
+        "Name",
+    "Строй":
+        "System of rule",
+    "Правитель":
+        "Ruler",
+    "Столица":
+        "Capital",
+    "Народы":
+        "Peoples",
+    "Соседи и отношения":
+        "Neighbors and relations",
+    "Внешность":
+        "Appearance",
+    "Сколько живут":
+        "Lifespan",
+    "Где живут":
+        "Where they live",
+    "Обычаи":
+        "Customs",
+    "Отношения с другими":
+        "Relations with others",
+    "Имя":
+        "Name",
+    "Роль в сюжете":
+        "Role in the story",
+    "Возраст":
+        "Age",
+    "Характер":
+        "Character",
+    "Чего хочет":
+        "What they want",
+    "Тайна":
+        "Secret",
+    "Место":
+        "Place",
+    "Что это":
+        "What it is",
+    "Климат":
+        "Climate",
+    "Кто живёт":
+        "Who lives there",
+    "Чем известно":
+        "What it is known for",
+    # статусы плана, вкладки антистресса, материалы кубиков
+    "Идея":
+        "Idea",
+    "Черновик":
+        "Draft",
+    "Правка":
+        "Editing",
+    "Без статуса":
+        "No status",
+    "Пупырка":
+        "Bubble wrap",
+    "Мячик":
+        "Ball",
+    "Спиннер":
+        "Spinner",
+    "Песок":
+        "Sand",
+    "Тумблеры":
+        "Switches",
+    "Блинчики":
+        "Skipping stones",
+    "Блоки":
+        "Blocks",
+    "Кость":
+        "Bone",
+    "Металл":
+        "Metal",
+    "Дуб":
+        "Oak",
+    "Индиго":
+        "Indigo",
+    # рулетка: ступени, заряды, история бросков
+    "Любые":
+        "Any",
+    "1. Безобидные":
+        "1. Harmless",
+    "2. Посерьёзнее":
+        "2. More serious",
+    "3. Жёсткие":
+        "3. Harsh",
+    "4. Злые":
+        "4. Cruel",
+    "5. Адище":
+        "5. Hell",
+    "6. Без тормозов":
+        "6. No brakes",
+    "1 патрон":
+        "1 round",
+    "2 патрона":
+        "2 rounds",
+    "3 патрона":
+        "3 rounds",
+    "4 патрона":
+        "4 rounds",
+    "5 патронов":
+        "5 rounds",
+    "6 - полный барабан":
+        "6 - a full cylinder",
+    "Монетка: на ребро! Такое бывает раз из 6000":
+        "Coin: on its edge! That happens once in 6000",
+    "Монетка: {side}":
+        "Coin: {side}",
+    "Число {low}–{high}: {v}":
+        "Number {low}–{high}: {v}",
+    "Термин":
+        "Term",
+    "Рулетка: {challenge}":
+        "Roulette: {challenge}",
+    "Ворон":
+        "Raven",
+    "Ласка":
+        "Weasel",
+    "Ребро":
+        "Edge",
+    # вызовы рулетки
+    "Добавь в сцену запах":
+        "Add a smell to the scene",
+    "Добавь в сцену звук, который никто из героев не замечает":
+        "Add a sound to the scene that none of the characters notice",
+    "Найди в последнем абзаце самое скучное слово и замени":
+        "Find the dullest word in the last paragraph and replace it",
+    "Опиши руки персонажа, который сейчас в кадре":
+        "Describe the hands of the character who is in the frame right now",
+    "Закончи главу вопросом":
+        "End the chapter with a question",
+    "Дай персонажу привычку - мелкую, но заметную":
+        "Give a character a habit - small but noticeable",
+    "Положи в сцену предмет, который потом пригодится":
+        "Put an object into the scene that will be useful later",
+    "Перепиши первую фразу главы трижды и оставь лучшую":
+        "Rewrite the first sentence of the chapter three times and keep the best",
+    "Три вещи, которые герой видит прямо сейчас - вставь одну":
+        "Three things the hero sees right now - put one of them in",
+    "Пусть кто-то в сцене ест или пьёт":
+        "Let someone in the scene eat or drink",
+    "Добавь погоду, которая мешает героям":
+        "Add weather that gets in the heroes' way",
+    "Напиши одну фразу, которую хочется процитировать":
+        "Write one sentence that begs to be quoted",
+    "Дай второстепенному персонажу имя и одну черту":
+        "Give a minor character a name and one trait",
+    "Абзац только из коротких предложений":
+        "A paragraph of short sentences only",
+    "Придумай главе название, если его ещё нет":
+        "Come up with a chapter title if it has none yet",
+    "Добавь в сцену цвет, который потом повторится":
+        "Add a color to the scene that will come back later",
+    "Опиши, как пахнет дом персонажа":
+        "Describe what the character's home smells like",
+    "Пусть персонаж что-нибудь уронит":
+        "Let the character drop something",
+    "Допиши 100 слов, прежде чем встать":
+        "Write 100 more words before you get up",
+    "Перечитай последнюю страницу вслух":
+        "Read the last page aloud",
+    "Пусть в сцене что-то тикает, капает или скрипит":
+        "Let something tick, drip or creak in the scene",
+    "Дай персонажу любимое словечко и вставь его один раз":
+        "Give a character a favorite word and use it once",
+    "Опиши свет: откуда он и что от него в тени":
+        "Describe the light: where it comes from and what it leaves in shadow",
+    "Добавь в комнату вещь, которая там явно лишняя":
+        "Add something to the room that clearly does not belong there",
+    "Пусть герой о чём-то вспомнит - одной фразой, не больше":
+        "Let the hero remember something - in one sentence, no more",
+    "Дай месту название, даже если его никто не произносит":
+        "Give a place a name, even if nobody says it",
+    "Опиши одежду героя так, чтобы по ней было понятно, какой сегодня день":
+        "Describe the hero's clothes so that they tell what kind of day it is",
+    "Напиши реплику, после которой все замолкают":
+        "Write a line after which everyone falls silent",
+    "Пусть в сцене будет животное - хоть муха":
+        "Let there be an animal in the scene - even a fly",
+    "Добавь деталь, которая выдаёт время года":
+        "Add a detail that gives away the season",
+    "Найди повтор слова в соседних фразах и убери":
+        "Find a repeated word in neighboring sentences and remove it",
+    "Вставь в главу одну короткую фразу из трёх слов":
+        "Put one short three-word sentence into the chapter",
+    "Пусть герой что-то потрогает и почувствует фактуру":
+        "Let the hero touch something and feel its texture",
+    "Опиши звук шагов персонажа":
+        "Describe the sound of the character's footsteps",
+    "Пусть кто-то в сцене смеётся не к месту":
+        "Let someone in the scene laugh at the wrong moment",
+    "Добавь сцене температуру: жарко, зябко, душно":
+        "Give the scene a temperature: hot, chilly, stuffy",
+    "Опиши лицо собеседника в момент, когда он слушает":
+        "Describe the face of the other person while they listen",
+    "Дай герою мелкое неудобство: жмёт обувь, чешется, хочется пить":
+        "Give the hero a small discomfort: tight shoes, an itch, thirst",
+    "Добавь письмо, записку или надпись - хотя бы в одну строчку":
+        "Add a letter, a note or an inscription - at least one line",
+    "Закончи сцену действием, а не мыслью":
+        "End the scene with an action, not a thought",
+    "Пусть в сцене кто-то опаздывает":
+        "Let someone in the scene be late",
+    "Замени одно общее слово точным: не «цветок», а какой":
+        "Replace one general word with a precise one: not «a flower», but which one",
+    "Начни абзац со звука":
+        "Start a paragraph with a sound",
+    "Пусть герой заметит то, что видит только он":
+        "Let the hero notice something only they can see",
+    "Добавь вещь, которая сломана, но ей пользуются":
+        "Add an object that is broken but still in use",
+    "Дай персонажу жест, по которому его узнают":
+        "Give a character a gesture people know them by",
+    "Опиши вкус - еды, воздуха, крови на губе":
+        "Describe a taste - of food, of the air, of blood on a lip",
+    "Пусть кто-то в сцене назовёт героя не так, как он привык":
+        "Let someone in the scene call the hero by the wrong name",
+    "Вставь короткую паузу: герой молчит, а что вокруг":
+        "Insert a short pause: the hero is silent - and what is around",
+    "Перепиши одно предложение так, чтобы оно стало вдвое короче":
+        "Rewrite one sentence to make it half as long",
+    "Пусть в сцене будет окно - и что за ним":
+        "Let there be a window in the scene - and what is behind it",
+    "Добавь запах, который вызывает воспоминание":
+        "Add a smell that brings back a memory",
+    "Дай месту одну странность, которую местные не замечают":
+        "Give a place one oddity the locals no longer notice",
+    "Напиши реплику, которая звучит вежливо, а значит другое":
+        "Write a line that sounds polite but means something else",
+    "Пусть герой что-то сосчитает":
+        "Let the hero count something",
+    "Убери из абзаца слово «очень»":
+        "Remove the word «very» from a paragraph",
+    "Опиши руки того, кто работает руками":
+        "Describe the hands of someone who works with their hands",
+    "Добавь в главу один вопрос без ответа":
+        "Add one unanswered question to the chapter",
+    "Напиши 50 слов, ни разу не перечитывая":
+        "Write 50 words without rereading once",
+    "Пусть герой наконец поест нормально":
+        "Let the hero finally have a proper meal",
+    "Следующая сцена - без единой реплики":
+        "The next scene - without a single line of dialogue",
+    "Следующая сцена - только диалог":
+        "The next scene - dialogue only",
+    "Убери из последнего абзаца все прилагательные":
+        "Remove all adjectives from the last paragraph",
+    "Допиши 300 слов, прежде чем встать":
+        "Write 300 more words before you get up",
+    "Дай второстепенному персонажу тайну":
+        "Give a minor character a secret",
+    "Начни следующую сцену с середины действия":
+        "Start the next scene in the middle of the action",
+    "Опиши место глазами того, кто его ненавидит":
+        "Describe a place through the eyes of someone who hates it",
+    "Пусть персонаж соврёт - так, чтобы читатель заметил":
+        "Let a character lie - so that the reader notices",
+    "15 минут по таймеру, телефон - в другую комнату":
+        "15 minutes on the timer, the phone goes to another room",
+    "Перескажи одну сцену глазами другого персонажа":
+        "Retell one scene through the eyes of another character",
+    "Пусть герой ошибётся и не узнает об этом":
+        "Let the hero make a mistake and never find out",
+    "Найди своё слово-паразит и убери его из главы везде":
+        "Find your filler word and remove it from the whole chapter",
+    "Сцена, где двое хотят разного и оба правы":
+        "A scene where two people want different things and both are right",
+    "Пусть персонаж скажет не то, что думает, а читатель поймёт":
+        "Let a character say something other than what they think, and let the reader understand",
+    "Поставь сцене срок: что-то должно случиться до заката":
+        "Give the scene a deadline: something must happen before sunset",
+    "Напиши абзац без буквы «о»":
+        "Write a paragraph without the letter «e»",
+    "Перепиши последнюю реплику так, чтобы в ней был подтекст":
+        "Rewrite the last line so that it has subtext",
+    "Пусть союзник героя на минуту станет помехой":
+        "Let the hero's ally become an obstacle for a minute",
+    "Опиши боль, ни разу не написав слово «боль»":
+        "Describe pain without writing the word «pain» once",
+    "Вычеркни самое красивое предложение главы - если без него не хуже, так и оставь":
+        "Cross out the most beautiful sentence of the chapter - if it is no worse without it, leave it out",
+    "Сцена, в которой герой ждёт - и ожидание тянется":
+        "A scene where the hero waits - and the waiting drags on",
+    "Перепиши диалог без единого «сказал»":
+        "Rewrite the dialogue without a single «said»",
+    "Дай герою выбор из двух плохих вариантов":
+        "Give the hero a choice between two bad options",
+    "Пусть второстепенный персонаж хочет чего-то своего - и мешает":
+        "Let a minor character want something of their own - and get in the way",
+    "Напиши абзац одним предложением":
+        "Write a paragraph as a single sentence",
+    "Пусть кто-то подслушает разговор":
+        "Let someone overhear a conversation",
+    "Начни главу с реплики":
+        "Start a chapter with a line of dialogue",
+    "Сцена в темноте: только звуки, запахи и касания":
+        "A scene in the dark: only sounds, smells and touch",
+    "Пусть герой нарушит обещание":
+        "Let the hero break a promise",
+    "Опиши комнату по тому, что из неё пропало":
+        "Describe a room by what has gone missing from it",
+    "Пусть два персонажа вспомнят одно событие по-разному":
+        "Let two characters remember the same event differently",
+    "Сцена, где кто-то врёт, и все это знают":
+        "A scene where someone lies and everyone knows it",
+    "Дай антагонисту маленькую человеческую слабость":
+        "Give the antagonist a small human weakness",
+    "Перепиши абзац во втором лице, потом верни - что изменилось":
+        "Rewrite a paragraph in the second person, then change it back - what changed",
+    "Пусть герой услышит о себе то, что не должен был":
+        "Let the hero hear something about themselves they were not supposed to",
+    "Напиши сцену, которая длится ровно минуту":
+        "Write a scene that lasts exactly one minute",
+    "Пусть самое важное в сцене скажут шёпотом":
+        "Let the most important thing in the scene be said in a whisper",
+    "Опиши город одним абзацем через звуки":
+        "Describe a city in one paragraph through its sounds",
+    "Пусть в разговоре кто-то трижды уходит от ответа":
+        "Let someone dodge a question three times in a conversation",
+    "Сцена, в которой герой учится чему-то и у него не выходит":
+        "A scene where the hero is learning something and failing",
+    "Добавь в главу противника без лица: погоду, болезнь, время":
+        "Add a faceless enemy to the chapter: weather, illness, time",
+    "Пусть герой отдаст вещь, которой дорожит":
+        "Let the hero give away something they treasure",
+    "Перепиши начало главы так, чтобы первая фраза цепляла":
+        "Rewrite the start of the chapter so that the first sentence hooks",
+    "Сцена на ходу: в дороге, в бегстве, в толпе":
+        "A scene on the move: on the road, in flight, in a crowd",
+    "Пусть кто-то ответит вопросом на вопрос - и это будет значить много":
+        "Let someone answer a question with a question - and let it mean a lot",
+    "Убери из диалога всё, что персонажи и так знают":
+        "Remove from the dialogue everything the characters already know",
+    "Пусть случайная фраза в начале выстрелит в конце":
+        "Let a random line at the start pay off at the end",
+    "Напиши сцену, где все неправы":
+        "Write a scene where everyone is wrong",
+    "Дай герою одну победу - маленькую и с привкусом":
+        "Give the hero one victory - a small one with an aftertaste",
+    "Перескажи последнюю главу в трёх предложениях и проверь, держится ли":
+        "Retell the last chapter in three sentences and check that it holds",
+    "Пусть письмо или сообщение придёт не тому":
+        "Let a letter or message reach the wrong person",
+    "Персонаж, который много говорит, - пусть замолчит, и это заметят":
+        "A character who talks a lot - let them fall silent, and let others notice",
+    "Добавь сцене обратный отсчёт":
+        "Add a countdown to the scene",
+    "Пусть герою помогут - и он об этом пожалеет":
+        "Let someone help the hero - and the hero regret it",
+    "Опиши драку, погоню или ссору короткими фразами":
+        "Describe a fight, a chase or a quarrel in short sentences",
+    "Сцена, где герой притворяется кем-то другим":
+        "A scene where the hero pretends to be someone else",
+    "Пусть в главе появится запрет - и кто-то его нарушит":
+        "Let a ban appear in the chapter - and someone break it",
+    "20 минут по таймеру, никаких вкладок кроме текста":
+        "20 minutes on the timer, no tabs except the text",
+    "Найди в главе место, где скучно, и выкинь его":
+        "Find a boring place in the chapter and throw it out",
+    "Допиши 500 слов до конца дня":
+        "Write 500 more words before the day ends",
+    "10 минут пиши не останавливаясь - никаких правок":
+        "Write for 10 minutes without stopping - no edits",
+    "Отними у героя то, на что он рассчитывал":
+        "Take away from the hero what they were counting on",
+    "Сократи последнюю сцену на треть":
+        "Cut the last scene by a third",
+    "Убей второстепенного персонажа. Или почти":
+        "Kill a minor character. Or almost",
+    "Допиши 1000 слов сегодня":
+        "Write 1000 more words today",
+    "Сцена от лица злодея - и чтобы он был прав":
+        "A scene from the villain's point of view - and make them right",
+    "Раскрой тайну на главу раньше, чем собирался":
+        "Reveal the secret one chapter earlier than planned",
+    "Пусть герой проиграет спор, который должен был выиграть":
+        "Let the hero lose an argument they should have won",
+    "Перенеси сцену в другое место, перепиши и оставь лучшую":
+        "Move the scene to another place, rewrite it and keep the better one",
+    "Забери у героя единственный путь к отступлению":
+        "Take away the hero's only way out",
+    "Пусть самый спокойный персонаж сорвётся":
+        "Let the calmest character snap",
+    "Сцена, где никто не говорит правду":
+        "A scene where nobody tells the truth",
+    "Убери из главы все наречия на «-о» - до единого":
+        "Remove every adverb ending in «-ly» from the chapter - every single one",
+    "Предательство от того, от кого не ждали":
+        "Betrayal by the one nobody expected",
+    "Напиши сцену, которую боишься писать, - черновиком, без правок":
+        "Write the scene you are afraid to write - as a draft, no edits",
+    "30 минут по таймеру без интернета":
+        "30 minutes on the timer without the internet",
+    "Герой должен выбрать между двумя людьми - и выбрать":
+        "The hero must choose between two people - and choose",
+    "Пусть секрет героя узнает худший из возможных людей":
+        "Let the worst possible person learn the hero's secret",
+    "Перепиши конец главы так, чтобы стало хуже":
+        "Rewrite the end of the chapter to make things worse",
+    "Сцена, где герою стыдно за себя":
+        "A scene where the hero is ashamed of themselves",
+    "Пусть герой сделает правильную вещь, и за это его накажут":
+        "Let the hero do the right thing and be punished for it",
+    "Сцена, в которой рушится дружба - без крика":
+        "A scene where a friendship falls apart - without shouting",
+    "Сделай так, чтобы читатель усомнился в рассказчике":
+        "Make the reader doubt the narrator",
+    "Отними у героя голос, зрение или слух на одну сцену":
+        "Take away the hero's voice, sight or hearing for one scene",
+    "Пусть самый надёжный план сорвётся из-за мелочи":
+        "Let the most reliable plan fail because of a trifle",
+    "Напиши сцену допроса - кто кого ломает":
+        "Write an interrogation scene - who breaks whom",
+    "Пусть герой впервые ударит человека":
+        "Let the hero hit a person for the first time",
+    "Перепиши самую удобную для героя сцену так, чтобы ему было неудобно":
+        "Rewrite the scene that is most comfortable for the hero so that it becomes uncomfortable",
+    "Глава, где все ждут от героя одного, а он делает другое":
+        "A chapter where everyone expects one thing from the hero, and they do another",
+    "Пусть смерть случится за кадром - и о ней узнают из мелочи":
+        "Let a death happen off-screen - and be found out through a small detail",
+    "Раскрой прошлое персонажа так, что оно меняет всё, что было":
+        "Reveal a character's past so that it changes everything before",
+    "Пусть герой потеряет деньги, дом или работу":
+        "Let the hero lose money, a home or a job",
+    "Сцена, где союзник требует плату за помощь":
+        "A scene where an ally demands payment for help",
+    "Пусть герой выберет себя, а не других - и это будет понятно":
+        "Let the hero choose themselves over others - and make it understandable",
+    "Убери из главы одного персонажа совсем - его реплики раздай или выкинь":
+        "Remove one character from the chapter entirely - give their lines to others or cut them",
+    "Пусть страх героя сбудется наполовину":
+        "Let the hero's fear come half true",
+    "Напиши сцену ревности, где оба взрослые и оба неправы":
+        "Write a jealousy scene where both are adults and both are wrong",
+    "Пусть герой наконец скажет то, что давно держал в себе - не тому человеку":
+        "Let the hero finally say what they have held in for a long time - to the wrong person",
+    "Сцена, где ребёнок или зверь видит больше взрослых":
+        "A scene where a child or an animal sees more than the adults",
+    "Отправь героя туда, где ему не рады":
+        "Send the hero where they are not welcome",
+    "Пусть злодей сделает доброе дело - и не скажет зачем":
+        "Let the villain do a good deed - and not say why",
+    "Глава без единого флешбэка и объяснения - только действие":
+        "A chapter without a single flashback or explanation - action only",
+    "Пусть в сцене кто-то умирает медленно, а остальные ничего не могут":
+        "Let someone in the scene die slowly while the others can do nothing",
+    "Заставь героя извиниться, когда он прав":
+        "Make the hero apologize when they are right",
+    "Дай герою власть - и посмотри, что он с ней сделает":
+        "Give the hero power - and see what they do with it",
+    "Пусть любимая вещь героя окажется краденой":
+        "Let the hero's favorite thing turn out to be stolen",
+    "Сцена, где правду говорит тот, кому никто не верит":
+        "A scene where the truth is told by the one nobody believes",
+    "Пусть герой проснётся и поймёт, что прошло больше времени, чем он думал":
+        "Let the hero wake up and realize more time has passed than they thought",
+    "Перепиши последнюю сцену с самым неприятным для героя исходом":
+        "Rewrite the last scene with the outcome most unpleasant for the hero",
+    "Пусть кто-то уйдёт навсегда - и дверь не хлопнет":
+        "Let someone leave forever - and the door does not slam",
+    "Сократи главу на 500 слов, не трогая сюжет":
+        "Cut the chapter by 500 words without touching the plot",
+    "Сцена, где герой должен соврать, чтобы спасти кого-то":
+        "A scene where the hero must lie to save someone",
+    "Пусть два союзника героя возненавидят друг друга":
+        "Let two of the hero's allies come to hate each other",
+    "Доведи спор до точки, после которой нельзя помириться":
+        "Take an argument to the point after which there is no making up",
+    "Пусть зло в главе будет скучным и бытовым":
+        "Let the evil in the chapter be boring and everyday",
+    "Глава, после которой у героя на одного врага больше":
+        "A chapter after which the hero has one more enemy",
+    "45 минут по таймеру, без правок":
+        "45 minutes on the timer, no edits",
+    "Допиши 1500 слов сегодня":
+        "Write 1500 more words today",
+    "Пусть герой узнает цену чего-то - и цена окажется человеком":
+        "Let the hero learn the price of something - and the price turns out to be a person",
+    "Сцена, где кто-то наконец говорит «нет»":
+        "A scene where someone finally says «no»",
+    "Убей персонажа, которого любишь сам":
+        "Kill a character you love yourself",
+    "Удали последнюю сцену и напиши заново, не подглядывая":
+        "Delete the last scene and write it again without peeking",
+    "Допиши 2000 слов, прежде чем лечь спать":
+        "Write 2000 more words before going to bed",
+    "Пусть герой сделает непростительное - и не пожалеет":
+        "Let the hero do something unforgivable - and not regret it",
+    "Сожги герою дом. Буквально или нет - решай сам":
+        "Burn down the hero's house. Literally or not - you decide",
+    "Пусть план героя сработает - и окажется ошибкой":
+        "Let the hero's plan work - and turn out to be a mistake",
+    "Отдай злодею победу в этой главе":
+        "Give the villain the win in this chapter",
+    "Глава, где у героя нет ни одного союзника":
+        "A chapter where the hero has not a single ally",
+    "Пусть любимец читателей предаст героя":
+        "Let the readers' favorite betray the hero",
+    "Сократи главу вдвое":
+        "Cut the chapter in half",
+    "Час письма без остановки, правки - завтра":
+        "An hour of writing without stopping, edits tomorrow",
+    "Отними у героя здоровье: рана, болезнь, увечье - и с этим жить дальше":
+        "Take away the hero's health: a wound, an illness, an injury - and they have to live with it",
+    "Пусть невинный пострадает из-за решения героя":
+        "Let an innocent suffer because of the hero's decision",
+    "Пусть герой узнает, что во всём виноват он сам":
+        "Let the hero find out that it is all their own fault",
+    "Напиши сцену похорон":
+        "Write a funeral scene",
+    "Выкинь свой лучший диалог и напиши хуже, но честнее":
+        "Throw out your best dialogue and write a worse but more honest one",
+    "Перепиши первую главу с нуля, не открывая старую":
+        "Rewrite the first chapter from scratch without opening the old one",
+    "Пусть мечта героя сбудется и сломает ему жизнь":
+        "Let the hero's dream come true and break their life",
+    "Герой остаётся один. Совсем":
+        "The hero is left alone. Completely",
+    "Пусть смерть персонажа ничего не изменит - и это самое страшное":
+        "Let a character's death change nothing - and that is the most terrible part",
+    "Пусть герой выберет, кто умрёт":
+        "Let the hero choose who dies",
+    "Глава, где герой жестоко неправ - и читатель это видит":
+        "A chapter where the hero is cruelly wrong - and the reader sees it",
+    "Пусть пытка будет в сцене - и не ради эффекта, а ради выбора":
+        "Let there be torture in the scene - not for effect, but for the sake of a choice",
+    "Отними у героя то, ради чего он всё начинал":
+        "Take away what the hero started it all for",
+    "Сцена, где герой смеётся над чужой бедой":
+        "A scene where the hero laughs at someone else's misfortune",
+    "Пусть друг детства окажется палачом":
+        "Let a childhood friend turn out to be the executioner",
+    "Пусть герой убьёт - не в бою, а потому что так проще":
+        "Let the hero kill - not in battle, but because it is easier",
+    "Перепиши главу, в которой всё обошлось, так, чтобы не обошлось":
+        "Rewrite a chapter where everything turned out fine so that it does not",
+    "Пусть любовь героя достанется врагу":
+        "Let the hero's love go to the enemy",
+    "Сцена, где толпа решает чью-то судьбу":
+        "A scene where a crowd decides someone's fate",
+    "Сделай невыносимым персонажа, которого все любили":
+        "Make the character everyone loved unbearable",
+    "Пусть герой сломается на глазах у тех, кто на него надеялся":
+        "Let the hero break down in front of those who counted on them",
+    "Голод, холод или болезнь - и никто не придёт на помощь":
+        "Hunger, cold or illness - and nobody comes to help",
+    "Пусть в главе погибнет ребёнок или животное - и это не будет дешёвым приёмом":
+        "Let a child or an animal die in the chapter - and not as a cheap trick",
+    "Глава глазами того, кого герой предал":
+        "A chapter through the eyes of the one the hero betrayed",
+    "Пусть победа стоит героям больше, чем поражение":
+        "Let victory cost the heroes more than defeat would",
+    "Сцена, где герой просит пощады - и не получает":
+        "A scene where the hero begs for mercy - and does not get it",
+    "Пусть твой самый светлый персонаж совершит подлость":
+        "Let your brightest character do something vile",
+    "Убери из книги самый удобный сюжетный ход и выкручивайся":
+        "Remove the most convenient plot device from the book and find a way out",
+    "Пусть город, который герой спас, проклянёт его":
+        "Let the city the hero saved curse them",
+    "Пусть родной человек отречётся от героя":
+        "Let a loved one disown the hero",
+    "Напиши смерть без единого красивого слова":
+        "Write a death without a single beautiful word",
+    "Сцена, где у героя отнимают имя, звание или память":
+        "A scene where the hero is stripped of their name, rank or memory",
+    "Пусть страшное случится среди бела дня, при всех, и никто не вмешается":
+        "Let something terrible happen in broad daylight, in front of everyone, and nobody steps in",
+    "Пусть герой выживет, а все вокруг - нет":
+        "Let the hero survive and everyone around them not",
+    "Сделай так, чтобы читатель захотел, чтобы герой проиграл":
+        "Make the reader want the hero to lose",
+    "Сцена казни - глазами палача":
+        "An execution scene - through the eyes of the executioner",
+    "Пусть герой отдаст приказ, о котором будет жалеть до конца книги":
+        "Let the hero give an order they will regret until the end of the book",
+    "Перепиши свой любимый поворот так, чтобы он стал хуже для героев":
+        "Rewrite your favorite twist so that it gets worse for the heroes",
+    "Пусть единственное лекарство достанется не тому":
+        "Let the only medicine go to the wrong person",
+    "Глава из одних потерь, без утешения в конце":
+        "A chapter of nothing but losses, with no comfort at the end",
+    "Пусть лучший друг героя окажется прав - уже после похорон":
+        "Let the hero's best friend turn out to be right - after the funeral",
+    "Сцена, где герой мстит - и месть мельче обиды":
+        "A scene where the hero takes revenge - and the revenge is smaller than the wrong",
+    "Пусть злодей объяснит свою правду так, что с ним трудно спорить":
+        "Let the villain explain their truth so that it is hard to argue with",
+    "Глава, где все герои врут друг другу":
+        "A chapter where all the heroes lie to each other",
+    "Пусть рана героя загноится":
+        "Let the hero's wound fester",
+    "Сделай свадьбу, праздник или встречу местом трагедии":
+        "Turn a wedding, a feast or a meeting into the site of a tragedy",
+    "Пусть герой поймёт, что его использовали с самого начала":
+        "Let the hero realize they were used from the very beginning",
+    "Допиши 3000 слов за день":
+        "Write 3000 more words today",
+    "Два часа без интернета. Только текст":
+        "Two hours without the internet. Only the text",
+    "Убей главного героя. Дальше решай, как жить книге":
+        "Kill the main hero. Then decide how the book goes on",
+    "Выкинь главную сюжетную линию и посмотри, что осталось":
+        "Throw out the main plotline and see what is left",
+    "Удали главу целиком. Версия сохранится - но пиши её заново":
+        "Delete a whole chapter. The version is kept - but write it again",
+    "Допиши 5000 слов за день":
+        "Write 5000 words today",
+    "Перепиши всю главу от лица злодея":
+        "Rewrite the whole chapter from the villain's point of view",
+    "Пусть злодей победит окончательно - а книга продолжится":
+        "Let the villain win for good - and the book go on",
+    "Сделай героя тем, против кого он боролся":
+        "Turn the hero into the one they fought against",
+    "Отними у героя всех, кто ему дорог. Кроме одного":
+        "Take away everyone the hero holds dear. Except one",
+    "Пиши, пока не кончится глава. Без перерывов":
+        "Write until the chapter ends. No breaks",
+    "Напиши финал книги сегодня, даже если до него далеко":
+        "Write the ending of the book today, even if it is far off",
+    "Сотри любимую сцену и напиши лучше, не подглядывая":
+        "Erase your favorite scene and write it better without peeking",
+    "Пусть всё, во что верил герой, окажется ложью":
+        "Let everything the hero believed in turn out to be a lie",
+    "Герой проиграл. Глава о том, что после":
+        "The hero lost. A chapter about what comes after",
+    "Перепиши первую строчку книги 20 раз":
+        "Rewrite the first line of the book 20 times",
+    "Убей рассказчика":
+        "Kill the narrator",
+    "Сожги мир книги до основания - город, страну, всё, что есть":
+        "Burn the book's world to the ground - the city, the country, everything there is",
+    "Три часа без интернета и телефона. Только текст":
+        "Three hours without the internet and the phone. Only the text",
+    "Перепиши лучшую главу хуже - и найди, на чём она держалась":
+        "Rewrite your best chapter worse - and find what held it together",
+    "Пусть герой своими руками погубит того, кого любит":
+        "Let the hero destroy the one they love with their own hands",
+    "Начни книгу заново с другим героем - хотя бы первую страницу":
+        "Start the book over with another hero - at least the first page",
+    "Убей всех второстепенных персонажей одной главы":
+        "Kill all the minor characters of one chapter",
+    "Пусть герой станет тем злом, о котором предупреждали в начале книги":
+        "Let the hero become the evil the start of the book warned about",
+    "Выкинь любовную линию из книги целиком":
+        "Throw the love story out of the book entirely",
+    "Перепиши книгу с конца: напиши последнюю главу и одну перед ней":
+        "Rewrite the book from the end: write the last chapter and the one before it",
+    "Пусть мир книги переживёт катастрофу, и прежнего больше не будет":
+        "Let the book's world survive a catastrophe, and nothing will be as before",
+    "Убей героя в середине книги и продолжай с тем, кто остался":
+        "Kill the hero in the middle of the book and go on with whoever is left",
+    "Перепиши главу так, будто её рассказывает убийца":
+        "Rewrite a chapter as if a murderer were telling it",
+    "Пусть читатель узнает, что всё было зря":
+        "Let the reader learn that it was all for nothing",
+    "Пусть добро в книге проиграет навсегда - и это будет честно":
+        "Let good lose in the book forever - and make it honest",
+    "Глава, после которой героя невозможно простить":
+        "A chapter after which the hero cannot be forgiven",
+    "Удали три главы подряд и сшей книгу без них":
+        "Delete three chapters in a row and stitch the book together without them",
+    "Пусть каждый, кому герой доверял, окажется по ту сторону":
+        "Let everyone the hero trusted turn out to be on the other side",
+    "Напиши сцену, после которой сам не сможешь уснуть":
+        "Write a scene after which you yourself will not be able to sleep",
+    "Пусть смерть героя станет лучшим, что случилось в книге":
+        "Let the hero's death be the best thing that happens in the book",
+    "Перепиши книгу в другом времени: прошедшее - в настоящее или наоборот, хотя бы главу":
+        "Rewrite the book in another tense: past to present or the other way round, at least one chapter",
+    "Пусть самая страшная сцена будет написана самым спокойным языком":
+        "Let the most terrible scene be written in the calmest language",
+    "Отдай главную роль злодею на пять глав":
+        "Give the leading role to the villain for five chapters",
+    "Пусть ложь героя убьёт больше людей, чем любая война в книге":
+        "Let the hero's lie kill more people than any war in the book",
+    "Глава, в которой никто не выживает":
+        "A chapter in which nobody survives",
+    "Перепиши героя так, чтобы ты сам его возненавидел":
+        "Rewrite the hero so that you yourself come to hate them",
+    "Пусть рассказчик врал читателю с первой строки":
+        "Let the narrator have lied to the reader from the first line",
+    "Сделай из счастливого финала пепел":
+        "Turn the happy ending to ashes",
+    "Пусть герой выберет власть вместо любви - и не пожалеет":
+        "Let the hero choose power over love - and not regret it",
+    "Разрушь главный символ книги - знамя, дом, клятву":
+        "Destroy the book's main symbol - a banner, a home, an oath",
+    "Пусть пророчество сбудется самым мерзким способом":
+        "Let a prophecy come true in the vilest possible way",
+    "Неделю пиши каждый день хотя бы 1000 слов":
+        "For a week write at least 1000 words every day",
+    "Пусть герой выйдет из книги сломанным и не починится":
+        "Let the hero leave the book broken and never be mended",
+    "Напиши главу, которую стыдно будет показывать":
+        "Write a chapter you will be ashamed to show",
+    "Пусть то, что спасли в первой половине книги, погибнет во второй":
+        "Let what was saved in the first half of the book perish in the second",
+    "Убей того, ради кого читатель вообще читает":
+        "Kill the one the reader is reading for",
+    "Перепиши всю главу без единой реплики":
+        "Rewrite the whole chapter without a single line of dialogue",
+    "Пусть никто никогда не узнает правду - и читатель тоже":
+        "Let nobody ever learn the truth - the reader included",
+    "Пусть злодей получит всё и окажется несчастным":
+        "Let the villain get everything and turn out to be unhappy",
+    "Глава, после которой книга становится другим жанром":
+        "A chapter after which the book becomes another genre",
+    "Пусть герой сам выберет смерть - и это будет его лучшим решением":
+        "Let the hero choose death themselves - and let it be their best decision",
+    "Перепиши финал трижды и оставь самый тёмный":
+        "Rewrite the ending three times and keep the darkest",
+    "Пусть дети в книге повторят ошибки отцов, ещё хуже":
+        "Let the children in the book repeat their fathers' mistakes, even worse",
+    "Сожги рукопись внутри книги: письмо, хронику, единственное доказательство":
+        "Burn a manuscript inside the book: a letter, a chronicle, the only proof",
+    "Пусть герой убьёт того, кто был прав":
+        "Let the hero kill the one who was right",
+    "Пять часов письма за один день":
+        "Five hours of writing in one day",
+    "Сцена, от которой мутит: опиши смерть так, как она пахнет":
+        "A sickening scene: describe death the way it smells",
+    "Пусть твой герой совершит военное преступление и будет считать себя правым":
+        "Let your hero commit a war crime and believe they are right",
+    "Напиши монолог фанатика, который звучит убедительно":
+        "Write a fanatic's monologue that sounds convincing",
+    "Пусть самый мерзкий персонаж книги получит главу от своего лица - без раскаяния":
+        "Give the vilest character of the book a chapter from their point of view - without remorse",
+    "Глава, где герой медленно сходит с ума, и это видно по языку":
+        "A chapter where the hero slowly goes mad, and it shows in the language",
+    "Пусть в книге появится каннибализм - от голода, без смакования, но без отвода глаз":
+        "Let cannibalism appear in the book - out of hunger, without relish, but without looking away",
+    "Сцена массовой гибели глазами того, кто её устроил":
+        "A mass death scene through the eyes of the one who caused it",
+    "Пусть пытка в главе сломает не тело, а то, во что герой верил":
+        "Let torture in the chapter break not the body but what the hero believed in",
+    "Напиши похороны, на которых все рады":
+        "Write a funeral where everyone is glad",
+    "Пусть мать предаст ребёнка - и у неё будут причины":
+        "Let a mother betray her child - and have her reasons",
+    "Глава, где герой - чудовище, а читатель всё равно на его стороне":
+        "A chapter where the hero is a monster, and the reader is still on their side",
+    "Пусть грязь войны будет без героизма: вши, понос, страх и вонь":
+        "Let the filth of war come without heroism: lice, dysentery, fear and stench",
+    "Напиши сцену, где жертва становится палачом за одну страницу":
+        "Write a scene where the victim becomes the executioner within one page",
+    "Пусть дорогой читателю персонаж умрёт бессмысленно и некрасиво":
+        "Let a character the reader loves die pointlessly and ugly",
+    "Сцена, где герой продаёт другого человека":
+        "A scene where the hero sells another person",
+    "Глава, после которой у книги не может быть хорошего конца":
+        "A chapter after which the book cannot have a happy ending",
+    "Пусть твой злодей окажется умнее тебя: напиши его план без дыр":
+        "Let your villain be smarter than you: write their plan with no holes",
+    "Пусть в главе прольётся столько крови, что герои устанут её замечать":
+        "Let so much blood be shed in the chapter that the heroes stop noticing it",
+    "Сцена в плену: дни, которые не кончаются":
+        "A scene in captivity: days that never end",
+    "Пусть религия, закон или семья в книге оправдают мерзость - и все согласятся":
+        "Let religion, law or family in the book justify something vile - and everyone agree",
+    "Пусть герой будет пьяным, грязным и жалким целую главу":
+        "Let the hero be drunk, filthy and pathetic for a whole chapter",
+    "Напиши ругань так, как ругаются на самом деле, - мат, если персонажу надо":
+        "Write swearing the way people really swear - obscenities, if the character needs them",
+    "Сцена расправы толпы над невиновным - с подробностями толпы, а не расправы":
+        "A scene of a mob punishing an innocent - with the details of the mob, not the punishment",
+    "Пусть тело героя предаст его: болезнь, увечье, распад":
+        "Let the hero's body betray them: illness, injury, decay",
+    "Глава глазами того, кто наслаждается чужой болью, - и читателю станет не по себе":
+        "A chapter through the eyes of someone who enjoys other people's pain - and let the reader feel uneasy",
+    "Пусть в книге появится то, о чём ты сам боишься думать":
+        "Let the book contain the thing you are afraid to think about yourself",
+    "Напиши самое тёмное признание персонажа - без оправданий":
+        "Write a character's darkest confession - without excuses",
+    "Пусть герой выживет, потому что съел, убил или предал - выбери":
+        "Let the hero survive because they ate, killed or betrayed - choose",
+    "Сцена эпидемии: город, который гниёт заживо":
+        "An epidemic scene: a city rotting alive",
+    "Пусть читатель узнает, что любимый герой когда-то сделал непростительное - и не пожалел":
+        "Let the reader learn that a beloved hero once did something unforgivable - and did not regret it",
+    "Пусть сцена насилия будет короткой, сухой и такой, что её не забыть - без смакования":
+        "Let a scene of violence be short, dry and unforgettable - without relish",
+    "Глава, где мораль книги ломается, и новой не появляется":
+        "A chapter where the book's morality breaks and no new one appears",
+    "Пусть герой придумает наказание хуже смерти - и применит":
+        "Let the hero invent a punishment worse than death - and use it",
+    "Напиши сон героя, после которого он боится спать":
+        "Write a dream of the hero after which they are afraid to sleep",
+    "Пусть самый добрый персонаж книги станет орудием зла и поймёт это слишком поздно":
+        "Let the kindest character of the book become a tool of evil and realize it too late",
+    "Пусть в книге умрёт кто-то только потому, что автор так решил, - и не объясняй":
+        "Let someone in the book die only because the author decided so - and do not explain",
+    "Сцена, где герой смотрит, как умирает враг, и не помогает":
+        "A scene where the hero watches an enemy die and does not help",
+    "Глава без единого светлого пятна - даже погоды":
+        "A chapter without a single bright spot - not even the weather",
+    "Перепиши самую жестокую сцену книги ещё жёстче, а потом убери всё лишнее":
+        "Rewrite the cruelest scene of the book even crueler, then cut everything unnecessary",
+    "Ночь без сна: пиши, пока не закончится то, что страшно писать":
+        "A night without sleep: write until the frightening part is done",
+    # план, «кто в какой главе», предпросмотр, полоски целей
+    "Готово {done} из {total} {chapters}":
+        "{done} of {total} {chapters} done",
+    "в правке":
+        "editing",
+    "в черновике":
+        "draft",
+    "в идеях":
+        "idea",
+    "Все":
+        "All",
+    "Справочник мира":
+        "World reference",
+    "По первому появлению":
+        "By first appearance",
+    "Сначала самые частые":
+        "Most frequent first",
+    "Сначала надолго пропавшие":
+        "Long-missing first",
+    "{gap} гл.":
+        "{gap} ch.",
+    "Страницами":
+        "Pages",
+    "Лентой, как веб-новелла":
+        "Scroll, like a web novel",
+    "день":
+        "day",
+    "глава":
+        "chapter",
+    "книга":
+        "book",
+    "Книжная":
+        "Book",
+    "Белая плотная":
+        "Thick white",
+    "Старая":
+        "Old",
+    "Экран":
+        "Screen",
+    "Электронные чернила":
+        "E-ink",
 }

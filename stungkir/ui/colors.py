@@ -239,7 +239,7 @@ class ColorsDialog(Sheet):
         self.slot_group = QButtonGroup(self)
         self.slot_buttons = {}
         for key, label in SLOTS.items():
-            button = QPushButton(label)
+            button = QPushButton(tr(label))
             button.setCheckable(True)
             button.setStyleSheet(f"QPushButton:checked {{ background: {C.IMPORTANT}; "
                                  f"color: {C.on_color(C.IMPORTANT)}; }}")

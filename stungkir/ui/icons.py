@@ -118,9 +118,34 @@ TEXT_ICONS = [
 ]
 
 
+_reverse = None
+
+
+def as_russian(clean):
+    """Надпись на другом языке -> русская: значки и «тихие» кнопки узнаются по русским словам.
+    Не нашлась - как есть."""
+    global _reverse
+    from ..core import i18n
+    if i18n.LANG == i18n.DEFAULT or not clean:
+        return clean
+    if _reverse is None:
+        from ..core.lang_en import EN
+        pairs = {}
+        for russian, english in EN.items():
+            for variant in (english, i18n.british(english)):
+                key = variant.replace("&", "").strip().lower().lstrip("+−-✕… ").strip().rstrip("…. ")
+                if len(key) >= 2:
+                    pairs.setdefault(key, russian.strip().lower().lstrip("+−-✕… ").strip())
+        _reverse = sorted(pairs.items(), key=lambda kv: -len(kv[0]))
+    for english, russian in _reverse:
+        if clean == english or (len(english) > 3 and clean.startswith(english + " ")):
+            return russian + clean[len(english):]
+    return clean
+
+
 def icon_for_text(text):
     """Значок по надписи: «Сохранить» - дискета, «Отмена» - крестик. Не узнал - None."""
-    clean = text.replace("&", "").strip().lower().lstrip("+−-✕… ").strip()
+    clean = as_russian(text.replace("&", "").strip().lower().lstrip("+−-✕… ").strip().rstrip("…. "))
     if not clean:
         return None
     for key, name in TEXT_ICONS:
@@ -188,7 +213,7 @@ MINOR_TEXTS = ("отмена", "закрыть", "стереть историю"
 def decorate_button(button):
     """Значок кнопке по её надписи, цветом надписи. Свой значок у кнопки не трогается.
     «Отмена», «Закрыть» и подобные (если это не главная кнопка окна) - неважные: тише остальных."""
-    clean = button.text().replace("&", "").strip().lower().rstrip("…. ")
+    clean = as_russian(button.text().replace("&", "").strip().lower().rstrip("…. "))
     minor = (clean in MINOR_TEXTS and button.objectName() != "Primary" and not button.isDefault()
              and not button.property("noIcon"))
     if bool(button.property("minor")) != minor:

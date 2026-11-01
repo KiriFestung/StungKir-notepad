@@ -37,13 +37,14 @@ def create_kit(category, names):
     made = []
     for name in names:
         kind, data = KITS[name]
+        title = tr(name)                         # у кого интерфейс английский - и заготовки по-английски
         if kind == "table":
-            path, text = category / f"{name}.csv", table_to_text(list(data), [])
+            path, text = category / f"{title}.csv", table_to_text([tr(column) for column in data], [])
         elif kind == "card":
             # «_» в начале - общая карточка справочника: «магия» и «языки» в тексте не подчёркиваются
-            path, text = category / f"_{name}.txt", data
+            path, text = category / f"_{title}.txt", tr(data)
         else:
-            path, text = category / f"{name}.timeline", json.dumps({"events": []}, ensure_ascii=False, indent=1) + "\n"
+            path, text = category / f"{title}.timeline", json.dumps({"events": []}, ensure_ascii=False, indent=1) + "\n"
         path = unique_path(path)
         save_text(path, text)
         append_to_order(category, path.name)
@@ -65,7 +66,7 @@ class WorldKitDialog(Sheet):
         self.boxes = {}
         for name, (kind, _data) in KITS.items():
             what = {"table": "таблица", "card": "карточка", "timeline": "хронология"}[kind]
-            box = QCheckBox(f"{name}  ·  {what}")
+            box = QCheckBox(f"{tr(name)}  ·  {what}")
             box.setChecked(True)
             self.boxes[name] = box
             self.content.addWidget(box)

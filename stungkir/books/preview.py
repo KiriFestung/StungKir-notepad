@@ -485,7 +485,7 @@ class PreviewDialog(Sheet):
         self.group = QButtonGroup(self)
         self.buttons = {}
         for key, (name, _frame, _sizes) in KINDS.items():
-            button = QPushButton(name)
+            button = QPushButton(tr(name))
             button.setCheckable(True)
             button.setProperty("noIcon", True)
             button.setAutoDefault(False)
@@ -501,13 +501,13 @@ class PreviewDialog(Sheet):
         self.size_box.currentIndexChanged.connect(self._size_changed)
         row.addWidget(self.size_box)
         self.mode_box = QComboBox()
-        self.mode_box.addItem("Страницами", "pages")
-        self.mode_box.addItem("Лентой, как веб-новелла", "ribbon")
+        self.mode_box.addItem(tr("Страницами"), "pages")
+        self.mode_box.addItem(tr("Лентой, как веб-новелла"), "ribbon")
         self.mode_box.currentIndexChanged.connect(lambda _i: self._show(reset=True))
         row.addWidget(self.mode_box)
         self.paper_box = QComboBox()
         for key in BOOK_PAPERS:
-            self.paper_box.addItem(PAPERS[key][0], key)
+            self.paper_box.addItem(tr(PAPERS[key][0]), key)
         self.paper_box.setToolTip(tr("Бумага книги"))
         self.paper_box.currentIndexChanged.connect(self._paper_changed)
         row.addWidget(self.paper_box)
@@ -574,7 +574,7 @@ class PreviewDialog(Sheet):
         self.size_box.blockSignals(True)
         self.size_box.clear()
         for size, label, *_rest in KINDS[self.device][2]:
-            self.size_box.addItem(label, size)
+            self.size_box.addItem(tr(label), size)
         chosen = self.sizes.get(self.device) or self._setting(f"preview_size_{self.device}", DEFAULT_SIZE[self.device])
         self.size_box.setCurrentIndex(max(0, self.size_box.findData(chosen)))
         self.size_box.blockSignals(False)
