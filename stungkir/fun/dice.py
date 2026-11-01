@@ -761,11 +761,7 @@ class RandomDialog(Sheet):
         self.coin_up = settings.value("coin_up", "Ворон") or "Ворон"     # как монетка лежит перед броском
         if self.coin_up not in COIN_SIDES:            # праздник: у монетки-пряника другие стороны
             self.coin_up = next(iter(COIN_SIDES))
-        coin = self.coin_note = QLabel("")
-        coin.setObjectName("Status")
-        coin.setWordWrap(True)
-        self.pages.addWidget(coin)
-        self._coin_text()
+        self.pages.addWidget(QWidget())               # у монетки своих настроек нет - только стол
         # число
         page = QWidget()
         row = QHBoxLayout(page)
@@ -893,17 +889,10 @@ class RandomDialog(Sheet):
         self.content.addLayout(buttons)
         self.set_mode(settings.value("random_mode", "dice") or "dice")
 
-    def _coin_text(self):
-        self.coin_note.setText(
-            tr("Сейчас сверху - {n}. Как в жизни: монетка чуть чаще падает той стороной, что лежала сверху "
-               "(50,8 на 49,2 - опыт на 350 757 бросках), а на ребро встаёт примерно раз из 6000. Подлетит, "
-               "покрутится и упадёт на стол.").format(n=tr(self.coin_up).lower()))
-
     def _coin_landed(self, side):
         if side in COIN_SIDES:                    # подняли - и она лежит той же стороной вверх
             self.coin_up = side
             self.settings.setValue("coin_up", side)
-            self._coin_text()
         self._done_big(tr("Монетка: на ребро! Такое бывает раз из 6000") if side == COIN_EDGE
                        else tr("Монетка: {side}").format(side=tr(side).lower()),
                        tr("На ребро!") if side == COIN_EDGE else tr(side))

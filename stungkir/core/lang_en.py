@@ -152,8 +152,6 @@ EN = {
         "Loaded:",
     "Вызовы:":
         "Challenges:",
-    "Сейчас сверху - {n}. Как в жизни: монетка чуть чаще падает той стороной, что лежала сверху (50,8 на 49,2 - опыт на 350 757 бросках), а на ребро встаёт примерно раз из 6000. Подлетит, покрутится и упадёт на стол.":
-        "Now on top - {n}. Just like in real life: a coin lands slightly more often on the side that was on top (50.8 to 49.2 - an experiment with 350,757 flips), and lands on its edge about once in 6000. It flies up, spins and drops onto the table.",
     "Список пуст: впиши варианты, каждый с новой строки":
         "The list is empty: enter options, one per line",
     "Пока не из чего выбирать: добавь персонажей или справочник мира":
