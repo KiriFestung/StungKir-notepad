@@ -140,3 +140,29 @@ class EnglishNamesTest(WindowCase):
         w.track_name("Kiра")                                                # латиница с кириллицей
         self.assertNotIn("Kiра", w.names)
         self.assertIn("вперемешку", w.toast.text())
+
+
+class EnglishRepeatsAndCrutchesTest(WindowCase):
+    def test_roots(self):
+        cases = {"looked": "look", "looks": "look", "looking": "look", "sighed": "sigh", "sighing": "sigh",
+                 "stories": "story", "stopped": "stop", "hoping": "hop", "hope": "hop", "boxes": "box",
+                 "Kira’s": "kira", "glass": "glass", "status": "status"}
+        self.assertEqual({w: T.english_root(w) for w in cases}, cases)
+
+    def test_crutch_forms(self):
+        crutches = T.Crutches(["sighed", "felt that", "вздохнул"])
+        found = lambda text: [text[s:e] for s, e, _e in crutches.spans(text)]   # noqa: E731
+        self.assertEqual(found("He sighs. Sighing, she left; they sighed."), ["sighs", "Sighing", "sighed"])
+        self.assertEqual(found("She felt that it was wrong."), ["felt that"])
+        self.assertEqual(found("Она вздохнула."), ["вздохнула"])                 # русский - как был
+
+    def test_repeats_in_english_paragraph(self):
+        path = self.chapter("Book", "Chapter", "x")
+        w = self.window()
+        w.open_path(path)
+        line = "The river was grey and the river was cold, and that was that."
+        repeats = [line[b:b + n] for b, n, kind in w.highlighter._ops(line)[1] if kind == "repeat"]
+        self.assertEqual(repeats, ["river", "river"])                           # «that» - служебное
+        line = "She looked at him. He looks away."
+        repeats = [line[b:b + n] for b, n, kind in w.highlighter._ops(line)[1] if kind == "repeat"]
+        self.assertEqual(repeats, ["looked", "looks"])                         # формы одного слова

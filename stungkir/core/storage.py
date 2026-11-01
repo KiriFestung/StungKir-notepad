@@ -1033,7 +1033,10 @@ def weekly_copy(folder, last=None, today=None):
                 return None
         except ValueError:
             pass
-    if not folder.is_dir():
+    try:
+        if not folder.is_dir():
+            return None
+    except (OSError, ValueError):       # вписали ерунду: слишком длинное имя, недопустимые знаки
         return None
     source = backup_path(today)
     if not source.is_file():
