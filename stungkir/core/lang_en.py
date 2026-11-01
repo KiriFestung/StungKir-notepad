@@ -2645,4 +2645,41 @@ EN = {
         "Chapter 1",
     "Глава 2":
         "Chapter 2",
+    # спринты и график прогресса
+    "Рост":
+        "Growth",
+    "Спринты…":
+        "Sprints…",
+    "Спринты":
+        "Sprints",
+    "цель {goal}":
+        "goal {goal}",
+    "макс. {n}":
+        "max {n}",
+    "Время вышло. За {minutes} мин: {n} {words}":
+        "Time is up. In {minutes} min: {n} {words}",
+    " ({per} в минуту)":
+        " ({per} per minute)",
+    ". Рекорд скорости!":
+        ". Speed record!",
+    "Когда":
+        "When",
+    "Минут":
+        "Minutes",
+    "В минуту":
+        "Per minute",
+    "Спринт - это таймер с лаской слева: поставь минуты и жми «Старт». Дошёл до конца - спринт записан. Рекорд скорости считается у спринтов от {n} минут.":
+        "A sprint is the weasel timer on the left: set the minutes and press «Start». When it runs to the end, the sprint is recorded. The speed record counts sprints of {n} minutes or longer.",
+    "Спринтов пока не было.":
+        "No sprints yet.",
+    "Спринтов: {count} · написано {n} за {minutes} мин · в среднем {per} в минуту":
+        "Sprints: {count} · {n} written in {minutes} min · {per} per minute on average",
+    "Лучший: {n} за {minutes} мин ({per} в минуту), {when}":
+        "Best: {n} in {minutes} min ({per} per minute), {when}",
+    "Для прогноза пока мало данных: попиши несколько дней - здесь появится, к чему ты идёшь.":
+        "Not enough data for a forecast yet: write for a few days and you will see where you are heading.",
+    "Темп за {days} дней: {n} в день. Так через месяц будет ещё {month}, через год - {year}.":
+        "Pace over {days} days: {n} a day. At this pace you will add {month} in a month and {year} in a year.",
+    "пунктир - цель {goal} в день":
+        "dashed - a goal of {goal} a day",
 }

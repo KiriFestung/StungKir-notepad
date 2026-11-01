@@ -234,6 +234,10 @@ class ProgressMixin:
         StatsDialog(self, self.stats, self.goal, self.day_marks, self.set_day_marks,
                     extra=self.deadline_lines()).exec()
 
+    def show_sprints(self):
+        from ..text.sprints import SprintsDialog
+        SprintsDialog(self).exec()
+
     def set_day_marks(self, marks):
         self.day_marks = marks
         save_marks(marks)
@@ -334,7 +338,10 @@ class ProgressMixin:
         self.update_status()
         saved = self.save_everything()
         self.store_stats()
-        result = f"Время вышло. За это время {signed(written)} {plural(written, 'слово', 'слова', 'слов')}"
+        from ..text.sprints import record_sprint, sprint_result     # таймер дошёл до конца - это спринт
+        minutes = round(getattr(self, "timer_total", 0) / 60_000)
+        _entry, record = record_sprint(minutes, written)
+        result = sprint_result(minutes, written, record)
         if self.timer_close.isChecked() and saved:
             self.toast.show_message(result + tr(". Всё сохранено, закрываю…"), 3000)
             QTimer.singleShot(3600, self, self.close)

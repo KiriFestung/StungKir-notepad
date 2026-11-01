@@ -50,7 +50,7 @@ class StatsChart(QWidget):
             pen.setStyle(Qt.DashLine)
             painter.setPen(pen)
             painter.drawLine(left, int(y), left + width, int(y))
-            painter.drawText(left, int(y) - 6, f"цель {self.goal}")
+            painter.drawText(left, int(y) - 6, tr("цель {goal}").format(goal=self.goal))
 
         painter.setPen(Qt.NoPen)
         for i, ((_day, _), value) in enumerate(zip(self.days, values)):
@@ -72,7 +72,7 @@ class StatsChart(QWidget):
                 label = day.strftime("%d.%m")
                 x = min(int(left + i * step), self.width() - right - metrics.horizontalAdvance(label))
                 painter.drawText(x, self.height() - 6, label)
-        painter.drawText(left, 14, f"макс. {max(values)}")
+        painter.drawText(left, 14, tr("макс. {n}").format(n=max(values)))
 
 
 def year_summary(stats, marks, today):
@@ -297,6 +297,20 @@ class WritingCalendar(QWidget):
                 painter.drawLine(int(x + 2), int(y + 2), int(x + 6), int(y - 3))
 
 
+def growth_page(stats, goal, today):
+    """Страница «Рост»: график прогресса и прогноз под ним."""
+    from .chart import GrowthChart, forecast
+    page = QWidget()
+    layout = QVBoxLayout(page)
+    layout.setContentsMargins(0, 8, 0, 0)
+    layout.addWidget(GrowthChart(stats, goal, today), 1)
+    note = QLabel(forecast(stats, today))
+    note.setObjectName("Status")
+    note.setWordWrap(True)
+    layout.addWidget(note)
+    return page
+
+
 class StatsDialog(Sheet):
     def __init__(self, parent, stats, goal, marks=None, on_marks=None, extra=()):
         super().__init__(parent, tr("Статистика · {APP_NAME}").format(APP_NAME=C.APP_NAME))
@@ -350,7 +364,7 @@ class StatsDialog(Sheet):
         right = QVBoxLayout()
         switch = QHBoxLayout()
         self.period = QButtonGroup(self)
-        for index, text in enumerate(("30 дней", "Год")):
+        for index, text in enumerate(("30 дней", "Год", "Рост")):
             button = QPushButton(tr(text))
             button.setCheckable(True)
             button.setAutoDefault(False)
@@ -378,6 +392,7 @@ class StatsDialog(Sheet):
         year_layout.addWidget(self.year_label)
         year_layout.addStretch()
         self.charts.addWidget(year)
+        self.charts.addWidget(growth_page(stats, goal, today))     # график прогресса - в ui/chart.py
         right.addWidget(self.charts, 1)
         self.period.idClicked.connect(self.charts.setCurrentIndex)
         body.addLayout(right, 1)
