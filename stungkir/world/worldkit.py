@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QCheckBox, QHBoxLayout, QLabel, QPushButton
 from ..ui.dialogs import Sheet
 from ..core.storage import append_to_order, save_text, unique_path
 from ..core.textutil import table_to_text
+from ..core.i18n import tr
 
 # название: ("table", столбцы) | ("card", текст карточки) | ("timeline", None)
 KITS = {
@@ -54,10 +55,10 @@ class WorldKitDialog(Sheet):
     """Галочки - что создать."""
 
     def __init__(self, parent, category_name, is_lore):
-        super().__init__(parent, f"Заготовки для мира · {category_name}")
+        super().__init__(parent, tr("Заготовки для мира · {category_name}").format(category_name=category_name))
         self.setMinimumWidth(480)
-        hint = QLabel("Пустые таблицы и карточки - заполнишь своим. Таблицы можно дополнять столбцами, "
-                      "карточки - своими пунктами.")
+        hint = QLabel(tr("Пустые таблицы и карточки - заполнишь своим. Таблицы можно дополнять столбцами, "
+                      "карточки - своими пунктами."))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         self.content.addWidget(hint)
@@ -68,15 +69,15 @@ class WorldKitDialog(Sheet):
             box.setChecked(True)
             self.boxes[name] = box
             self.content.addWidget(box)
-        self.lore = QCheckBox("Сделать категорию справочником мира (имена подчёркиваются в тексте)")
+        self.lore = QCheckBox(tr("Сделать категорию справочником мира (имена подчёркиваются в тексте)"))
         self.lore.setChecked(not is_lore)
         self.lore.setVisible(not is_lore)
         self.content.addWidget(self.lore)
         row = QHBoxLayout()
         row.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        ok = QPushButton("Создать")
+        ok = QPushButton(tr("Создать"))
         ok.setObjectName("Primary")
         ok.setDefault(True)
         ok.clicked.connect(self.accept)

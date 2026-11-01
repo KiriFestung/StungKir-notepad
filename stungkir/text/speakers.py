@@ -16,6 +16,7 @@ from ..core import config as C
 from ..ui.dialogs import Sheet
 from ..world.lore import Lore, LoreTerm
 from ..core.textutil import MARKER_RE, WORD_RE, name_key, plain_markup, plural
+from ..core.i18n import tr
 
 DASHES = ("—", "–")
 RUN = 4                       # столько реплик подряд без «кто говорит» - уже повод проверить
@@ -211,7 +212,7 @@ class ReplyStatsDialog(Sheet):
     """Сколько говорит каждый: реплики и слова, по всей книге или по одной главе; ниже - по главам."""
 
     def __init__(self, parent, speakers, texts, current=None):
-        super().__init__(parent, "Реплики персонажей")
+        super().__init__(parent, tr("Реплики персонажей"))
         self.setMinimumSize(760, 620)
         self.speakers, self.texts = speakers, texts
         row = QHBoxLayout()
@@ -230,14 +231,14 @@ class ReplyStatsDialog(Sheet):
         self.scope.currentIndexChanged.connect(self.fill)
         row.addWidget(self.scope, 1)
         self.content.addLayout(row)
-        hint = QLabel("Кто говорит - по «сказала Кира», по «сказал он» (кто упоминался последним), по действию "
+        hint = QLabel(tr("Кто говорит - по «сказала Кира», по «сказал он» (кто упоминался последним), по действию "
                       "в абзаце перед репликой и по очерёдности в разговоре двоих. Выбери персонажа - ниже будет "
-                      "видно, сколько он говорит в каждой главе.")
+                      "видно, сколько он говорит в каждой главе."))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         self.content.addWidget(hint)
         self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(["Персонаж", "Реплик", "Слов", "Доля реплик"])
+        self.table.setHorizontalHeaderLabels([tr(name) for name in ["Персонаж", "Реплик", "Слов", "Доля реплик"]])
         self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
@@ -245,7 +246,7 @@ class ReplyStatsDialog(Sheet):
         self.table.itemSelectionChanged.connect(self._chapters)
         self.content.addWidget(self.table, 3)
         self.per_chapter = QTableWidget(0, 3)
-        self.per_chapter.setHorizontalHeaderLabels(["Глава", "Реплик", "Слов"])
+        self.per_chapter.setHorizontalHeaderLabels([tr(name) for name in ["Глава", "Реплик", "Слов"]])
         self.per_chapter.verticalHeader().setVisible(False)
         self.per_chapter.setEditTriggers(QTableWidget.NoEditTriggers)
         self.content.addWidget(self.per_chapter, 2)
@@ -255,7 +256,7 @@ class ReplyStatsDialog(Sheet):
         self.content.addWidget(self.summary)
         buttons = QHBoxLayout()
         buttons.addStretch()
-        close = QPushButton("Закрыть")
+        close = QPushButton(tr("Закрыть"))
         close.setDefault(True)
         close.clicked.connect(self.accept)
         buttons.addWidget(close)
@@ -288,7 +289,7 @@ class ReplyStatsDialog(Sheet):
                 title.setForeground(QColor(C.DIM))
             guessed = entry["how"].get("turn", 0)
             if guessed:
-                title.setToolTip(f"Из них {guessed} - угадано по очерёдности в разговоре")
+                title.setToolTip(tr("Из них {guessed} - угадано по очерёдности в разговоре").format(guessed=guessed))
             self.table.setItem(r, 0, title)
             for c, value in ((1, entry["replies"]), (2, entry["words"])):
                 cell = QTableWidgetItem(f"{value:,}".replace(",", " "))
@@ -300,9 +301,9 @@ class ReplyStatsDialog(Sheet):
             self.table.setItem(r, 3, bar)
         replies = sum(s["replies"] for s in self.stats.values())
         unknown = self.stats.get(None, {}).get("replies", 0)
-        self.summary.setText(f"Всего {replies} {plural(replies, 'реплика', 'реплики', 'реплик')}"
-                             + (f", у {unknown} не понять, кто говорит - их можно найти через "
-                                "«Кто говорит: проверить реплики»" if unknown else ""))
+        self.summary.setText(tr("Всего {replies} {n}").format(replies=replies, n=plural(replies, 'реплика', 'реплики', 'реплик'))
+                             + (tr(", у {unknown} не понять, кто говорит - их можно найти через «Кто говорит: "
+                                   "проверить реплики»").format(unknown=unknown) if unknown else ""))
         if people:
             self.table.selectRow(0)
         else:
@@ -336,7 +337,7 @@ class SpeakersMixin:
     def show_speaker_check(self):
         """Список мест по всем главам: длинные цепочки реплик и непонятные «сказала она». Клик - к месту."""
         if not self.names:
-            self.toast.show_message("Сначала добавь персонажей: «Персонажи» слева или правый клик по имени", 3500)
+            self.toast.show_message(tr("Сначала добавь персонажей: «Персонажи» слева или правый клик по имени"), 3500)
         speakers = self.speaker_finder()
         texts = self.crutch_texts()
         for _path, text in texts:                         # сначала узнать, кто он, кто она
@@ -358,6 +359,6 @@ class SpeakersMixin:
         for _path, text in texts:
             speakers.chapter(text)
         if not texts:
-            self.toast.show_message("Пока нет глав")
+            self.toast.show_message(tr("Пока нет глав"))
             return
         ReplyStatsDialog(self, speakers, texts, self.path if self.view is None else None).exec()

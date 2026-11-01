@@ -17,6 +17,7 @@ from ..core import config as C
 from ..ui.dialogs import Sheet
 from ..ui.style import frameless_menu, rounded_menu
 from ..ui.widgets import RussianLineEdit, RussianTextEdit
+from ..core.i18n import tr
 
 
 def year_label(year):
@@ -52,34 +53,34 @@ class EventDialog(Sheet):
     """Событие: когда, год для порядка, название, описание, цвет, связанная глава."""
 
     def __init__(self, parent, event, chapters, on_foreign, existing):
-        super().__init__(parent, "Событие")
+        super().__init__(parent, tr("Событие"))
         self.setMinimumSize(520, 460)
         self.deleted = False
         grid = QGridLayout()
         grid.setHorizontalSpacing(10)
-        grid.addWidget(QLabel("Когда:"), 0, 0)
+        grid.addWidget(QLabel(tr("Когда:")), 0, 0)
         self.when = RussianLineEdit(on_foreign)
-        self.when.setPlaceholderText("как в твоём мире: «312 г. Второй эры, весна»")
+        self.when.setPlaceholderText(tr("как в твоём мире: «312 г. Второй эры, весна»"))
         self.when.setText(event.get("when", ""))
         grid.addWidget(self.when, 0, 1)
-        grid.addWidget(QLabel("Год (для порядка):"), 1, 0)
+        grid.addWidget(QLabel(tr("Год (для порядка):")), 1, 0)
         self.year = QDoubleSpinBox()
         self.year.setRange(-1_000_000, 1_000_000)
         self.year.setDecimals(2)
         self.year.setValue(float(event.get("year", 0)))
-        self.year.setToolTip("По этому числу события встают по порядку. Дробное - если в одном году несколько")
+        self.year.setToolTip(tr("По этому числу события встают по порядку. Дробное - если в одном году несколько"))
         grid.addWidget(self.year, 1, 1)
         self.content.addLayout(grid)
         self.title = RussianLineEdit(on_foreign)
-        self.title.setPlaceholderText("Что случилось")
+        self.title.setPlaceholderText(tr("Что случилось"))
         self.title.setText(event.get("title", ""))
         self.content.addWidget(self.title)
         self.text = RussianTextEdit(on_foreign)
-        self.text.setPlaceholderText("Подробности…")
+        self.text.setPlaceholderText(tr("Подробности…"))
         self.text.setPlainText(event.get("text", ""))
         self.content.addWidget(self.text, 1)
         row = QHBoxLayout()
-        row.addWidget(QLabel("Цвет:"))
+        row.addWidget(QLabel(tr("Цвет:")))
         self.swatches = []
         for name, color in C.CARD_COLORS:
             swatch = QPushButton("")
@@ -101,13 +102,13 @@ class EventDialog(Sheet):
         self.content.addWidget(self.chapter)
         buttons = QHBoxLayout()
         if existing:
-            delete = QPushButton("Удалить событие")
+            delete = QPushButton(tr("Удалить событие"))
             delete.clicked.connect(self._delete)
             buttons.addWidget(delete)
         buttons.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        ok = QPushButton("Готово")
+        ok = QPushButton(tr("Готово"))
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
         buttons.addWidget(cancel)
@@ -197,12 +198,12 @@ class TimelineView(QWidget):
         bar.setObjectName("TableBar")
         row = QHBoxLayout(bar)
         row.setContentsMargins(0, 0, 0, 0)
-        add = QPushButton("+ событие")
+        add = QPushButton(tr("+ событие"))
         add.setCursor(Qt.PointingHandCursor)
         add.clicked.connect(self.new_event)
         row.addWidget(add)
         row.addSpacing(14)
-        hint = QLabel("события идут по году; двойной клик - изменить, по пустому месту - новое")
+        hint = QLabel(tr("события идут по году; двойной клик - изменить, по пустому месту - новое"))
         hint.setObjectName("Status")
         row.addWidget(hint)
         row.addStretch()
@@ -305,20 +306,20 @@ class TimelineView(QWidget):
         item = self.list.itemAt(pos)
         menu = rounded_menu(self)
         if item is None:
-            menu.addAction("Новое событие", self.new_event)
+            menu.addAction(tr("Новое событие"), self.new_event)
         else:
             event = json.loads(item.data(Qt.UserRole) or "{}")
-            menu.addAction("Изменить", lambda: self.edit_event(item))
+            menu.addAction(tr("Изменить"), lambda: self.edit_event(item))
             if event.get("chapter"):
-                menu.addAction("Открыть главу", lambda: self.open_chapter(event["chapter"]))
-            colors = frameless_menu(menu.addMenu("Цвет"))
+                menu.addAction(tr("Открыть главу"), lambda: self.open_chapter(event["chapter"]))
+            colors = frameless_menu(menu.addMenu(tr("Цвет")))
             names = {"none": "Без цвета", "purple": "Фиолетовый", "amber": "Янтарный",
                      "green": "Зелёный", "coral": "Коралловый"}
             for name, _ in C.CARD_COLORS:
                 colors.addAction(names[name], lambda n=name: self.set_color(item, n))
             menu.addSeparator()
-            menu.addAction("Новое событие", self.new_event)
-            menu.addAction("Удалить", lambda: (self._fill([e for i, e in enumerate(self.events())
+            menu.addAction(tr("Новое событие"), self.new_event)
+            menu.addAction(tr("Удалить"), lambda: (self._fill([e for i, e in enumerate(self.events())
                                                             if i != self.list.row(item)]), self.changed()))
         menu.exec(self.list.viewport().mapToGlobal(pos))
 

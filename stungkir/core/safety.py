@@ -17,6 +17,7 @@ from PySide6.QtCore import QLockFile, QTimer
 from . import config as C
 from .storage import LockedFile, log_error, read_text, save_text, snapshot
 from .textutil import WORD_RE, plural
+from .i18n import tr
 
 ERASE_WORDS = 150            # стёрто за раз больше - это повод подстраховать
 JOURNAL_SECONDS = 5
@@ -121,8 +122,8 @@ def install_crash_guard(window_getter):
                 if state["shown"] < 3:          # не засыпать сообщениями, если ошибка повторяется
                     state["shown"] += 1
                     note = "текст сохранён" if saved else "набранное в запасном файле"
-                    window.toast.show_message(f"Что-то пошло не так внутри блокнота - {note}. "
-                                              f"Подробности в {C.ERROR_LOG.name}", 5000)
+                    window.toast.show_message(tr("Что-то пошло не так внутри блокнота - {note}. Подробности в "
+                                                 "{name}").format(note=note, name=C.ERROR_LOG.name), 5000)
         finally:
             state["busy"] = False
 
@@ -246,7 +247,7 @@ class SafetyMixin:
         cursor.select(cursor.SelectionType.Document)
         cursor.insertText(text)                     # одной правкой: Ctrl+Z вернёт то, что было на диске
         self.set_modified(True)
-        self.toast.show_message("Набранное вернулось. Сохрани, если всё на месте", 4000)
+        self.toast.show_message(tr("Набранное вернулось. Сохрани, если всё на месте"), 4000)
         return True
 
     # ---- стёрли много за раз ----
@@ -258,7 +259,7 @@ class SafetyMixin:
         if self.path is not None:
             snapshot(self.path, before)             # версия «до» - даже если плашку не заметят
         self.last_erase = before
-        self.toast.show_message(f"Стёрто {lost} {plural(lost, 'слово', 'слова', 'слов')}. Нажми сюда - вернуть",
+        self.toast.show_message(tr("Стёрто {lost} {n}. Нажми сюда - вернуть").format(lost=lost, n=plural(lost, 'слово', 'слова', 'слов')),
                                 7000, action=self.undo_big_erase)
 
     def undo_big_erase(self):
@@ -268,5 +269,5 @@ class SafetyMixin:
         cursor.select(cursor.SelectionType.Document)
         cursor.insertText(self.last_erase)
         self.last_erase = None
-        self.toast.show_message("Вернул")
+        self.toast.show_message(tr("Вернул"))
 

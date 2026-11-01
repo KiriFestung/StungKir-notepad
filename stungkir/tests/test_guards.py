@@ -80,6 +80,18 @@ class GuardsWindowTest(WindowCase):
         from stungkir.core.trash import trash_entries
         self.assertEqual(len(trash_entries()), 1)                 # копия - в корзине, не пропала
 
+    def test_conflict_copy_vanished_before_click(self):
+        """Нашёл робот: пока висело «нажми сюда - разобрать», синхронизация убрала копию сама."""
+        mine = self.chapter("Книга", "Глава", "Моя версия")
+        copy = mine.with_name("Глава (conflicted copy 2026-10-15).txt")
+        copy.write_text("Их версия", encoding="utf-8", newline="\n")
+        w = self.window()
+        w.announce_conflicts()
+        copy.unlink()
+        w.open_conflict(copy, mine)                               # раньше - FileNotFoundError
+        self.assertIn("уже нет", w.toast.text())
+        self.assertEqual(mine.read_text(encoding="utf-8"), "Моя версия")
+
     def test_undo_replace_everywhere(self):
         one = self.chapter("Книга", "Глава 1", "Кира пришла.")
         two = self.chapter("Книга", "Глава 2", "Кира ушла.")

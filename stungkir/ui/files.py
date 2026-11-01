@@ -23,6 +23,7 @@ from ..books.export import (book_paragraphs, docx_available, export_docx, export
     export_txt, marker_lines)
 from .dialogs import ask_choice, ask_item, ask_question, ask_text, show_error, show_warning
 from .windows import CompileDialog, VersionsDialog
+from ..core.i18n import tr
 
 
 def _valid_json(text):
@@ -77,8 +78,8 @@ class FilesMixin:
         if not self.path.exists():
             if getattr(self, "_gone_told", None) != self.path:
                 self._gone_told = self.path
-                self.toast.show_message(f"«{self.path.stem}» удалили или переименовали снаружи. Текст остался "
-                                        "здесь - сохранишь, и глава появится снова", 5000)
+                self.toast.show_message(tr("«{stem}» удалили или переименовали снаружи. Текст остался здесь - "
+                                           "сохранишь, и глава появится снова").format(stem=self.path.stem), 5000)
             return
         self.watch_current()   # после замены файла его надо отслеживать заново
         stamp = self._stamp(self.path)
@@ -92,9 +93,9 @@ class FilesMixin:
         if text == self.current_text():
             return
         if self.is_modified():
-            choice = ask_choice(self, "Глава изменилась",
-                                f"«{self.path.stem}» изменили на другом устройстве.\n"
-                                "Твои несохранённые правки останутся в версиях.",
+            choice = ask_choice(self, tr("Глава изменилась"),
+                                tr("«{stem}» изменили на другом устройстве.\nТвои несохранённые правки "
+                                   "останутся в версиях.").format(stem=self.path.stem),
                                 [("keep", "Оставить мою"), ("take", "Взять новую")])
             if choice != "take":
                 # своя версия остаётся и сразу ложится на диск, а пришедшая - в «Версии файла»:
@@ -105,13 +106,13 @@ class FilesMixin:
                     self.save(auto=True)
                 except OSError as error:
                     log_error("Своя версия не записалась", error)
-                    self.toast.show_message(f"Не записалось: {os_message(error)}. Сохрани вручную", 4000)
+                    self.toast.show_message(tr("Не записалось: {n}. Сохрани вручную").format(n=os_message(error)), 4000)
                 return
         # то, что было на экране, - в версии (если ещё не там): автосохранённое версий не делает
         snapshot(self.path, self.current_text())
         if self.view:
             self.load_view(self.view, text)
-            self.toast.show_message(f"{self.view.kind()} обновилась с другого устройства", 2500)
+            self.toast.show_message(tr("{n} обновилась с другого устройства").format(n=self.view.kind()), 2500)
             return
         position = self.editor.textCursor().position()
         notes = self.notes_margin.data()
@@ -120,7 +121,7 @@ class FilesMixin:
         cursor = self.editor.textCursor()
         cursor.setPosition(min(position, self.editor.document().characterCount() - 1))
         self.editor.setTextCursor(cursor)
-        self.toast.show_message("Глава обновилась с другого устройства", 2500)
+        self.toast.show_message(tr("Глава обновилась с другого устройства"), 2500)
 
     def save_everything(self):
         """Сохраняет без вопросов. Безымянный текст кладёт в «Черновики»."""
@@ -177,7 +178,7 @@ class FilesMixin:
             return
         thumb = picture.scaled(36, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         item.setIcon(0, QIcon(thumb))
-        item.setToolTip(0, f"«{folder.name}» - у категории есть обложка. Правый клик → «Обложка…»")
+        item.setToolTip(0, tr("«{name}» - у категории есть обложка. Правый клик → «Обложка…»").format(name=folder.name))
 
     def make_world_kit(self, category=None):
         """Пустые таблицы и карточки для мира в категории (по умолчанию - спросить, в какую)."""
@@ -193,7 +194,7 @@ class FilesMixin:
         if dialog.lore.isChecked() and not is_lore:
             self.toggle_lore_category(category)
         self.refresh_tree()
-        self.toast.show_message(f"Создано в «{category.name}»: {len(made)}")
+        self.toast.show_message(tr("Создано в «{name}»: {n}").format(name=category.name, n=len(made)))
         return made
 
     def show_cover(self, folder):
@@ -220,7 +221,7 @@ class FilesMixin:
                     child = QTreeWidgetItem(["      ⊘ " + f.name])            # картинка, Word, программа
                     child.setData(0, Qt.UserRole, str(f))
                     child.setForeground(0, QColor(C.DIM))
-                    child.setToolTip(0, "Не текст - блокнот его не открывает. " + NOT_TEXT_HINT)
+                    child.setToolTip(0, tr("Не текст - блокнот его не открывает. ") + NOT_TEXT_HINT)
                     child.setFlags(child.flags() & ~Qt.ItemIsDropEnabled)
                     item.addChild(child)
                     continue
@@ -228,8 +229,8 @@ class FilesMixin:
                     child = QTreeWidgetItem([f"      ⚠ {original.stem} - конфликт"])
                     child.setData(0, Qt.UserRole, str(f))
                     child.setForeground(0, QColor(C.SPELL))
-                    child.setToolTip(0, "Копия от программы синхронизации: глава поменялась на двух устройствах. "
-                                        "Открой - покажу разницу и дам выбрать")
+                    child.setToolTip(0, tr("Копия от программы синхронизации: глава поменялась на двух устройствах. "
+                                        "Открой - покажу разницу и дам выбрать"))
                     child.setFlags(child.flags() & ~Qt.ItemIsDropEnabled)
                     item.addChild(child)
                     continue
@@ -287,7 +288,7 @@ class FilesMixin:
             return self.new_category()
         if len(cats) == 1:
             return cats[0]
-        name, ok = ask_item(self, "Категория", "Куда положить:",
+        name, ok = ask_item(self, tr("Категория"), tr("Куда положить:"),
                                         [c.name for c in cats], 0, False)
         return C.ROOT / name if ok else None
 
@@ -303,17 +304,17 @@ class FilesMixin:
         return name
 
     def new_category(self):
-        name = self.ask_name("Новая категория", "Название категории:")
+        name = self.ask_name(tr("Новая категория"), tr("Название категории:"))
         if not name:
             return None
         folder = C.ROOT / name
         if name_clash(folder):
-            show_warning(self, "Новая категория", f"Такая категория уже есть: «{name_clash(folder).name}».")
+            show_warning(self, tr("Новая категория"), tr("Такая категория уже есть: «{name}».").format(name=name_clash(folder).name))
             return None
         try:
             folder.mkdir()
         except OSError as error:
-            show_error(self, "Новая категория", f"Категория не создана. {os_message(error)}")
+            show_error(self, tr("Новая категория"), tr("Категория не создана. {n}").format(n=os_message(error)))
             return None
         if load_order(C.ROOT):
             append_to_order(C.ROOT, name)
@@ -328,7 +329,7 @@ class FilesMixin:
         if not category:
             return False
         lore = content is None and category.name in self.lore_cfg["categories"]
-        name = self.ask_name("Новый файл", f"Название файла в «{category.name}»:",
+        name = self.ask_name(tr("Новый файл"), tr("Название файла в «{name}»:").format(name=category.name),
                              "" if lore else next_chapter_name(category))
         if not name:
             return False
@@ -342,12 +343,12 @@ class FilesMixin:
         # «Глава 1.5» или «План.board» - всё равно глава: тип файла не меняется от точки в названии
         path = category / (name if Path(name).suffix.lower() in (".txt", ".md") else name + ".txt")
         if name_clash(path):
-            show_warning(self, "Новый файл", f"Файл с таким названием уже есть: «{name_clash(path).name}».")
+            show_warning(self, tr("Новый файл"), tr("Файл с таким названием уже есть: «{name}».").format(name=name_clash(path).name))
             return False
         try:
             save_text(path, content or "")
         except OSError as error:
-            show_error(self, "Новый файл", f"Файл не создан. {os_message(error)}")
+            show_error(self, tr("Новый файл"), tr("Файл не создан. {n}").format(n=os_message(error)))
             return False
         append_to_order(category, path.name)
         if fresh:
@@ -370,19 +371,19 @@ class FilesMixin:
         category = self.ask_category()
         if not category:
             return False
-        name = self.ask_name("Новая таблица", f"Название таблицы в «{category.name}»:")
+        name = self.ask_name(tr("Новая таблица"), tr("Название таблицы в «{name}»:").format(name=category.name))
         if not name:
             return False
         path = category / (name + ".csv")
         if name_clash(path):
-            show_warning(self, "Новая таблица", "Файл с таким названием уже есть.")
+            show_warning(self, tr("Новая таблица"), tr("Файл с таким названием уже есть."))
             return False
         empty = [[""] * len(C.TABLE_COLUMNS) for _ in range(C.TABLE_ROWS)]
         header_only = table_to_text(list(C.TABLE_COLUMNS), [])
         try:
             save_text(path, header_only)
         except OSError as error:
-            show_error(self, "Новая таблица", f"Не получилось создать:\n{error}")
+            show_error(self, tr("Новая таблица"), tr("Не получилось создать:\n{error}").format(error=error))
             return False
         append_to_order(category, path.name)
         self.refresh_tree()
@@ -399,18 +400,18 @@ class FilesMixin:
         category = self.ask_category()
         if not category:
             return False
-        name = self.ask_name("Новая доска", f"Название доски в «{category.name}»:")
+        name = self.ask_name(tr("Новая доска"), tr("Название доски в «{name}»:").format(name=category.name))
         if not name:
             return False
         path = category / (name + ".board")
         if name_clash(path):
-            show_warning(self, "Новая доска", "Файл с таким названием уже есть.")
+            show_warning(self, tr("Новая доска"), tr("Файл с таким названием уже есть."))
             return False
         blank = {"columns": [{"title": t, "cards": []} for t in C.BOARD_COLUMNS]}
         try:
             save_text(path, json.dumps(blank, ensure_ascii=False, indent=1) + "\n")
         except OSError as error:
-            show_error(self, "Новая доска", f"Не получилось создать:\n{error}")
+            show_error(self, tr("Новая доска"), tr("Не получилось создать:\n{error}").format(error=error))
             return False
         append_to_order(category, path.name)
         self.refresh_tree()
@@ -423,17 +424,17 @@ class FilesMixin:
         category = self.ask_category()
         if not category:
             return False
-        name = self.ask_name("Новая хронология", f"Название хронологии в «{category.name}»:", "Хронология")
+        name = self.ask_name(tr("Новая хронология"), tr("Название хронологии в «{name}»:").format(name=category.name), "Хронология")
         if not name:
             return False
         path = category / (name + ".timeline")
         if name_clash(path):
-            show_warning(self, "Новая хронология", "Файл с таким названием уже есть.")
+            show_warning(self, tr("Новая хронология"), tr("Файл с таким названием уже есть."))
             return False
         try:
             save_text(path, json.dumps({"events": []}, ensure_ascii=False, indent=1) + "\n")
         except OSError as error:
-            show_error(self, "Новая хронология", f"Не получилось создать:\n{error}")
+            show_error(self, tr("Новая хронология"), tr("Не получилось создать:\n{error}").format(error=error))
             return False
         append_to_order(category, path.name)
         self.refresh_tree()
@@ -442,12 +443,12 @@ class FilesMixin:
 
     def show_create_menu(self):
         menu = rounded_menu(self)
-        menu.addAction("Главу" + self.hk("new"), self.new_file)
-        menu.addAction("Таблицу", self.new_table)
-        menu.addAction("Доску сюжета", self.new_board)
-        menu.addAction("Хронологию", self.new_timeline)
+        menu.addAction(tr("Главу") + self.hk("new"), self.new_file)
+        menu.addAction(tr("Таблицу"), self.new_table)
+        menu.addAction(tr("Доску сюжета"), self.new_board)
+        menu.addAction(tr("Хронологию"), self.new_timeline)
         menu.addSeparator()
-        menu.addAction("Категорию", self.new_category)
+        menu.addAction(tr("Категорию"), self.new_category)
         menu.exec(self.create_button.mapToGlobal(QPoint(self.create_button.width(), 0)))
 
     def compile_book(self):
@@ -461,8 +462,8 @@ class FilesMixin:
         options = dialog.options()
         self.settings.setValue("author", options["author"])
         if options["format"] == "docx" and not docx_available():
-            show_warning(self, "Собрать книгу", "Для Word нужна библиотека python-docx.\n"
-                                "Запусти install.sh ещё раз, он её поставит.")
+            show_warning(self, tr("Собрать книгу"), tr("Для Word нужна библиотека python-docx.\n"
+                                "Запусти install.sh ещё раз, он её поставит."))
             return
         extension = options["format"]
         filters = {"pdf": "PDF (*.pdf)", "docx": "Word (*.docx)", "epub": "Электронная книга (*.epub)",
@@ -492,10 +493,10 @@ class FilesMixin:
                 shown = "\n".join(f"• {line}   ({name})" for name, line in found[:8])
                 more = f"\n…и ещё {len(found) - 8}" if len(found) > 8 else ""
                 choice = ask_choice(
-                    self, "Собрать книгу",
-                    "Эти строки целиком в квадратных скобках. Скобки - это пометки для себя, "
-                    f"при сборке они вырезаются:\n\n{shown}{more}\n\nЕсли это заголовки, их можно "
-                    "сделать заголовками. В тексте заголовок пишется так: «# Пролог».",
+                    self, tr("Собрать книгу"),
+                    tr("Эти строки целиком в квадратных скобках. Скобки - это пометки для себя, при сборке "
+                       "они вырезаются:\n\n{shown}{more}\n\nЕсли это заголовки, их можно сделать заголовками. "
+                       "В тексте заголовок пишется так: «# Пролог».").format(shown=shown, more=more),
                     [("cancel", "Отмена"), ("cut", "Вырезать"), ("heading", "Сделать заголовками")])
                 if choice in (None, "cancel"):
                     return
@@ -520,10 +521,10 @@ class FilesMixin:
             temp.unlink(missing_ok=True)
             log_error("Книга не собрана", error)
             kept = " Прежний файл книги не тронут." if target.exists() else ""
-            show_error(self, "Собрать книгу", f"Книга не собрана: {error}.{kept}")
+            show_error(self, tr("Собрать книгу"), tr("Книга не собрана: {error}.{kept}").format(error=error, kept=kept))
             return
         words = sum(len(WORD_RE.findall(p)) for _, paragraphs in chapters for p in paragraphs)
-        self.toast.show_message(f"Книга собрана: {target.name}, {words_label(words)}", 3500)
+        self.toast.show_message(tr("Книга собрана: {name}, {n}").format(name=target.name, n=words_label(words)), 3500)
         if skipped:
             self._report("Книга собрана не полностью", "Эти главы не прочитались и в книгу не попали:",
                          skipped)
@@ -574,14 +575,14 @@ class FilesMixin:
             added += 1
         if paths:
             self.refresh_tree()
-            self.toast.show_message(f"Добавлено: {added}")
+            self.toast.show_message(tr("Добавлено: {added}").format(added=added))
         if skipped or odd:
             parts = []
             if skipped:
                 parts.append("Не добавлены:\n" + "\n".join("• " + x for x in skipped))
             if odd:
                 parts.append("Переведены в UTF-8, проверь текст:\n" + "\n".join("• " + x for x in odd))
-            show_warning(self, "Добавить файлы", "\n\n".join(parts))
+            show_warning(self, tr("Добавить файлы"), "\n\n".join(parts))
 
     def on_item_clicked(self, item, _column=0):
         path = self.item_path(item)
@@ -611,7 +612,7 @@ class FilesMixin:
             try:
                 src.rename(new)
             except OSError as error:
-                show_warning(self, "Перемещение", f"Не получилось переместить:\n{error}")
+                show_warning(self, tr("Перемещение"), tr("Не получилось переместить:\n{error}").format(error=error))
                 return
             if not move_versions(src, new):
                 report_problem(f"Версии «{src.stem}» остались под старым путём")
@@ -681,12 +682,12 @@ class FilesMixin:
         try:
             text, encoding, lossy = read_text_info(path)
         except LockedFile:
-            show_warning(self, "Открыть", "Этот файл не расшифровывается: он зашифрован другим паролем "
+            show_warning(self, tr("Открыть"), tr("Этот файл не расшифровывается: он зашифрован другим паролем "
                                           "или повреждён (например, оборвалась синхронизация). Предыдущие "
-                                          "версии - в «Версиях файла», копии - в резервных копиях.")
+                                          "версии - в «Версиях файла», копии - в резервных копиях."))
             return False
         except OSError as error:
-            show_error(self, "Открыть", f"Не получилось открыть файл:\n{os_message(error)}")
+            show_error(self, tr("Открыть"), tr("Не получилось открыть файл:\n{n}").format(n=os_message(error)))
             return False
         broken = (is_board(path) or is_timeline(path)) and text.strip() and not _valid_json(text)
         if broken:
@@ -712,15 +713,16 @@ class FilesMixin:
         self.update_title()
         self.select_in_tree()
         if broken:
-            show_warning(self, "Файл повреждён", f"«{path.stem}» не читается - похоже, файл испорчен "
-                         "(оборвалась запись или синхронизация). Он открыт пустым, а то, что в нём было, "
-                         "сохранено в «Версиях файла». Если ничего не менять, файл останется как есть.")
+            show_warning(self, tr("Файл повреждён"), tr("«{stem}» не читается - похоже, файл испорчен (оборвалась "
+                                                    "запись или синхронизация). Он открыт пустым, а то, что в "
+                                                    "нём было, сохранено в «Версиях файла». Если ничего не "
+                                                    "менять, файл останется как есть.").format(stem=path.stem))
         if lossy:
-            show_warning(self, "Кодировка", f"Часть символов в «{path.stem}» не распознана, "
-                         "они показаны знаком �. Если сохранить, они так и останутся, но точная копия "
-                         f"файла сохранена в {C.service_path('.versions')}. Лучше сначала проверь текст.")
+            show_warning(self, tr("Кодировка"), tr("Часть символов в «{stem}» не распознана, они показаны знаком "
+                                               "�. Если сохранить, они так и останутся, но точная копия файла "
+                                               "сохранена в {n}. Лучше сначала проверь текст.").format(stem=path.stem, n=C.service_path('.versions')))
         elif encoding not in ("UTF-8",):
-            self.toast.show_message(f"Файл был в кодировке {encoding}: при сохранении станет UTF-8", 4000)
+            self.toast.show_message(tr("Файл был в кодировке {encoding}: при сохранении станет UTF-8").format(encoding=encoding), 4000)
         if self.view:
             view = self.view
             fade(view, 0.0, 1.0, 260, lambda: view.setGraphicsEffect(None))
@@ -773,7 +775,7 @@ class FilesMixin:
         except OSError as error:
             if auto:
                 raise
-            show_error(self, "Сохранить", f"Не получилось сохранить:\n{error}")
+            show_error(self, tr("Сохранить"), tr("Не получилось сохранить:\n{error}").format(error=error))
             return False
         self.remember_own_write()
         self.watch_current()
@@ -791,10 +793,10 @@ class FilesMixin:
         self.count_words()
         self.store_stats()
         if foreign:
-            self.toast.show_message("Глава успела измениться на другом устройстве. Записана твоя версия, "
-                                    "а та - в «Версиях файла»", 5000)
+            self.toast.show_message(tr("Глава успела измениться на другом устройстве. Записана твоя версия, "
+                                    "а та - в «Версиях файла»"), 5000)
         elif not auto:
-            self.toast.show_message("Сохранено")
+            self.toast.show_message(tr("Сохранено"))
         return True
 
     # ---------------- автосохранение ----------------
@@ -822,7 +824,7 @@ class FilesMixin:
             self.save(auto=True)
         except OSError as error:
             log_error("Автосохранение не удалось", error)
-            self.toast.show_message(f"Автосохранение не удалось: {os_message(error)}. Сохрани вручную", 4000)
+            self.toast.show_message(tr("Автосохранение не удалось: {n}. Сохрани вручную").format(n=os_message(error)), 4000)
 
     def maybe_save(self):
         if not self.is_modified():
@@ -835,7 +837,7 @@ class FilesMixin:
             if not self.is_modified():
                 return True
         answer = ask_question(
-            self, "Несохранённый текст", "Сохранить изменения?",
+            self, tr("Несохранённый текст"), tr("Сохранить изменения?"),
             QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel, QMessageBox.Save)
         if answer == QMessageBox.Save:
             return self.save()
@@ -848,19 +850,19 @@ class FilesMixin:
             self.toast.show_message(message)
             return
         QApplication.clipboard().setText(self.editor.toPlainText())
-        self.toast.show_message("Весь текст скопирован")
+        self.toast.show_message(tr("Весь текст скопирован"))
 
     def show_versions(self, path=None):
         if self.editor.forward_only:
-            self.toast.show_message("В режиме «только вперёд» версии не возвращаются")
+            self.toast.show_message(tr("В режиме «только вперёд» версии не возвращаются"))
             return
         path = path or self.path
         if path is None:
-            self.toast.show_message("Сначала открой файл")
+            self.toast.show_message(tr("Сначала открой файл"))
             return
         versions = list_versions(path)
         if not versions:
-            self.toast.show_message("Версий пока нет: они появляются при сохранении", 3000)
+            self.toast.show_message(tr("Версий пока нет: они появляются при сохранении"), 3000)
             if hasattr(self, "picture_pop"):
                 self.picture_pop.play("empty-versions", 3000, width=260)
             return
@@ -877,7 +879,7 @@ class FilesMixin:
         if accepted and self.view:
             self.view.load(dialog.chosen)
             self.view.set_modified(True)
-            self.toast.show_message("Версия возвращена. Сохрани, если всё так")
+            self.toast.show_message(tr("Версия возвращена. Сохрани, если всё так"))
         elif accepted:
             # одним действием, чтобы Ctrl+Z вернул всё обратно
             notes = self.notes_margin.data()
@@ -888,7 +890,7 @@ class FilesMixin:
             cursor.endEditBlock()
             self.notes_margin.load(notes)
             self.editor.moveCursor(QTextCursor.Start)
-            self.toast.show_message("Версия возвращена. Сохрани, если всё так")
+            self.toast.show_message(tr("Версия возвращена. Сохрани, если всё так"))
 
     def tree_menu(self, pos):
         item = self.tree.itemAt(pos)
@@ -898,31 +900,31 @@ class FilesMixin:
         menu = rounded_menu(self)
         if path.is_dir():
             self.tree.setCurrentItem(item)
-            menu.addAction("Новый файл здесь", self.new_file)
-            menu.addAction("Новая таблица здесь", self.new_table)
-            menu.addAction("Новая доска здесь", self.new_board)
-            menu.addAction("Новая хронология здесь", self.new_timeline)
+            menu.addAction(tr("Новый файл здесь"), self.new_file)
+            menu.addAction(tr("Новая таблица здесь"), self.new_table)
+            menu.addAction(tr("Новая доска здесь"), self.new_board)
+            menu.addAction(tr("Новая хронология здесь"), self.new_timeline)
             menu.addSeparator()
             is_lore = path.name in self.lore_cfg["categories"]
-            menu.addAction("Больше не справочник мира" if is_lore else "Сделать справочником мира",
+            menu.addAction(tr("Больше не справочник мира") if is_lore else tr("Сделать справочником мира"),
                            lambda: self.toggle_lore_category(path))
-            menu.addAction("Обложка…", lambda: self.show_cover(path))
-            menu.addAction("Заготовки для мира…", lambda: self.make_world_kit(path))
+            menu.addAction(tr("Обложка…"), lambda: self.show_cover(path))
+            menu.addAction(tr("Заготовки для мира…"), lambda: self.make_world_kit(path))
             if not is_lore:
-                menu.addAction("Выложить на сайт…", lambda: self.show_publish(path))
+                menu.addAction(tr("Выложить на сайт…"), lambda: self.show_publish(path))
             menu.addSeparator()
         else:
-            menu.addAction("Открыть рядом" + self.hk("side"), lambda: self.open_beside(path))
-            menu.addAction("Версии…", lambda: self.show_versions(path))
-            menu.addAction("Цель главы…", lambda: self.set_chapter_goal(path))
+            menu.addAction(tr("Открыть рядом") + self.hk("side"), lambda: self.open_beside(path))
+            menu.addAction(tr("Версии…"), lambda: self.show_versions(path))
+            menu.addAction(tr("Цель главы…"), lambda: self.set_chapter_goal(path))
             if is_prose(path) and path.parent.name not in self.lore_cfg["categories"]:
                 menu.addSeparator()
                 self.plan_menu(menu, path)
                 menu.addSeparator()
             if path.parent.name in self.lore_cfg["categories"] and path.suffix == ".txt":
-                menu.addAction("Сохранить как шаблон…", lambda: self.save_as_template(path))
-        menu.addAction("Переименовать", lambda: self.rename(path))
-        menu.addAction("Удалить в корзину", lambda: self.delete(path))
+                menu.addAction(tr("Сохранить как шаблон…"), lambda: self.save_as_template(path))
+        menu.addAction(tr("Переименовать"), lambda: self.rename(path))
+        menu.addAction(tr("Удалить в корзину"), lambda: self.delete(path))
         menu.exec(self.tree.viewport().mapToGlobal(pos))
 
     def _affects_current(self, path):
@@ -933,13 +935,13 @@ class FilesMixin:
 
     def _restored(self, target):
         self.refresh_tree()
-        self.toast.show_message(f"Вернулось: «{target.stem if target.is_file() else target.name}»")
+        self.toast.show_message(tr("Вернулось: «{n}»").format(n=target.stem if target.is_file() else target.name))
         if target.is_file():
             self.open_path(target)
 
     def rename(self, path):
         default = path.stem if path.suffix in (".txt", ".csv", ".board") else path.name
-        name = self.ask_name("Переименовать", "Новое название:", default)
+        name = self.ask_name(tr("Переименовать"), tr("Новое название:"), default)
         if not name:
             return
         if path.is_file() and Path(name).suffix.lower() != path.suffix.lower():
@@ -949,11 +951,11 @@ class FilesMixin:
             return
         try:
             if name_clash(target, source=path):
-                show_warning(self, "Переименовать", "Такое название уже занято.")
+                show_warning(self, tr("Переименовать"), tr("Такое название уже занято."))
                 return
             path.rename(target)
         except OSError as error:
-            show_error(self, "Переименовать", f"Не переименовано. {os_message(error)}")
+            show_error(self, tr("Переименовать"), tr("Не переименовано. {n}").format(n=os_message(error)))
             return
         self._move_keys(path, target)
         if target.is_dir():
@@ -973,9 +975,9 @@ class FilesMixin:
                 report_problem(f"Заметки на полях «{path.stem}» остались под старым именем")
             rename_in_order(path.parent, path.name, target.name)
         if not moved:
-            show_warning(self, "История версий",
-                         f"Переименовано, но старые версии не переехали и лежат под прежним именем "
-                         f"в папке {C.service_path('.versions')}. Подробности в {C.ERROR_LOG}.")
+            show_warning(self, tr("История версий"),
+                         tr("Переименовано, но старые версии не переехали и лежат под прежним именем в папке "
+                            "{n}. Подробности в {ERROR_LOG}.").format(n=C.service_path('.versions'), ERROR_LOG=C.ERROR_LOG))
         if self._affects_current(path):
             self.path = target if self.path == path else target / self.path.relative_to(path)
             self.update_title()
@@ -988,8 +990,8 @@ class FilesMixin:
 
     def delete(self, path):
         what = "категорию со всеми файлами" if path.is_dir() else "файл"
-        answer = ask_question(self, "Удалить", f"Отправить {what} «{path.name}» в корзину?\n"
-                                               f"Там он пролежит {TRASH_DAYS} дней, и его можно вернуть.")
+        answer = ask_question(self, tr("Удалить"), tr("Отправить {what} «{name}» в корзину?\nТам он пролежит "
+                                                  "{TRASH_DAYS} дней, и его можно вернуть.").format(what=what, name=path.name, TRASH_DAYS=TRASH_DAYS))
         if answer != QMessageBox.Yes:
             return
         if self._affects_current(path) and self.is_modified():
@@ -997,9 +999,9 @@ class FilesMixin:
         try:
             entry = move_to_trash(path)
         except OSError as error:
-            show_warning(self, "Удалить", f"Не получилось отправить в корзину: {os_message(error)}")
+            show_warning(self, tr("Удалить"), tr("Не получилось отправить в корзину: {n}").format(n=os_message(error)))
             return
-        self.toast.show_message(f"«{path.stem if path.is_file() else path.name}» в корзине. Нажми сюда - вернуть",
+        self.toast.show_message(tr("«{n}» в корзине. Нажми сюда - вернуть").format(n=path.stem if path.is_file() else path.name),
                                 5000, action=lambda e=entry: self._restored(restore_from_trash(e)))
         if self._affects_current(path):
             self.path = None

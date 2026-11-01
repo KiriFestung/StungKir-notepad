@@ -122,22 +122,22 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         self.view = None          # None - глава, иначе таблица или доска
         self.board_view = BoardView(self._view_changed,
                                     lambda: self.toast.show_message(
-                                        "Латиница выключена: переключи раскладку на русскую"),
+                                        tr("Латиница выключена: переключи раскладку на русскую")),
                                     lambda text: self.toast.show_message(text),
                                     self.chapter_keys, self.open_chapter_key)
         self.table_view = TableView(self._view_changed,         # таблицы тоже сохраняются сами
                                     lambda: self.toast.show_message(
-                                        "Латиница выключена: переключи раскладку на русскую"),
+                                        tr("Латиница выключена: переключи раскладку на русскую")),
                                     lambda text: self.toast.show_message(text))
         self.table_view.table.itemChanged.connect(lambda _i: self.count_timer.start())
         self.timeline_view = TimelineView(self._view_changed,
                                           lambda: self.toast.show_message(
-                                              "Латиница выключена: переключи раскладку на русскую"),
+                                              tr("Латиница выключена: переключи раскладку на русскую")),
                                           lambda text: self.toast.show_message(text),
                                           self.chapter_keys, self.open_chapter_key)
         self.editor.speller = self.speller
         self.editor.foreign_callback = lambda: self.toast.show_message(
-            "Латиница выключена: переключи раскладку на русскую")
+            tr("Латиница выключена: переключи раскладку на русскую"))
         self.editor.dictionary_changed = lambda: self._rehighlight()
         self.editor.track_name_callback = self.name_from_text
         self.editor.lore_tip = self._lore_tip
@@ -152,7 +152,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         self.line_numbers.set_shown(self.settings.value("line_numbers", "false") == "true")
         self.editor.note_callback = self.note_for_block
         self.editor.forward_callback = lambda: self.toast.show_message(
-            "Режим «только вперёд»: стирать нельзя, пиши дальше")
+            tr("Режим «только вперёд»: стирать нельзя, пиши дальше"))
         self.pages = QStackedWidget()
         self.pages.addWidget(self.editor)
         self.pages.addWidget(self.table_view)
@@ -331,7 +331,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         QTimer.singleShot(2600, self, self.weekly_backup)
         if not self.speller.available:
             QTimer.singleShot(900, self, lambda: self.toast.show_message(
-                "Проверка орфографии выключена: нет русского словаря", 3000))
+                tr("Проверка орфографии выключена: нет русского словаря"), 3000))
 
     # ---------------- панели и окно ----------------
     def eventFilter(self, obj, event):
@@ -354,7 +354,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         self.notes_margin.setVisible(not on)
         self.line_numbers.set_quiet(on)
         if on:
-            self.toast.show_message("Без отвлечений. F10 - вернуть всё", 2600)
+            self.toast.show_message(tr("Без отвлечений. F10 - вернуть всё"), 2600)
         self.editor.setFocus()
 
     def set_texture(self, kind):
@@ -399,8 +399,8 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         path = Path(path)
         image = QImage(str(path))
         if image.isNull():
-            show_warning(self, "Картинка под текстом", "Эту картинку не получилось открыть. "
-                                                       "Подойдут JPG, PNG, WebP, BMP.")
+            show_warning(self, tr("Картинка под текстом"), tr("Эту картинку не получилось открыть. "
+                                                       "Подойдут JPG, PNG, WebP, BMP."))
             return False
         try:
             C.DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -408,19 +408,18 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
                 old.unlink()
             shutil.copyfile(path, C.DATA_DIR / f"фон-под-текстом{path.suffix.lower()}")
         except OSError as error:
-            show_error(self, "Картинка под текстом", f"Не получилось сохранить картинку: {error}")
+            show_error(self, tr("Картинка под текстом"), tr("Не получилось сохранить картинку: {error}").format(error=error))
             return False
         self.set_texture("picture")
         need = self.backdrop_need()
         if image.width() < need[0] * 0.8 or image.height() < need[1] * 0.8:
-            show_warning(self, "Картинка под текстом",
-                         f"Картинка маленькая: {image.width()}×{image.height()}, а окно на твоём экране - "
-                         f"{need[0]}×{need[1]} точек. Её придётся растянуть, и она будет мыльной.\n\n"
-                         f"Для чёткой картинки нужна от {need[0]}×{need[1]} и больше. Блокнот хранит её "
-                         f"без пережатия и рисует в настоящих точках экрана - качество теряется только "
-                         f"при растягивании.")
+            show_warning(self, tr("Картинка под текстом"),
+                         tr("Картинка маленькая: {n}×{n2}, а окно на твоём экране - {n3}×{n4} точек. Её "
+                            "придётся растянуть, и она будет мыльной.\n\nДля чёткой картинки нужна от "
+                            "{n3}×{n4} и больше. Блокнот хранит её без пережатия и рисует в настоящих точках "
+                            "экрана - качество теряется только при растягивании.").format(n=image.width(), n2=image.height(), n3=need[0], n4=need[1]))
         else:
-            self.toast.show_message("Картинка под текстом. Насколько её притемнить - «Фон под текстом → Затемнение»")
+            self.toast.show_message(tr("Картинка под текстом. Насколько её притемнить - «Фон под текстом → Затемнение»"))
         return True
 
     def backdrop_need(self):
@@ -464,8 +463,8 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         if not shown and self.line_numbers.shown:      # номера сами не возвращаются: их включают нарочно
             self.toggle_line_numbers()
         self.apply_screen()
-        self.toast.show_message("Всё вернулось на экран" if shown else
-                                "На экране только текст. Вернуть: Вид → На экране → Вернуть всё", 3500)
+        self.toast.show_message(tr("Всё вернулось на экран") if shown else
+                                tr("На экране только текст. Вернуть: Вид → На экране → Вернуть всё"), 3500)
 
     PLACES = {"clock": (("tr", "Справа сверху"), ("tl", "Слева сверху"), ("br", "Справа снизу"),
                         ("bl", "Слева снизу")),
@@ -647,7 +646,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         if path.exists():
             self.open_path(path)
         else:
-            self.toast.show_message("Такой главы больше нет")
+            self.toast.show_message(tr("Такой главы больше нет"))
 
     def update_title(self, *_):
         name = self.path.stem if self.path else "Без названия"
@@ -725,20 +724,20 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         self.highlighter.current = self._focus_block()
         self.focus_button.setChecked(on)
         self._rehighlight()
-        self._mode_changed("Режим фокуса включён" if on else "Режим фокуса выключен", changed and not quiet)
+        self._mode_changed(tr("Режим фокуса включён") if on else tr("Режим фокуса выключен"), changed and not quiet)
 
     def set_typewriter(self, on, quiet=False):
         changed = on != self.editor.typewriter
         self.editor.set_typewriter(on)
         self.typewriter_button.setChecked(on)
-        self._mode_changed("Печатная машинка: строка, где пишешь, всегда посередине экрана" if on
-                           else "Печатная машинка выключена",
+        self._mode_changed(tr("Печатная машинка: строка, где пишешь, всегда посередине экрана") if on
+                           else tr("Печатная машинка выключена"),
                            changed and not quiet)
 
     def set_forward_only(self, on):
         self.editor.forward_only = on
         self.forward_button.setChecked(on)
-        self.toast.show_message("Только вперёд: стирать нельзя" if on else "Стирать снова можно")
+        self.toast.show_message(tr("Только вперёд: стирать нельзя") if on else tr("Стирать снова можно"))
         self.update_status()
 
     def _mode_changed(self, message, announce):
@@ -786,7 +785,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
     def show_preview(self, device="book"):
         """Как глава будет выглядеть у читателя: книга A5, телефон, читалка."""
         if self.view is not None:
-            self.toast.show_message("Предпросмотр - для главы, а не таблицы, доски или хронологии")
+            self.toast.show_message(tr("Предпросмотр - для главы, а не таблицы, доски или хронологии"))
             return None
         from ..books.preview import PreviewDialog
         title = self.path.stem if self.path else "Без названия"
@@ -826,9 +825,9 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
                 shortcut.activated.connect(callback)
             shortcut.setKey(QKeySequence(keys.get(code, "")))
         from .icons import decorate_button
-        for name, label, code in (("focus_button", "Режим фокуса", "focus"),
-                                  ("typewriter_button", "Печатная машинка", "typewriter"),
-                                  ("forward_button", "Только вперёд", "forward")):
+        for name, label, code in (("focus_button", tr("Режим фокуса"), "focus"),
+                                  ("typewriter_button", tr("Печатная машинка"), "typewriter"),
+                                  ("forward_button", tr("Только вперёд"), "forward")):
             button = getattr(self, name, None)
             if button is not None and button.text() != label + self.hk(code):
                 button.setText(label + self.hk(code))
@@ -843,7 +842,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         own = {code: value for code, value in dialog.values().items() if value != DEFAULT_KEYS[code]}
         self.settings.setValue("hotkeys", json.dumps(own, ensure_ascii=False))
         self.apply_hotkeys()
-        self.toast.show_message("Горячие клавиши сохранены" if own else "Горячие клавиши - как были")
+        self.toast.show_message(tr("Горячие клавиши сохранены") if own else tr("Горячие клавиши - как были"))
 
     def show_settings(self):
         dialog = SettingsDialog(self, load_config_raw(), self.goal)
@@ -1047,18 +1046,18 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         if done:
             self.settings.setValue("weekly_last", done)
             if not getattr(self, "_closed", False):
-                self.toast.show_message("Недельная копия книги сделана", 2500)
+                self.toast.show_message(tr("Недельная копия книги сделана"), 2500)
         return done
 
     def set_eye_break(self, minutes):
         self.settings.setValue("eye_break", minutes)
         self._screen_time = 0
-        self.toast.show_message(f"Напомню отдохнуть глазам через {minutes} минут за текстом" if minutes
-                                else "Напоминание о перерыве выключено")
+        self.toast.show_message(tr("Напомню отдохнуть глазам через {minutes} минут за текстом").format(minutes=minutes) if minutes
+                                else tr("Напоминание о перерыве выключено"))
 
     def set_typing_sound(self, name):
         self.settings.setValue("typing_sound", name)
-        self.toast.show_message("Звук машинки выключен" if name == "Без звука" else f"Звук машинки: {name.lower()}")
+        self.toast.show_message(tr("Звук машинки выключен") if name == "Без звука" else tr("Звук машинки: {n}").format(n=name.lower()))
 
     def typing_sound(self, event):
         """Каждая клавиша - удар литеры, пробел - глуше, Enter - звоночек каретки."""

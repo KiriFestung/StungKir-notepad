@@ -87,7 +87,7 @@ def year_summary(stats, marks, today):
         days += bool(value) or wrote_on(day, stats, marks)
         months[(day.year, day.month)] = months.get((day.year, day.month), 0) + value
     (year, month), best = max(months.items(), key=lambda item: (item[1], item[0]))
-    return words, days, f"{MONTHS[month - 1]} {year}", best
+    return words, days, f"{tr(MONTHS[month - 1])} {year}", best
 
 
 class YearHeatmap(QWidget):
@@ -139,7 +139,7 @@ class YearHeatmap(QWidget):
             QToolTip.hideText()
             return
         words = max(0, self.stats.get(day.isoformat(), 0))
-        text = f"{day.day} {MONTHS_OF[day.month - 1]} {day.year}: " + (
+        text = f"{day.day} {tr(MONTHS_OF[day.month - 1])} {day.year}: " + (
             words_label(words) if words else ("писал (отмечено)" if day.isoformat() in self.marks else "ничего"))
         QToolTip.showText(event.globalPosition().toPoint(), text, self)
 
@@ -153,7 +153,7 @@ class YearHeatmap(QWidget):
         painter.setFont(small)
         painter.setPen(QColor(C.DIM))
         for row, name in ((0, "пн"), (2, "ср"), (4, "пт")):
-            painter.drawText(QRectF(0, top + row * cell - 2, left - 4, cell + 2), Qt.AlignRight | Qt.AlignVCenter, name)
+            painter.drawText(QRectF(0, top + row * cell - 2, left - 4, cell + 2), Qt.AlignRight | Qt.AlignVCenter, tr(name))
         shown_month = None
         for n in range(self.WEEKS * 7):
             day = self.start + timedelta(days=n)
@@ -163,7 +163,7 @@ class YearHeatmap(QWidget):
                 shown_month = day.month
                 painter.setPen(QColor(C.DIM))
                 painter.drawText(QRectF(left + (n // 7) * cell, 0, cell * 4, top - 4), Qt.AlignLeft | Qt.AlignBottom,
-                                 MONTHS[day.month - 1][:3].lower())
+                                 tr(MONTHS[day.month - 1])[:3].lower())
             painter.setPen(Qt.NoPen)
             painter.setBrush(shades[self.level(day)])
             painter.drawRoundedRect(self._rect(day), 2.5, 2.5)
@@ -175,13 +175,13 @@ class YearHeatmap(QWidget):
         y = top + 7 * cell + 10
         x = self.width() - 4 - 6 * (cell + 1) - 74
         painter.setPen(QColor(C.DIM))
-        painter.drawText(QRectF(x - 90, y - 2, 86, cell + 4), Qt.AlignRight | Qt.AlignVCenter, "меньше")
+        painter.drawText(QRectF(x - 90, y - 2, 86, cell + 4), Qt.AlignRight | Qt.AlignVCenter, tr("меньше"))
         for i, shade in enumerate(shades):
             painter.setPen(Qt.NoPen)
             painter.setBrush(shade)
             painter.drawRoundedRect(QRectF(x + i * (cell + 1), y, cell - 2, cell - 2), 2.5, 2.5)
         painter.setPen(QColor(C.DIM))
-        painter.drawText(QRectF(x + 6 * (cell + 1) + 4, y - 2, 70, cell + 4), Qt.AlignLeft | Qt.AlignVCenter, "больше")
+        painter.drawText(QRectF(x + 6 * (cell + 1) + 4, y - 2, 70, cell + 4), Qt.AlignLeft | Qt.AlignVCenter, tr("больше"))
 
 
 MONTHS_OF = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября",
@@ -213,7 +213,7 @@ class WritingCalendar(QWidget):
             self.update()
 
     def title(self):
-        return f"{MONTHS[self.month.month - 1]} {self.month.year}"
+        return f"{tr(MONTHS[self.month.month - 1])} {self.month.year}"
 
     def _cells(self):
         first = self.month
@@ -260,7 +260,7 @@ class WritingCalendar(QWidget):
         painter.setFont(small)
         painter.setPen(QColor(C.DIM))
         for column, name in enumerate(["пн", "вт", "ср", "чт", "пт", "сб", "вс"]):
-            painter.drawText(QRectF(2 + column * self.CELL, 8, self.CELL - 4, 18), Qt.AlignCenter, name)
+            painter.drawText(QRectF(2 + column * self.CELL, 8, self.CELL - 4, 18), Qt.AlignCenter, tr(name))
         font = QFont(C.FONT_FAMILY, 10)
         font.setBold(True)
         painter.setFont(font)
@@ -299,7 +299,7 @@ class WritingCalendar(QWidget):
 
 class StatsDialog(Sheet):
     def __init__(self, parent, stats, goal, marks=None, on_marks=None, extra=()):
-        super().__init__(parent, f"Статистика · {C.APP_NAME}")
+        super().__init__(parent, tr("Статистика · {APP_NAME}").format(APP_NAME=C.APP_NAME))
         self.setMinimumSize(920, 580)
         today = date.today()
         self.stats = stats
@@ -314,9 +314,8 @@ class StatsDialog(Sheet):
 
         layout = self.content
         summary = QLabel(
-            f"За {C.STATS_DAYS} дней: {words_label(written)}   ·   "
-            f"в среднем {round(sum(active) / len(active)) if active else 0} в день письма   ·   "
-            f"лучший день: {best} ({best_day:%d.%m})" + "".join("\n" + line for line in extra))
+            tr("За {STATS_DAYS} дней: {n}   ·   в среднем {n2} в день письма   ·   лучший день: {best} "
+               "({best_day:%d.%m})").format(STATS_DAYS=C.STATS_DAYS, n=words_label(written), n2=round(sum(active) / len(active)) if active else 0, best=best, best_day=best_day) + "".join("\n" + line for line in extra))
         summary.setWordWrap(True)
         layout.addWidget(summary)
         body = QHBoxLayout()
@@ -339,8 +338,8 @@ class StatsDialog(Sheet):
         self.streak = QLabel("")
         self.streak.setObjectName("Section")
         left.addWidget(self.streak)
-        hint = QLabel(f"День засчитан от {C.STREAK_WORDS} слов. Писал на телефоне или от руки - "
-                      "кликни по дню, появится галочка.")
+        hint = QLabel(tr("День засчитан от {STREAK_WORDS} слов. Писал на телефоне или от руки - кликни по "
+                         "дню, появится галочка.").format(STREAK_WORDS=C.STREAK_WORDS))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         hint.setMaximumWidth(self.calendar.width())
@@ -372,8 +371,8 @@ class StatsDialog(Sheet):
         self.heatmap.setFixedHeight(140)
         year_layout.addWidget(self.heatmap)
         total, active_days, best_month, best_month_words = year_summary(stats, self.marks, today)
-        self.year_label = QLabel(f"За год: {words_label(total)}   ·   дней с текстом: {active_days}"
-                                 + (f"   ·   лучший месяц: {best_month} ({best_month_words})" if best_month_words else ""))
+        self.year_label = QLabel(tr("За год: {n}   ·   дней с текстом: {active_days}").format(n=words_label(total), active_days=active_days)
+                                 + (tr("   ·   лучший месяц: {best_month} ({best_month_words})").format(best_month=best_month, best_month_words=best_month_words) if best_month_words else ""))
         self.year_label.setObjectName("Status")
         self.year_label.setWordWrap(True)
         year_layout.addWidget(self.year_label)
@@ -387,7 +386,7 @@ class StatsDialog(Sheet):
         self._update_streak()
         row = QHBoxLayout()
         row.addStretch()
-        close = QPushButton("Закрыть")
+        close = QPushButton(tr("Закрыть"))
         close.clicked.connect(self.accept)
         row.addWidget(close)
         layout.addLayout(row)
@@ -399,7 +398,7 @@ class StatsDialog(Sheet):
     def _update_streak(self):
         from ..core.storage import streaks
         current, best = streaks(self.stats, self.marks, date.today())
-        self.streak.setText(f"Дней подряд: {current}   ·   рекорд: {best}")
+        self.streak.setText(tr("Дней подряд: {current}   ·   рекорд: {best}").format(current=current, best=best))
 
     def toggle_day(self, day):
         key = day.isoformat()
@@ -420,7 +419,7 @@ class CompileDialog(Sheet):
     SPACINGS = [1.0, 1.15, 1.25, 1.5, 2.0]
 
     def __init__(self, parent, categories, current, author, skipped=()):
-        super().__init__(parent, "Собрать книгу")
+        super().__init__(parent, tr("Собрать книгу"))
         self.skipped = {str(p) for p in skipped}       # «не в книгу» из плана: сначала без галочки
         self.setMinimumSize(720, 600)
         self.store = QSettings(C.APP_ID, C.APP_ID)
@@ -437,9 +436,9 @@ class CompileDialog(Sheet):
             self.category.setCurrentIndex(max(0, self.category.findData(str(current))))
         self.category.currentIndexChanged.connect(self._fill)
         self.title = QLineEdit()
-        self.title.setPlaceholderText("Название книги")
+        self.title.setPlaceholderText(tr("Название книги"))
         self.author = QLineEdit(author)
-        self.author.setPlaceholderText("Можно оставить пустым")
+        self.author.setPlaceholderText(tr("Можно оставить пустым"))
         for column, (label, widget) in enumerate((("Шаблон:", self.template), ("Из какой категории:", self.category))):
             grid.addWidget(QLabel(label), 0, column)
             grid.addWidget(widget, 1, column)
@@ -449,8 +448,8 @@ class CompileDialog(Sheet):
         grid.setColumnStretch(0, 1)
         grid.setColumnStretch(1, 1)
         layout.addLayout(grid)
-        hint = QLabel("Главы идут в том же порядке, что и в списке слева. Сними галочку, "
-                      "чтобы главу не включать.")
+        hint = QLabel(tr("Главы идут в том же порядке, что и в списке слева. Сними галочку, "
+                      "чтобы главу не включать."))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         layout.addWidget(hint)
@@ -466,14 +465,14 @@ class CompileDialog(Sheet):
         look = QHBoxLayout()
         self.page = QComboBox()
         self.page.addItems(list(PAGE_SIZES))
-        self.page.setToolTip("Размер страницы (для PDF и Word)")
+        self.page.setToolTip(tr("Размер страницы (для PDF и Word)"))
         self.size = QDoubleSpinBox()
         self.size.setAlignment(Qt.AlignCenter)
         self.size.setRange(8, 18)
         self.size.setSingleStep(0.5)
         self.size.setDecimals(1)
-        self.size.setSuffix(" пт")
-        self.size.setToolTip("Размер шрифта")
+        self.size.setSuffix(tr(" пт"))
+        self.size.setToolTip(tr("Размер шрифта"))
         self.spacing = QComboBox()
         for value in self.SPACINGS:
             self.spacing.addItem(f"интервал {value:g}".replace(".", ","), value)
@@ -490,14 +489,14 @@ class CompileDialog(Sheet):
             look.addWidget(widget, 1)
         layout.addLayout(look)
         self.contacts = QLineEdit(self.store.value("contacts", ""))
-        self.contacts.setPlaceholderText("Контакты для титула рукописи: почта, телефон")
+        self.contacts.setPlaceholderText(tr("Контакты для титула рукописи: почта, телефон"))
         self.contacts_label = self.contacts    # отдельной подписи нет, подсказка внутри поля
         layout.addWidget(self.contacts)
-        self.new_page = QCheckBox("Глава с новой страницы")
+        self.new_page = QCheckBox(tr("Глава с новой страницы"))
         self.new_page.setChecked(True)
-        self.headings = QCheckBox("Заголовки глав")
+        self.headings = QCheckBox(tr("Заголовки глав"))
         self.headings.setChecked(True)
-        self.strip_markers = QCheckBox("Без пометок [ … ]")
+        self.strip_markers = QCheckBox(tr("Без пометок [ … ]"))
         self.strip_markers.setChecked(True)
         boxes = QHBoxLayout()
         for box in (self.new_page, self.headings, self.strip_markers):
@@ -506,9 +505,9 @@ class CompileDialog(Sheet):
         layout.addLayout(boxes)
         row = QHBoxLayout()
         row.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        ok = QPushButton("Собрать")
+        ok = QPushButton(tr("Собрать"))
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
         row.addWidget(cancel)
@@ -550,7 +549,7 @@ class CompileDialog(Sheet):
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             if str(f) in self.skipped:
                 item.setCheckState(Qt.Unchecked)
-                item.setToolTip("В плане книги отмечена «не в книгу». Поставь галочку, если всё же нужна")
+                item.setToolTip(tr("В плане книги отмечена «не в книгу». Поставь галочку, если всё же нужна"))
             else:
                 item.setCheckState(Qt.Checked)
             self.chapters.addItem(item)
@@ -584,7 +583,7 @@ class SettingsDialog(Sheet):
     """Шрифт, колонка, цели, копии. Цвета - в отдельном окне «Цвета и темы»."""
 
     def __init__(self, parent, config, goal):
-        super().__init__(parent, "Настройки")
+        super().__init__(parent, tr("Настройки"))
         self.setMinimumWidth(640)
         self.config = dict(config)
         grid = QGridLayout()
@@ -607,55 +606,58 @@ class SettingsDialog(Sheet):
             grid.addWidget(widget, row, 1)
             row += 1
 
-        section("Оформление")
-        colors = QPushButton("Цвета и темы…")
-        colors.setToolTip("Все цвета, свои темы, дневная тема по времени, теплота - с образцом")
+        section(tr("Оформление"))
+        colors = QPushButton(tr("Цвета и темы…"))
+        colors.setToolTip(tr("Все цвета, свои темы, дневная тема по времени, теплота - с образцом"))
         colors.clicked.connect(lambda: parent.show_colors() if parent else None)
-        add("Цвета", colors)
+        add(tr("Цвета"), colors)
         self.language = QComboBox()
         for code, name in LANGUAGES.items():
             self.language.addItem(name, code)
         self.language.setCurrentIndex(max(0, self.language.findData(self.config.get("LANGUAGE", i18n.LANG))))
-        self.language.setToolTip("Меняется после перезапуска. Нет перевода - надпись остаётся русской")
+        self.language.setToolTip(tr("Меняется после перезапуска. Нет перевода - надпись остаётся русской"))
         add(tr("Язык"), self.language)
 
-        section("Текст")
+        section(tr("Текст"))
         self.font = QFontComboBox()
         self.font.setCurrentFont(QFont(self.config.get("FONT_FAMILY", C.FONT_FAMILY)))
-        add("Шрифт", self.font)
+        add(tr("Шрифт"), self.font)
         self.size = QSpinBox()
         self.size.setRange(10, 32)
         self.size.setValue(int(self.config.get("FONT_SIZE", parent.font_size if parent else C.FONT_SIZE)))
-        add("Размер", self.size)
+        add(tr("Размер"), self.size)
         self.weight = QComboBox()
-        self.weight.addItems(list(C.WEIGHTS))
+        for weight in C.WEIGHTS:                         # на экране - перевод, в настройках - как было
+            self.weight.addItem(tr(weight), weight)
         current_weight = next((k for k, v in C.WEIGHTS.items() if v == C.FONT_WEIGHT), "Обычный")
-        self.weight.setCurrentText(self.config.get("FONT_WEIGHT", current_weight))
-        add("Насыщенность", self.weight)
+        self.weight.setCurrentIndex(max(0, self.weight.findData(self.config.get("FONT_WEIGHT", current_weight))))
+        add(tr("Насыщенность"), self.weight)
         self.column = QSpinBox()
         self.column.setRange(400, 1600)
         self.column.setSingleStep(20)
         self.column.setSuffix(" px")
         self.column.setValue(int(self.config.get("COLUMN_WIDTH", C.COLUMN_WIDTH)))
-        add("Ширина колонки", self.column)
+        add(tr("Ширина колонки"), self.column)
         self.line = QSpinBox()
         self.line.setRange(100, 250)
         self.line.setSingleStep(10)
         self.line.setSuffix(" %")
         self.line.setValue(int(self.config.get("LINE_HEIGHT", C.LINE_HEIGHT)))
-        add("Межстрочный интервал", self.line)
-        self.russian = QCheckBox("Только русские буквы в тексте")
+        add(tr("Межстрочный интервал"), self.line)
+        self.russian = QCheckBox(tr("Только русские буквы в тексте"))
         self.russian.setChecked(bool(self.config.get("ONLY_RUSSIAN", C.ONLY_RUSSIAN)))
         grid.addWidget(self.russian, row, 0, 1, 2)
         row += 1
-        self.autosave = QCheckBox("Сохранять само (после паузы в наборе)")
+        self.autosave = QCheckBox(tr("Сохранять само (после паузы в наборе)"))
         self.autosave.setChecked(bool(self.config.get("AUTOSAVE", C.AUTOSAVE)))
         grid.addWidget(self.autosave, row, 0, 1, 2)
         row += 1
         self.speech_rate = QComboBox()
-        self.speech_rate.addItems(["Медленно", "Обычно", "Быстрее", "Быстро"])
-        self.speech_rate.setCurrentText(QSettings(C.APP_ID, C.APP_ID).value("speech_rate", "Обычно"))
-        add("Чтение вслух (F5)", self.speech_rate)
+        for rate in ("Медленно", "Обычно", "Быстрее", "Быстро"):
+            self.speech_rate.addItem(tr(rate), rate)
+        self.speech_rate.setCurrentIndex(max(0, self.speech_rate.findData(
+            QSettings(C.APP_ID, C.APP_ID).value("speech_rate", "Обычно"))))
+        add(tr("Чтение вслух (F5)"), self.speech_rate)
         self.voice = QComboBox()
         voices = []
         speech = getattr(parent, "_speech", None)
@@ -665,32 +667,34 @@ class SettingsDialog(Sheet):
                 voices = [v.name() for v in tts.availableVoices()]
             except Exception:
                 voices = []
-        self.voice.addItem("Как в системе", "")
+        self.voice.addItem(tr("Как в системе"), "")
         for name in voices:
             self.voice.addItem(name, name)
         self.voice.setCurrentIndex(max(0, self.voice.findData(QSettings(C.APP_ID, C.APP_ID).value("speech_voice", ""))))
-        self.voice.setToolTip("Русские голоса, которые стоят в системе. На Debian получше звучат голоса RHVoice "
-                              "(sudo apt install rhvoice-russian): Александр, Анна, Елена, Ирина")
+        self.voice.setToolTip(tr("Русские голоса, которые стоят в системе. На Debian получше звучат голоса RHVoice "
+                              "(sudo apt install rhvoice-russian): Александр, Анна, Елена, Ирина"))
         self.voice.setEnabled(bool(voices))
-        add("Голос", self.voice)
+        add(tr("Голос"), self.voice)
         from ..fun.sounds import DEFAULT_VOLUME, VOLUMES
         self.dice_sound = QComboBox()
-        self.dice_sound.addItems(list(VOLUMES))
-        self.dice_sound.setCurrentText(QSettings(C.APP_ID, C.APP_ID).value("dice_sound", DEFAULT_VOLUME))
-        add("Звук кубиков и монетки", self.dice_sound)
-        self.flat = QCheckBox("Окошки без теней (если вокруг них чёрная рамка)")
+        for volume in VOLUMES:
+            self.dice_sound.addItem(tr(volume), volume)
+        self.dice_sound.setCurrentIndex(max(0, self.dice_sound.findData(
+            QSettings(C.APP_ID, C.APP_ID).value("dice_sound", DEFAULT_VOLUME))))
+        add(tr("Звук кубиков и монетки"), self.dice_sound)
+        self.flat = QCheckBox(tr("Окошки без теней (если вокруг них чёрная рамка)"))
         self.flat.setChecked(bool(self.config.get("FLAT_WINDOWS", C.FLAT_WINDOWS)))
         grid.addWidget(self.flat, row, 0, 1, 2)
         row += 1
 
-        section("Разное")
+        section(tr("Разное"))
         self.goal = QSpinBox()
         self.goal.setRange(0, 100000)
         self.goal.setSingleStep(50)
-        self.goal.setSuffix(" слов")
-        self.goal.setSpecialValueText("без цели")
+        self.goal.setSuffix(tr(" слов"))
+        self.goal.setSpecialValueText(tr("без цели"))
         self.goal.setValue(goal)
-        add("Цель на день", self.goal)
+        add(tr("Цель на день"), self.goal)
         night = QHBoxLayout()
         night.setContentsMargins(0, 0, 0, 0)
         self.night_from = QSpinBox()
@@ -701,14 +705,14 @@ class SettingsDialog(Sheet):
         self.night_to.setRange(0, 23)
         self.night_to.setSuffix(":00")
         self.night_to.setValue(int(self.config.get("NIGHT_TO", C.NIGHT_TO)))
-        night.addWidget(QLabel("с"))
+        night.addWidget(QLabel(tr("с")))
         night.addWidget(self.night_from)
-        night.addWidget(QLabel("до"))
+        night.addWidget(QLabel(tr("до")))
         night.addWidget(self.night_to)
         night.addStretch()
         holder = QWidget()
         holder.setLayout(night)
-        add("Тёплый фильтр (авто)", holder)
+        add(tr("Тёплый фильтр (авто)"), holder)
         backup = QHBoxLayout()
         backup.setContentsMargins(0, 0, 0, 0)
         self.backup = QLineEdit(self.config.get("BACKUP_DIR", str(C.BACKUP_DIR)))
@@ -718,30 +722,30 @@ class SettingsDialog(Sheet):
         backup.addWidget(browse)
         holder = QWidget()
         holder.setLayout(backup)
-        add("Резервные копии", holder)
+        add(tr("Резервные копии"), holder)
         weekly = QHBoxLayout()
         weekly.setContentsMargins(0, 0, 0, 0)
         self.weekly = QLineEdit(QSettings(C.APP_ID, C.APP_ID).value("weekly_dir", "") or "")
-        self.weekly.setPlaceholderText("не делать - или папка на флешке, в облаке")
-        self.weekly.setToolTip("Раз в неделю вся книга архивом копируется сюда. Флешки нет - "
-                               "копия сделается в следующий раз, когда папка найдётся. Хранятся последние 8.")
+        self.weekly.setPlaceholderText(tr("не делать - или папка на флешке, в облаке"))
+        self.weekly.setToolTip(tr("Раз в неделю вся книга архивом копируется сюда. Флешки нет - "
+                               "копия сделается в следующий раз, когда папка найдётся. Хранятся последние 8."))
         browse_weekly = QPushButton("…")
         browse_weekly.clicked.connect(self._browse_weekly)
         weekly.addWidget(self.weekly, 1)
         weekly.addWidget(browse_weekly)
         holder = QWidget()
         holder.setLayout(weekly)
-        add("Копия раз в неделю", holder)
+        add(tr("Копия раз в неделю"), holder)
         self.content.addLayout(grid)
 
         buttons = QHBoxLayout()
-        reset = QPushButton("Сбросить всё")
+        reset = QPushButton(tr("Сбросить всё"))
         reset.clicked.connect(self._reset)
         buttons.addWidget(reset)
         buttons.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        ok = QPushButton("Сохранить")
+        ok = QPushButton(tr("Сохранить"))
         ok.setObjectName("Primary")
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
@@ -754,7 +758,7 @@ class SettingsDialog(Sheet):
         if problem:
             self.backup.setFocus()
             self.backup.selectAll()
-            show_warning(self, "Папка для копий", problem)
+            show_warning(self, tr("Папка для копий"), problem)
             return
         super().accept()
 
@@ -771,7 +775,7 @@ class SettingsDialog(Sheet):
     def _reset(self):
         self.font.setCurrentFont(QFont("DejaVu Sans"))
         self.size.setValue(15)
-        self.weight.setCurrentText("Обычный")
+        self.weight.setCurrentIndex(max(0, self.weight.findData("Обычный")))
         self.column.setValue(740)
         self.line.setValue(150)
         self.russian.setChecked(False)
@@ -782,15 +786,15 @@ class SettingsDialog(Sheet):
         self.backup.setText(str(C.DATA_DIR / "backups"))
 
     def values(self):
-        QSettings(C.APP_ID, C.APP_ID).setValue("speech_rate", self.speech_rate.currentText())
+        QSettings(C.APP_ID, C.APP_ID).setValue("speech_rate", self.speech_rate.currentData())
         QSettings(C.APP_ID, C.APP_ID).setValue("speech_voice", self.voice.currentData() or "")
-        QSettings(C.APP_ID, C.APP_ID).setValue("dice_sound", self.dice_sound.currentText())
+        QSettings(C.APP_ID, C.APP_ID).setValue("dice_sound", self.dice_sound.currentData())
         weekly = self.weekly.text().strip()
         if weekly != (QSettings(C.APP_ID, C.APP_ID).value("weekly_dir", "") or ""):
             QSettings(C.APP_ID, C.APP_ID).setValue("weekly_last", "")     # новая папка - копия сразу
         QSettings(C.APP_ID, C.APP_ID).setValue("weekly_dir", weekly)
         config = {"FONT_FAMILY": self.font.currentFont().family(),
-                  "FONT_SIZE": self.size.value(), "FONT_WEIGHT": self.weight.currentText(),
+                  "FONT_SIZE": self.size.value(), "FONT_WEIGHT": self.weight.currentData(),
                   "COLUMN_WIDTH": self.column.value(), "LINE_HEIGHT": self.line.value(),
                   "ONLY_RUSSIAN": self.russian.isChecked(), "AUTOSAVE": self.autosave.isChecked(),
                   "FLAT_WINDOWS": self.flat.isChecked(),
@@ -807,7 +811,7 @@ class VersionsDialog(Sheet):
     last_mode = 1
 
     def __init__(self, parent, path, versions, font, current=None):
-        super().__init__(parent, f"Версии · {path.stem}")
+        super().__init__(parent, tr("Версии · {stem}").format(stem=path.stem))
         self.setMinimumSize(900, 580)
         self.versions = []
         self.texts = []
@@ -851,12 +855,12 @@ class VersionsDialog(Sheet):
 
         buttons = QHBoxLayout()
         buttons.addStretch()
-        close = QPushButton("Закрыть")
+        close = QPushButton(tr("Закрыть"))
         close.clicked.connect(self.reject)
-        restore = QPushButton("Вернуть эту версию")
+        restore = QPushButton(tr("Вернуть эту версию"))
         restore.clicked.connect(self._restore)
-        beside = QPushButton("Рядом с текстом")
-        beside.setToolTip("Эта версия - в панели рядом с главой: пиши и сверяйся")
+        beside = QPushButton(tr("Рядом с текстом"))
+        beside.setToolTip(tr("Эта версия - в панели рядом с главой: пиши и сверяйся"))
         beside.clicked.connect(self._beside)
         self.beside_index = None
         buttons.addWidget(close)
@@ -905,12 +909,12 @@ class SnapshotsDialog(Sheet):
     """Точки возврата: вся книга на момент - поставить, вернуться, удалить. (В коде - «снимки».)"""
 
     def __init__(self, owner):
-        super().__init__(owner, "Точки возврата")
+        super().__init__(owner, tr("Точки возврата"))
         self.owner = owner
         self.setMinimumSize(700, 460)
-        hint = QLabel("Точка возврата - вся книга целиком на этот момент: главы, справочник, заметки, доски. "
+        hint = QLabel(tr("Точка возврата - вся книга целиком на этот момент: главы, справочник, заметки, доски. "
                       "Поставь её перед большой правкой, а если не понравится - вернись. История версий глав "
-                      "и статистика при возврате не меняются.")
+                      "и статистика при возврате не меняются."))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         self.content.addWidget(hint)
@@ -918,13 +922,13 @@ class SnapshotsDialog(Sheet):
         self.list.itemDoubleClicked.connect(lambda _item: self._restore())
         self.content.addWidget(self.list, 1)
         row = QHBoxLayout()
-        take = QPushButton("Новая точка")
+        take = QPushButton(tr("Новая точка"))
         take.clicked.connect(self._take)
-        self.remove = QPushButton("Удалить")
+        self.remove = QPushButton(tr("Удалить"))
         self.remove.clicked.connect(self._delete)
-        self.back = QPushButton("Вернуться к точке")
+        self.back = QPushButton(tr("Вернуться к точке"))
         self.back.clicked.connect(self._restore)
-        close = QPushButton("Закрыть")
+        close = QPushButton(tr("Закрыть"))
         close.clicked.connect(self.reject)
         for button in (take, self.remove):
             row.addWidget(button)
@@ -981,24 +985,24 @@ class CoverDialog(Sheet):
     """Обложка категории крупно: поставить свою картинку или убрать."""
 
     def __init__(self, owner, folder):
-        super().__init__(owner, f"Обложка · {folder.name}")
+        super().__init__(owner, tr("Обложка · {name}").format(name=folder.name))
         self.folder = folder
         self.setMinimumSize(420, 520)
         self.picture = QLabel()
         self.picture.setAlignment(Qt.AlignCenter)
         self.picture.setMinimumSize(360, 400)
         self.content.addWidget(self.picture, 1)
-        hint = QLabel("Картинка книги или категории: видна значком в списке слева и становится обложкой, "
-                      "когда собираешь книгу в PDF или EPUB. С паролем шифруется вместе с текстами.")
+        hint = QLabel(tr("Картинка книги или категории: видна значком в списке слева и становится обложкой, "
+                      "когда собираешь книгу в PDF или EPUB. С паролем шифруется вместе с текстами."))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         self.content.addWidget(hint)
         row = QHBoxLayout()
-        choose = QPushButton("Выбрать картинку…")
+        choose = QPushButton(tr("Выбрать картинку…"))
         choose.clicked.connect(self._choose)
-        self.remove = QPushButton("Убрать обложку")
+        self.remove = QPushButton(tr("Убрать обложку"))
         self.remove.clicked.connect(self._remove)
-        close = QPushButton("Закрыть")
+        close = QPushButton(tr("Закрыть"))
         close.clicked.connect(self.accept)
         row.addWidget(choose)
         row.addWidget(self.remove)
@@ -1012,7 +1016,7 @@ class CoverDialog(Sheet):
         picture = cover_pixmap(self.folder) if has_cover(self.folder) else QPixmap()
         if picture.isNull():
             self.picture.setPixmap(QPixmap())
-            self.picture.setText("Обложки пока нет")
+            self.picture.setText(tr("Обложки пока нет"))
         else:
             self.picture.setPixmap(picture.scaled(360, 400, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.remove.setEnabled(not picture.isNull())
@@ -1020,7 +1024,7 @@ class CoverDialog(Sheet):
     def choose_file(self, path):
         from ..books.covers import save_cover
         if not save_cover(self.folder, path):
-            show_warning(self, "Обложка", "Эту картинку не получилось открыть. Подойдут JPG, PNG, WebP, BMP.")
+            show_warning(self, tr("Обложка"), tr("Эту картинку не получилось открыть. Подойдут JPG, PNG, WebP, BMP."))
             return False
         self._show()
         return True

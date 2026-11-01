@@ -6,6 +6,7 @@ from PySide6.QtGui import QTextCursor
 
 from ..core.textutil import (STRESS, markup_range, markup_wrapped, position_map, py_index, smart_yo, toggle_markup,
     toggle_stress, utf16_len)
+from ..core.i18n import tr
 
 
 
@@ -109,7 +110,7 @@ class MarkupMixin:
             position = len(line)
         result = toggle_stress(line, position)
         if result is None:
-            self.toast.show_message("Ударение ставится сразу после гласной: поставь курсор за ней")
+            self.toast.show_message(tr("Ударение ставится сразу после гласной: поставь курсор за ней"))
             self.editor.setFocus()
             return
         new, position = result

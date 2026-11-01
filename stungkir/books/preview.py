@@ -19,6 +19,7 @@ from ..core import config as C
 from ..ui.dialogs import Sheet
 from .export import book_paragraphs, heading_of, image_of, is_scene_break
 from ..core.textutil import markup_runs
+from ..core.i18n import tr
 
 MM = 96 / 25.4                       # экранных точек в миллиметре (вёрстка в «настоящем» размере)
 
@@ -473,7 +474,7 @@ class PreviewDialog(Sheet):
     ◀ страница ▶ или лента."""
 
     def __init__(self, parent, title, text, device="book", following=(), folder=None):
-        super().__init__(parent, f"Как увидит читатель · {title}")
+        super().__init__(parent, tr("Как увидит читатель · {title}").format(title=title))
         self.folder = folder
         self.setMinimumSize(640, 760)
         self.title, self.text = title, text
@@ -507,7 +508,7 @@ class PreviewDialog(Sheet):
         self.paper_box = QComboBox()
         for key in BOOK_PAPERS:
             self.paper_box.addItem(PAPERS[key][0], key)
-        self.paper_box.setToolTip("Бумага книги")
+        self.paper_box.setToolTip(tr("Бумага книги"))
         self.paper_box.currentIndexChanged.connect(self._paper_changed)
         row.addWidget(self.paper_box)
         row.addStretch()
@@ -523,10 +524,10 @@ class PreviewDialog(Sheet):
         self.counter = QLabel("")
         self.counter.setAlignment(Qt.AlignCenter)
         self.counter.setObjectName("Status")
-        self.sound_box = QCheckBox("Шелест страниц")
+        self.sound_box = QCheckBox(tr("Шелест страниц"))
         self.sound_box.setChecked(self._setting("preview_sound", "false") == "true")
         self.sound_box.toggled.connect(lambda on: self._remember("preview_sound", "true" if on else "false"))
-        close = QPushButton("Закрыть")
+        close = QPushButton(tr("Закрыть"))
         close.setDefault(True)
         close.clicked.connect(self.accept)
         for button in (self.back, self.forward):
@@ -656,13 +657,13 @@ class PreviewDialog(Sheet):
             ribbon = self.view.pages
             total = len(ribbon.parts) + len(ribbon.following)
             share = self.view.offset / ribbon.max_offset() if ribbon.max_offset() else 1.0
-            self.counter.setText(f"глава {ribbon.chapter_at(self.view.offset)} из {total} · {round(share * 100)}%")
-            self.counter.setToolTip("Листай вниз колесом или перетаскиванием - следующая глава подгрузится сама")
+            self.counter.setText(tr("глава {n} из {total} · {n2}%").format(n=ribbon.chapter_at(self.view.offset), total=total, n2=round(share * 100)))
+            self.counter.setToolTip(tr("Листай вниз колесом или перетаскиванием - следующая глава подгрузится сама"))
             self.back.setEnabled(self.view.offset > 0)
             self.forward.setEnabled(self.view.offset < ribbon.max_offset())
             return
         pages = self.pages[self.device]
         total = pages.count()
-        self.counter.setText(f"страница {self.number + 1} из {total}")
+        self.counter.setText(tr("страница {n} из {total}").format(n=self.number + 1, total=total))
         self.back.setEnabled(self.number > 0)
         self.forward.setEnabled(self.number < total - 1)

@@ -17,6 +17,7 @@ from . import config as C
 from ..ui.dialogs import Sheet, ask_question
 from .storage import append_to_order, log_error, unique_path
 from .textutil import plural
+from .i18n import tr
 
 DAYS = 30
 META = "meta.json"
@@ -107,11 +108,11 @@ def age_label(when, now=None):
 
 class TrashDialog(Sheet):
     def __init__(self, parent, on_restored):
-        super().__init__(parent, "Корзина")
+        super().__init__(parent, tr("Корзина"))
         self.setMinimumSize(780, 460)
         self.on_restored = on_restored
-        hint = QLabel(f"Удалённое лежит здесь {DAYS} дней, потом исчезает само. Вернулась глава - "
-                      "вернулись и её версии с заметками.")
+        hint = QLabel(tr("Удалённое лежит здесь {DAYS} дней, потом исчезает само. Вернулась глава - вернулись "
+                         "и её версии с заметками.").format(DAYS=DAYS))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         self.content.addWidget(hint)
@@ -121,16 +122,16 @@ class TrashDialog(Sheet):
         from ..ui.widgets import EmptyPicture
         self.empty_picture = EmptyPicture(self.listing)
         row = QHBoxLayout()
-        self.empty = QPushButton("Очистить корзину")
+        self.empty = QPushButton(tr("Очистить корзину"))
         self.empty.clicked.connect(self._empty)
-        self.forget = QPushButton("Удалить насовсем")
+        self.forget = QPushButton(tr("Удалить насовсем"))
         self.forget.clicked.connect(self._forget)
         row.addWidget(self.empty)
         row.addWidget(self.forget)
         row.addStretch()
-        close = QPushButton("Закрыть")
+        close = QPushButton(tr("Закрыть"))
         close.clicked.connect(self.accept)
-        self.back = QPushButton("Вернуть")
+        self.back = QPushButton(tr("Вернуть"))
         self.back.setObjectName("Primary")
         self.back.setDefault(True)
         self.back.clicked.connect(self._restore)
@@ -180,15 +181,15 @@ class TrashDialog(Sheet):
         entry = self._chosen()
         if entry is None:
             return
-        if ask_question(self, "Удалить насовсем", "Удалить насовсем? Вернуть будет нельзя.") != QMessageBox.Yes:
+        if ask_question(self, tr("Удалить насовсем"), tr("Удалить насовсем? Вернуть будет нельзя.")) != QMessageBox.Yes:
             return
         forget(entry)
         self.fill()
 
     def _empty(self):
         count = len(trash_entries())
-        if ask_question(self, "Очистить корзину",
-                        f"Удалить насовсем всё, что в корзине ({count})? Вернуть будет нельзя.") != QMessageBox.Yes:
+        if ask_question(self, tr("Очистить корзину"),
+                        tr("Удалить насовсем всё, что в корзине ({count})? Вернуть будет нельзя.").format(count=count)) != QMessageBox.Yes:
             return
         for entry, *_rest in trash_entries():
             forget(entry)

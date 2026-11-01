@@ -21,6 +21,7 @@ from .windows import load_config_raw
 from ..story.plan import StatusDelegate
 from .widgets import FileTree, FoxWheel, GoalStrip, SoftButton
 from ..books.sample import has_sample
+from ..core.i18n import tr
 
 
 
@@ -73,38 +74,38 @@ class PanelsMixin:
         layout = QVBoxLayout(self._scrolling(panel))
         layout.setContentsMargins(10, 12, 10, 12)
         layout.setSpacing(1)
-        self.create_button = self._button("Создать  ▸", self.show_create_menu, layout,
-                                          "Главу, таблицу, доску или категорию", "create")
+        self.create_button = self._button(tr("Создать  ▸"), self.show_create_menu, layout,
+                                          tr("Главу, таблицу, доску или категорию"), "create")
         for text, callback, tip, icon in [
-            ("Сохранить", self.save, "Ctrl+S", "save"),
-            ("Поиск по всем файлам", self.show_global_search, "Ctrl+Shift+F", "search"),
-            ("Пометки", self.show_markers, "Всё, что в [скобках], по всем главам", "marker"),
-            ("Персонажи", self.show_characters, "Сколько раз встречается каждое имя", "people"),
-            ("Версии файла", self.show_versions, "Прошлые сохранения этой главы", "versions"),
-            ("Сравнить с версией", lambda: self.compare_with_version(), "Прошлая версия рядом с текстом, "
-             "ушедшее подсвечено" + self.hk("compare"), "split"),
-            ("План книги", lambda: self.show_plan(), "Статусы глав, о чём они и сколько слов" + self.hk("plan"),
+            (tr("Сохранить"), self.save, "Ctrl+S", "save"),
+            (tr("Поиск по всем файлам"), self.show_global_search, "Ctrl+Shift+F", "search"),
+            (tr("Пометки"), self.show_markers, tr("Всё, что в [скобках], по всем главам"), "marker"),
+            (tr("Персонажи"), self.show_characters, tr("Сколько раз встречается каждое имя"), "people"),
+            (tr("Версии файла"), self.show_versions, tr("Прошлые сохранения этой главы"), "versions"),
+            (tr("Сравнить с версией"), lambda: self.compare_with_version(), tr("Прошлая версия рядом с текстом, "
+             "ушедшее подсвечено") + self.hk("compare"), "split"),
+            (tr("План книги"), lambda: self.show_plan(), tr("Статусы глав, о чём они и сколько слов") + self.hk("plan"),
              "check"),
-            ("Собрать книгу", self.compile_book, "В PDF, Word, EPUB или один текстовый файл", "book"),
+            (tr("Собрать книгу"), self.compile_book, tr("В PDF, Word, EPUB или один текстовый файл"), "book"),
         ]:
             self._button(text, callback, layout, tip, icon)
         layout.addSpacing(6)
-        self.focus_button = self._button("Режим фокуса" + self.hk("focus"),
+        self.focus_button = self._button(tr("Режим фокуса") + self.hk("focus"),
                                          lambda: self.set_focus_mode(not self.highlighter.focus),
-                                         layout, "Яркий только абзац, где пишешь", "focus")
-        self.typewriter_button = self._button("Печатная машинка" + self.hk("typewriter"),
+                                         layout, tr("Яркий только абзац, где пишешь"), "focus")
+        self.typewriter_button = self._button(tr("Печатная машинка") + self.hk("typewriter"),
                                               lambda: self.set_typewriter(not self.editor.typewriter),
-                                              layout, "Строка всегда по центру экрана", "typewriter")
-        self.forward_button = self._button("Только вперёд" + self.hk("forward"),
+                                              layout, tr("Строка всегда по центру экрана"), "typewriter")
+        self.forward_button = self._button(tr("Только вперёд") + self.hk("forward"),
                                            lambda: self.set_forward_only(not self.editor.forward_only),
-                                           layout, "Нельзя стирать: только писать дальше", "forward")
+                                           layout, tr("Нельзя стирать: только писать дальше"), "forward")
         for button in (self.focus_button, self.typewriter_button, self.forward_button):
             button.setCheckable(True)
-        self.more_button = self._button("Ещё  ▸", self.show_more_menu, layout,
-                                        "Настройки, статистика, цели, пароль…", "more")
+        self.more_button = self._button(tr("Ещё  ▸"), self.show_more_menu, layout,
+                                        tr("Настройки, статистика, цели, пароль…"), "more")
         self._build_tools(layout)                       # знаки, рандомайзеры и таймер - под рукой, выше глав
         layout.addSpacing(6)
-        self._title("Категории", layout)
+        self._title(tr("Категории"), layout)
         self.tree = FileTree(self.on_drop)
         self.tree.setItemDelegate(StatusDelegate(self.tree))      # точка статуса главы справа
         self.tree.setHeaderHidden(True)
@@ -134,41 +135,41 @@ class PanelsMixin:
     def build_more_menu(self):
         """«Ещё» по разделам: каждый раздел - подменю, чтобы всё влезало и в маленькое окно."""
         menu = rounded_menu(self)
-        files = self._submenu(menu, "Файлы и импорт")
-        files.addAction("Добавить файлы (текст, Word, книги, таблицы)…", self.import_files)
-        files.addAction("Импорт из Scrivener…", self.import_scrivener)
-        files.addAction("Заготовки для мира…", lambda: self.make_world_kit())
-        files.addAction("Точки возврата…", self.show_snapshots)
-        files.addAction("Корзина…", self.show_trash)
+        files = self._submenu(menu, tr("Файлы и импорт"))
+        files.addAction(tr("Добавить файлы (текст, Word, книги, таблицы)…"), self.import_files)
+        files.addAction(tr("Импорт из Scrivener…"), self.import_scrivener)
+        files.addAction(tr("Заготовки для мира…"), lambda: self.make_world_kit())
+        files.addAction(tr("Точки возврата…"), self.show_snapshots)
+        files.addAction(tr("Корзина…"), self.show_trash)
         if has_sample():
-            files.addAction("Убрать пример", self.drop_sample)
+            files.addAction(tr("Убрать пример"), self.drop_sample)
         else:
-            files.addAction("Добавить пример-проект", self.add_sample)
+            files.addAction(tr("Добавить пример-проект"), self.add_sample)
         files.addSeparator()
-        files.addAction("Поиск в главе" + self.hk("find"), self.show_search)
-        files.addAction("Найти и заменить во всех главах…" + self.hk("replace"), self.show_replace_all)
-        undo = files.addAction("Отменить последнюю замену во всех главах", self.undo_replace)
+        files.addAction(tr("Поиск в главе") + self.hk("find"), self.show_search)
+        files.addAction(tr("Найти и заменить во всех главах…") + self.hk("replace"), self.show_replace_all)
+        undo = files.addAction(tr("Отменить последнюю замену во всех главах"), self.undo_replace)
         undo.setEnabled(bool(getattr(self, "last_replace", None)))
-        files.addAction("Копировать всё" + self.hk("copy_all"), self.copy_all)
+        files.addAction(tr("Копировать всё") + self.hk("copy_all"), self.copy_all)
 
-        look = self._submenu(menu, "Вид, тема и цвета")
+        look = self._submenu(menu, tr("Вид, тема и цвета"))
         config = load_config_raw()
         current = C.theme_name(config.get("theme")) or C.DEFAULT_THEME
-        themes = self._submenu(look, f"Тема: {current}")       # тем много - отдельным списком
+        themes = self._submenu(look, tr("Тема: {current}").format(current=current))       # тем много - отдельным списком
         for name in C.all_themes(config):
             self._toggle(themes, name, lambda _c=False, n=name: self.choose_theme(n), name == current)
         if config.get("day_theme"):
-            look.addAction(f"Днём: {config['day_theme']}").setEnabled(False)
-        look.addAction("Настроить цвета и дневную тему…", self.show_colors)
+            look.addAction(tr("Днём: {n}").format(n=config['day_theme'])).setEnabled(False)
+        look.addAction(tr("Настроить цвета и дневную тему…"), self.show_colors)
         look.addSeparator()
-        self._toggle(look, "Выделять знаки препинания", self.toggle_punctuation, self.highlighter.punctuation)
-        self._toggle(look, "Подчёркивать имена и термины мира", self.toggle_lore_underline,
+        self._toggle(look, tr("Выделять знаки препинания"), self.toggle_punctuation, self.highlighter.punctuation)
+        self._toggle(look, tr("Подчёркивать имена и термины мира"), self.toggle_lore_underline,
                      self.highlighter.lore_underline)
-        screen = self._submenu(look, "На экране")       # что показывать вокруг текста
+        screen = self._submenu(look, tr("На экране"))       # что показывать вокруг текста
         for key, label in self.SCREEN_ITEMS:
             self._toggle(screen, label, lambda _c=False, k=key: self.toggle_screen(k), self.screen_shown(key))
-        self._toggle(screen, "Заметки на полях", self.toggle_margin_notes, self.notes_margin.shown)
-        self._toggle(screen, "Номера строк" + self.hk("lines"), self.toggle_line_numbers, self.line_numbers.shown)
+        self._toggle(screen, tr("Заметки на полях"), self.toggle_margin_notes, self.notes_margin.shown)
+        self._toggle(screen, tr("Номера строк") + self.hk("lines"), self.toggle_line_numbers, self.line_numbers.shown)
         screen.addSeparator()
         for what, title in (("clock", "Часы"), ("bar", "Полоски и строка"), ("align", "Полоски и строка")):
             current = dict(self.PLACES[what])[self.place(what)]
@@ -177,77 +178,77 @@ class PanelsMixin:
                 self._toggle(places, label, lambda _c=False, w=what, v=value: self.set_place(w, v),
                              self.place(what) == value)
         screen.addSeparator()
-        screen.addAction("Убрать всё - только текст", lambda: self.set_screen_all(False))
-        screen.addAction("Вернуть всё", lambda: self.set_screen_all(True))
-        bars = self._submenu(look, f"Полоски цели: {GoalStrip.STYLES[self.goal_strip.style_name].lower()}")
+        screen.addAction(tr("Убрать всё - только текст"), lambda: self.set_screen_all(False))
+        screen.addAction(tr("Вернуть всё"), lambda: self.set_screen_all(True))
+        bars = self._submenu(look, tr("Полоски цели: {n}").format(n=GoalStrip.STYLES[self.goal_strip.style_name].lower()))
         for name, label in GoalStrip.STYLES.items():
             self._toggle(bars, label, lambda _c=False, n=name: self.set_goal_style(n),
                          self.goal_strip.style_name == name)
-        self._toggle(look, "Без отвлечений" + self.hk("zen"), lambda: self.set_zen(not self.zen), self.zen)
-        texture = self._submenu(look, f"Фон под текстом: {TEXTURES.get(C.TEXTURE, 'ровный')}")
+        self._toggle(look, tr("Без отвлечений") + self.hk("zen"), lambda: self.set_zen(not self.zen), self.zen)
+        texture = self._submenu(look, tr("Фон под текстом: {n}").format(n=TEXTURES.get(C.TEXTURE, 'ровный')))
         for kind, label in TEXTURES.items():
             self._toggle(texture, label.capitalize(), lambda _c=False, k=kind: self.set_texture(k), C.TEXTURE == kind)
-        texture.addAction("Выбрать свою картинку…", lambda: self.choose_backdrop())
+        texture.addAction(tr("Выбрать свою картинку…"), lambda: self.choose_backdrop())
         if C.TEXTURE == "picture":
             dim = int(self.settings.value("backdrop_dim", 55) or 55)
-            dims = self._submenu(texture, f"Затемнение картинки: {self.BACKDROP_DIMS.get(dim, dim)}")
+            dims = self._submenu(texture, tr("Затемнение картинки: {n}").format(n=self.BACKDROP_DIMS.get(dim, dim)))
             for value, label in self.BACKDROP_DIMS.items():
                 self._toggle(dims, label.capitalize(), lambda _c=False, v=value: self.set_backdrop_dim(v), dim == value)
-        look.addAction(("Закрыть панель рядом" if self.side.isVisible() else "Панель рядом") + self.hk("side"),
+        look.addAction((tr("Закрыть панель рядом") if self.side.isVisible() else tr("Панель рядом")) + self.hk("side"),
                        self.toggle_side)
-        look.addAction("Во весь экран" + self.hk("fullscreen"), self.toggle_fullscreen)
+        look.addAction(tr("Во весь экран") + self.hk("fullscreen"), self.toggle_fullscreen)
         from ..fun.sounds import VOLUMES
         typing = self.settings.value("typing_sound", "Без звука")
-        sound = self._submenu(look, "Звук печатной машинки: " + ("выключен" if typing == "Без звука" else typing.lower()))
+        sound = self._submenu(look, tr("Звук печатной машинки: ") + (tr("выключен") if typing == "Без звука" else typing.lower()))
         for name in VOLUMES:
             self._toggle(sound, name, lambda _c=False, n=name: self.set_typing_sound(n), typing == name)
         eye = int(self.settings.value("eye_break", 20) or 0)
-        breaks = self._submenu(look, "Перерыв для глаз: " + (f"раз в {eye} мин" if eye else "выключен"))
-        for minutes, label in ((20, "Каждые 20 минут"), (30, "Каждые 30 минут"), (45, "Каждые 45 минут"),
-                               (60, "Каждый час"), (0, "Выключен")):
+        breaks = self._submenu(look, tr("Перерыв для глаз: ") + (tr("раз в {eye} мин").format(eye=eye) if eye else tr("выключен")))
+        for minutes, label in ((20, tr("Каждые 20 минут")), (30, tr("Каждые 30 минут")), (45, tr("Каждые 45 минут")),
+                               (60, tr("Каждый час")), (0, tr("Выключен"))):
             self._toggle(breaks, label, lambda _c=False, m=minutes: self.set_eye_break(m), eye == minutes)
-        night = self._submenu(look, "Тёплый фильтр вечером")
-        for mode, label in (("auto", f"Авто, с {C.NIGHT_FROM}:00 до {C.NIGHT_TO}:00"),
-                            ("on", "Всегда"), ("off", "Выключен")):
+        night = self._submenu(look, tr("Тёплый фильтр вечером"))
+        for mode, label in (("auto", tr("Авто, с {NIGHT_FROM}:00 до {NIGHT_TO}:00").format(NIGHT_FROM=C.NIGHT_FROM, NIGHT_TO=C.NIGHT_TO)),
+                            ("on", tr("Всегда")), ("off", tr("Выключен"))):
             self._toggle(night, label, lambda _c=False, m=mode: self.set_night_mode(m), self.night_mode == mode)
 
-        goals = self._submenu(menu, "Цели и статистика")
-        goals.addAction("Статистика", self.show_stats)
+        goals = self._submenu(menu, tr("Цели и статистика"))
+        goals.addAction(tr("Статистика"), self.show_stats)
         goal = f" (сейчас {self.goal})" if self.goal else " (выключена)"
-        goals.addAction("Цель на день" + goal + "…", self.set_goal)
+        goals.addAction(tr("Цель на день") + goal + "…", self.set_goal)
         chapter = self.chapter_goal()
-        goals.addAction("Цель этой главы" + (f" (сейчас {chapter})" if chapter else "") + "…",
+        goals.addAction(tr("Цель этой главы") + (tr(" (сейчас {chapter})").format(chapter=chapter) if chapter else "") + "…",
                         self.set_chapter_goal)
-        goals.addAction("Дедлайн книги…", self.show_deadline)
+        goals.addAction(tr("Дедлайн книги…"), self.show_deadline)
         from .widgets import STREAK_VOICES
         voice = self.settings.value("streak_voice", "cheer")
-        talk = self._submenu(goals, f"Огонёк серии: {STREAK_VOICES.get(voice, 'подбадривает').lower()}")
+        talk = self._submenu(goals, tr("Огонёк серии: {n}").format(n=STREAK_VOICES.get(voice, 'подбадривает').lower()))
         for key, label in STREAK_VOICES.items():
             self._toggle(talk, label, lambda _c=False, k=key: self.set_streak_voice(k), voice == key)
-        goals.addAction("Кто в какой главе", self.show_presence)
-        goals.addAction("Ритм главы", self.show_rhythm)
-        goals.addAction("Реплики персонажей", self.show_reply_stats)
-        goals.addAction("Кто говорит: проверить реплики", self.show_speaker_check)
-        goals.addAction("Читать вслух" + self.hk("read"), self.toggle_reading)
-        goals.addAction("Проверить написание имён", self.check_term_spelling)
-        goals.addAction("Мои штампы…", self.show_crutches)
-        goals.addAction("Найти мои штампы во всех главах", self.show_crutch_places)
+        goals.addAction(tr("Кто в какой главе"), self.show_presence)
+        goals.addAction(tr("Ритм главы"), self.show_rhythm)
+        goals.addAction(tr("Реплики персонажей"), self.show_reply_stats)
+        goals.addAction(tr("Кто говорит: проверить реплики"), self.show_speaker_check)
+        goals.addAction(tr("Читать вслух") + self.hk("read"), self.toggle_reading)
+        goals.addAction(tr("Проверить написание имён"), self.check_term_spelling)
+        goals.addAction(tr("Мои штампы…"), self.show_crutches)
+        goals.addAction(tr("Найти мои штампы во всех главах"), self.show_crutch_places)
 
-        safety = self._submenu(menu, "Пароль и копии")
+        safety = self._submenu(menu, tr("Пароль и копии"))
         if lock_path().exists():
-            safety.addAction("Сменить пароль…", self.change_password)
-            safety.addAction("Новый код восстановления…", self.new_recovery_code)
-            safety.addAction("Снять пароль…", self.remove_password)
+            safety.addAction(tr("Сменить пароль…"), self.change_password)
+            safety.addAction(tr("Новый код восстановления…"), self.new_recovery_code)
+            safety.addAction(tr("Снять пароль…"), self.remove_password)
         else:
-            safety.addAction("Поставить пароль…", self.set_password)
-        safety.addAction("Точки возврата…", self.show_snapshots)
+            safety.addAction(tr("Поставить пароль…"), self.set_password)
+        safety.addAction(tr("Точки возврата…"), self.show_snapshots)
 
         menu.addSeparator()
-        menu.addAction("Настройки…" + self.hk("settings"), self.show_settings)
-        menu.addAction("Горячие клавиши - посмотреть и поменять…" + self.hk("help"), self.show_hotkeys)
-        menu.addAction("Как увидит читатель (книга, телефон, читалка)" + self.hk("preview"), lambda: self.show_preview())
-        menu.addAction("Антистресс" + self.hk("antistress"), self.show_antistress)
-        menu.addAction("О программе", self.show_about)
+        menu.addAction(tr("Настройки…") + self.hk("settings"), self.show_settings)
+        menu.addAction(tr("Горячие клавиши - посмотреть и поменять…") + self.hk("help"), self.show_hotkeys)
+        menu.addAction(tr("Как увидит читатель (книга, телефон, читалка)") + self.hk("preview"), lambda: self.show_preview())
+        menu.addAction(tr("Антистресс") + self.hk("antistress"), self.show_antistress)
+        menu.addAction(tr("О программе"), self.show_about)
         return menu
 
     def show_intro(self):
@@ -256,7 +257,7 @@ class PanelsMixin:
         self.hover_timer.stop()
         steps = [
             (0, lambda: (self.left.set_open(True),
-                         self.toast.show_message("Слева: файлы, меню, знаки и таймер. Подведи мышь к левому краю",
+                         self.toast.show_message(tr("Слева: файлы, меню, знаки и таймер. Подведи мышь к левому краю"),
                                                  3200))),
             (3600, lambda: (self.left.set_open(False), self.hover_timer.start())),
         ]
@@ -300,13 +301,13 @@ class PanelsMixin:
     def _build_tools(self, layout):
         """Середина левой панели: знаки (всплывают по кнопке), таймер с лаской и рандомайзеры.
         Правой панели больше нет: кубики и монетка живут в «Рандомайзерах», там они лучше."""
-        self.symbols_button = self._button("Знаки  ▸", self.show_symbols, layout,
-                                           "Тире, кавычки, ударение, разметка", "edit")
-        self._button("Рандомайзеры…", self.show_random, layout,
-                     "Кубики и монетка на столе, число, вариант из списка, персонаж или термин мира, "
-                     "рулетка с вызовами", "dice")
+        self.symbols_button = self._button(tr("Знаки  ▸"), self.show_symbols, layout,
+                                           tr("Тире, кавычки, ударение, разметка"), "edit")
+        self._button(tr("Рандомайзеры…"), self.show_random, layout,
+                     tr("Кубики и монетка на столе, число, вариант из списка, персонаж или термин мира, "
+                     "рулетка с вызовами"), "dice")
         layout.addSpacing(6)
-        self._title("Таймер", layout)
+        self._title(tr("Таймер"), layout)
         row = QHBoxLayout()
         row.setSpacing(6)
         self.fox_wheel = FoxWheel()
@@ -316,19 +317,19 @@ class PanelsMixin:
         column.setSpacing(6)
         self.timer_minutes = QSpinBox()
         self.timer_minutes.setRange(1, 600)
-        self.timer_minutes.setSuffix(" мин")
+        self.timer_minutes.setSuffix(tr(" мин"))
         self.timer_minutes.setAlignment(Qt.AlignCenter)
         self.timer_minutes.setValue(int(self.settings.value("timer_minutes", C.TIMER_MINUTES)))
         column.addWidget(self.timer_minutes)
-        self.timer_button = QPushButton("Старт")
+        self.timer_button = QPushButton(tr("Старт"))
         self.timer_button.setObjectName("Primary")          # главное действие - цветом «Важное»
         self.timer_button.setCursor(Qt.PointingHandCursor)
         self.timer_button.clicked.connect(self.toggle_timer)
         column.addWidget(self.timer_button)
         row.addLayout(column, 2)
         layout.addLayout(row)
-        self.timer_close = QCheckBox("Сохранить и выйти")
-        self.timer_close.setToolTip("Когда время выйдет, StungKir всё сохранит и закроется сам")
+        self.timer_close = QCheckBox(tr("Сохранить и выйти"))
+        self.timer_close.setToolTip(tr("Когда время выйдет, StungKir всё сохранит и закроется сам"))
         self.timer_close.setChecked(self.settings.value("timer_close", "true") == "true")
         layout.addWidget(self.timer_close)
 
@@ -340,7 +341,7 @@ class PanelsMixin:
         from PySide6.QtWidgets import QFileDialog
         from ..books.export import IMAGE_TYPES
         if self.path is None or self.view is not None:
-            self.toast.show_message("Картинку можно вставить в главу - открой её")
+            self.toast.show_message(tr("Картинку можно вставить в главу - открой её"))
             return None
         if source is None:
             source, _ = QFileDialog.getOpenFileName(self, "Картинка в текст", str(Path.home()),
@@ -349,7 +350,7 @@ class PanelsMixin:
                 return None
         source = Path(source)
         if source.suffix.lower() not in IMAGE_TYPES or not source.is_file():
-            self.toast.show_message("Это не картинка: подойдут PNG, JPG, GIF, WebP")
+            self.toast.show_message(tr("Это не картинка: подойдут PNG, JPG, GIF, WebP"))
             return None
         folder = self.path.parent
         if source.parent in (folder, folder / "картинки"):
@@ -373,7 +374,7 @@ class PanelsMixin:
         cursor.insertText(before + line + after)
         self.editor.setTextCursor(cursor)
         self.editor.setFocus()
-        self.toast.show_message("Картинка вставлена: в книге и превью она будет на своём месте", 2500)
+        self.toast.show_message(tr("Картинка вставлена: в книге и превью она будет на своём месте"), 2500)
         return name
 
     def show_symbols(self):
@@ -393,9 +394,9 @@ class PanelsMixin:
                 button.setToolTip(tip)
             button.clicked.connect(lambda checked=False, v=value: (menu.close(), self.insert_symbol(v)))
             grid.addWidget(button, i // 4, i % 4)
-        picture = QPushButton("Картинка в текст…")
+        picture = QPushButton(tr("Картинка в текст…"))
         picture.setCursor(Qt.PointingHandCursor)
-        picture.setToolTip("Строка [картинка: файл] - в книге, «Как увидит читатель» и на сайте будет картинка")
+        picture.setToolTip(tr("Строка [картинка: файл] - в книге, «Как увидит читатель» и на сайте будет картинка"))
         picture.clicked.connect(lambda checked=False: (menu.close(), self.insert_picture()))
         grid.addWidget(picture, (len(C.SYMBOLS) + 3) // 4, 0, 1, 4)
         action = QWidgetAction(menu)
@@ -412,7 +413,7 @@ class PanelsMixin:
         row.setContentsMargins(14, 4, 6, 4)
         row.setSpacing(2)
         self.find_edit = QLineEdit()
-        self.find_edit.setPlaceholderText("Поиск…")
+        self.find_edit.setPlaceholderText(tr("Поиск…"))
         self.find_edit.textChanged.connect(self._on_find_text)
         self.find_edit.returnPressed.connect(self.find_next)
         row.addWidget(self.find_edit, 1)
@@ -440,7 +441,7 @@ class PanelsMixin:
         layout.setContentsMargins(16, 14, 16, 14)
         layout.setSpacing(8)
         top = QHBoxLayout()
-        self.global_title = QLabel("Поиск по всем файлам")
+        self.global_title = QLabel(tr("Поиск по всем файлам"))
         self.global_title.setObjectName("Title")
         top.addWidget(self.global_title)
         top.addStretch()
@@ -451,13 +452,13 @@ class PanelsMixin:
         top.addWidget(close_button)
         layout.addLayout(top)
         self.global_edit = QLineEdit()
-        self.global_edit.setPlaceholderText("Слово или фраза…")
+        self.global_edit.setPlaceholderText(tr("Слово или фраза…"))
         self.global_edit.textChanged.connect(lambda: self.global_timer.start())
         self.global_edit.returnPressed.connect(self.run_global_search)
         search_row = QHBoxLayout()
         search_row.addWidget(self.global_edit, 1)
-        self.replace_button = QPushButton("Заменить…")
-        self.replace_button.setToolTip("Найти и заменить во всех главах" + self.hk("replace"))
+        self.replace_button = QPushButton(tr("Заменить…"))
+        self.replace_button.setToolTip(tr("Найти и заменить во всех главах") + self.hk("replace"))
         self.replace_button.clicked.connect(self.show_replace_all)
         search_row.addWidget(self.replace_button)
         layout.addLayout(search_row)

@@ -13,6 +13,7 @@ from ..core import config as C
 from ..ui.style import rounded_menu
 from ..core.textutil import has_foreign, parse_table, table_to_text
 from ..ui.dialogs import ask_question, ask_text
+from ..core.i18n import tr
 
 
 class CellDelegate(QStyledItemDelegate):
@@ -53,14 +54,14 @@ class TableView(QWidget):
         row = QHBoxLayout(bar)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(4)
-        for text, callback in [("+ строка", self.add_row), ("+ столбец", self.add_column),
-                               ("− строка", self.remove_row), ("− столбец", self.remove_column)]:
+        for text, callback in [(tr("+ строка"), self.add_row), (tr("+ столбец"), self.add_column),
+                               (tr("− строка"), self.remove_row), (tr("− столбец"), self.remove_column)]:
             button = QPushButton(text)
             button.setCursor(Qt.PointingHandCursor)
             button.clicked.connect(lambda checked=False, c=callback: c())
             row.addWidget(button)
         row.addStretch()
-        hint = QLabel("двойной клик по заголовку - переименовать, правый клик - ещё")
+        hint = QLabel(tr("двойной клик по заголовку - переименовать, правый клик - ещё"))
         hint.setObjectName("Status")
         row.addWidget(hint)
         layout.addWidget(bar)
@@ -156,7 +157,7 @@ class TableView(QWidget):
             self._changed()
 
     def add_column(self, at=None):
-        name, ok = ask_text(self, "Новый столбец", "Название столбца:")
+        name, ok = ask_text(self, tr("Новый столбец"), tr("Название столбца:"))
         if not ok:
             return
         at = self.table.columnCount() if at is None else at
@@ -171,15 +172,15 @@ class TableView(QWidget):
         if at < 0 or self.table.columnCount() <= 1:
             return
         title = self.headers()[at] or "без названия"
-        answer = ask_question(self, "Удалить столбец",
-                                      f"Удалить столбец «{title}» со всеми ячейками?")
+        answer = ask_question(self, tr("Удалить столбец"),
+                                      tr("Удалить столбец «{title}» со всеми ячейками?").format(title=title))
         if answer == QMessageBox.Yes:
             self.table.removeColumn(at)
             self._changed()
 
     def rename_column(self, column):
         old = self.headers()[column]
-        name, ok = ask_text(self, "Столбец", "Название столбца:", text=old)
+        name, ok = ask_text(self, tr("Столбец"), tr("Название столбца:"), text=old)
         if ok:
             self.table.setHorizontalHeaderItem(column, QTableWidgetItem(name.strip()))
             self._changed()
@@ -201,24 +202,24 @@ class TableView(QWidget):
         if column < 0:
             return
         menu = rounded_menu(self)
-        menu.addAction("Переименовать", lambda: self.rename_column(column))
-        menu.addAction("Сортировать А → Я", lambda: self.sort(column, False))
-        menu.addAction("Сортировать Я → А", lambda: self.sort(column, True))
+        menu.addAction(tr("Переименовать"), lambda: self.rename_column(column))
+        menu.addAction(tr("Сортировать А → Я"), lambda: self.sort(column, False))
+        menu.addAction(tr("Сортировать Я → А"), lambda: self.sort(column, True))
         menu.addSeparator()
-        menu.addAction("Вставить столбец слева", lambda: self.add_column(column))
-        menu.addAction("Вставить столбец справа", lambda: self.add_column(column + 1))
-        menu.addAction("Удалить столбец", lambda: self.remove_column(column))
+        menu.addAction(tr("Вставить столбец слева"), lambda: self.add_column(column))
+        menu.addAction(tr("Вставить столбец справа"), lambda: self.add_column(column + 1))
+        menu.addAction(tr("Удалить столбец"), lambda: self.remove_column(column))
         menu.exec(self.table.horizontalHeader().mapToGlobal(pos))
 
     def _cell_menu(self, pos):
         row = self.table.rowAt(pos.y())
         menu = rounded_menu(self)
         if row >= 0:
-            menu.addAction("Вставить строку выше", lambda: self.add_row(row))
-            menu.addAction("Вставить строку ниже", lambda: self.add_row(row + 1))
-            menu.addAction("Удалить строку", lambda: self.remove_row(row))
+            menu.addAction(tr("Вставить строку выше"), lambda: self.add_row(row))
+            menu.addAction(tr("Вставить строку ниже"), lambda: self.add_row(row + 1))
+            menu.addAction(tr("Удалить строку"), lambda: self.remove_row(row))
         else:
-            menu.addAction("Добавить строку", self.add_row)
+            menu.addAction(tr("Добавить строку"), self.add_row)
         menu.exec(self.table.viewport().mapToGlobal(pos))
 
     # ---- поиск и вставка знаков ----

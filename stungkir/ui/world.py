@@ -19,6 +19,7 @@ from ..core.textutil import has_foreign, is_board, is_table, is_timeline, name_k
 from ..core.storage import LockedFile, files_in, notes_path, read_text, report_problem, save_names, save_text
 from ..world.lore import Lore, LoreTerm, birth_year, lore_note, lore_terms_from_table, lore_tooltip, save_lore_config
 from .dialogs import NoteDialog, ask_text, show_warning
+from ..core.i18n import tr
 
 
 class WorldMixin:
@@ -71,7 +72,7 @@ class WorldMixin:
         if self.view is not None:
             return
         if self.path is None:
-            self.toast.show_message("Сначала сохрани главу: заметки хранятся рядом с ней")
+            self.toast.show_message(tr("Сначала сохрани главу: заметки хранятся рядом с ней"))
             return
         index = self.notes_margin.index_for(block)
         if index is not None:
@@ -195,7 +196,7 @@ class WorldMixin:
         if term is None:
             return False
         if term.path is None:
-            self.toast.show_message(f"У «{term.name}» пока нет заметки в справочнике")
+            self.toast.show_message(tr("У «{name}» пока нет заметки в справочнике").format(name=term.name))
             return True
         QTimer.singleShot(0, self, lambda: self.open_lore_term(term))
         return True
@@ -229,14 +230,14 @@ class WorldMixin:
         """«Сравнить с версией»: прошлое сохранение главы - в панели рядом с текстом (по умолчанию
         слева), ушедшее подсвечено; ◀ ▶ - листать версии. Писать можно дальше, сравнение обновляется."""
         if self.path is None or self.view is not None:
-            self.toast.show_message("Сравнивать можно главу: открой её")
+            self.toast.show_message(tr("Сравнивать можно главу: открой её"))
             return
         from ..core.storage import list_versions
         if self.is_modified():
             self.save(auto=True)
         versions = list_versions(self.path)
         if not versions:
-            self.toast.show_message("Версий пока нет: они появляются при сохранении", 3000)
+            self.toast.show_message(tr("Версий пока нет: они появляются при сохранении"), 3000)
             if hasattr(self, "picture_pop"):
                 self.picture_pop.play("empty-versions", 3000, width=260)
             return
@@ -298,7 +299,7 @@ class WorldMixin:
                 if f != self.path:
                     self.open_beside(f)
                     return
-        self.toast.show_message("Рядом пока нечего открыть: нужен ещё хотя бы один файл")
+        self.toast.show_message(tr("Рядом пока нечего открыть: нужен ещё хотя бы один файл"))
 
     def open_from_side(self, path):
         """«Открыть здесь»: файл из панели идёт в основное окно, а текущий - в панель."""
@@ -326,9 +327,9 @@ class WorldMixin:
         """Ищет по всем файлам имена и названия, написанные не так, как в справочнике."""
         self.rebuild_lore()
         if not self.lore.terms:
-            show_warning(self, "Написание имён",
-                         "Пока не с чем сравнивать. Добавь имена в «Персонажи» или сделай категорию "
-                         "справочником мира: правый клик по ней в списке слева.")
+            show_warning(self, tr("Написание имён"),
+                         tr("Пока не с чем сравнивать. Добавь имена в «Персонажи» или сделай категорию "
+                         "справочником мира: правый клик по ней в списке слева."))
             return
         texts = []
         for folder in self.categories():
@@ -344,7 +345,7 @@ class WorldMixin:
         self.global_results.setFocus()
         if not self.variant_terms:
             self.global_results.clear()
-            self.global_count.setText("Всё сходится: каждое имя везде написано одинаково")
+            self.global_count.setText(tr("Всё сходится: каждое имя везде написано одинаково"))
             return
         words = sorted(self.variant_terms, key=len, reverse=True)
         self._fill_results(re.compile(r"(?<![А-Яа-яЁё\u0301])(?:" + "|".join(map(re.escape, words))
@@ -359,7 +360,7 @@ class WorldMixin:
             return
         word = item.data(Qt.UserRole)[3]
         menu = rounded_menu(self)
-        menu.addAction(f"«{word}» - так и задумано", lambda: self._ignore_variant(word))
+        menu.addAction(tr("«{word}» - так и задумано").format(word=word), lambda: self._ignore_variant(word))
         menu.exec(self.global_results.viewport().mapToGlobal(pos))
 
     def _ignore_variant(self, word):
@@ -377,7 +378,7 @@ class WorldMixin:
         layout.setContentsMargins(16, 14, 16, 14)
         layout.setSpacing(8)
         top = QHBoxLayout()
-        title = QLabel("Персонажи и имена")
+        title = QLabel(tr("Персонажи и имена"))
         title.setObjectName("Title")
         top.addWidget(title)
         top.addStretch()
@@ -389,10 +390,10 @@ class WorldMixin:
         layout.addLayout(top)
         row = QHBoxLayout()
         self.name_edit = QLineEdit()
-        self.name_edit.setPlaceholderText("Добавить имя, например Ольга")
+        self.name_edit.setPlaceholderText(tr("Добавить имя, например Ольга"))
         self.name_edit.returnPressed.connect(self._add_name_from_edit)
         row.addWidget(self.name_edit, 1)
-        add = QPushButton("Добавить")
+        add = QPushButton(tr("Добавить"))
         add.setCursor(Qt.PointingHandCursor)
         add.clicked.connect(self._add_name_from_edit)
         row.addWidget(add)
@@ -406,7 +407,7 @@ class WorldMixin:
         self.names_list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.names_list.customContextMenuRequested.connect(self._names_menu)
         layout.addWidget(self.names_list, 1)
-        check = QPushButton("Проверить, не написано ли где-то имя иначе")
+        check = QPushButton(tr("Проверить, не написано ли где-то имя иначе"))
         check.setCursor(Qt.PointingHandCursor)
         check.clicked.connect(lambda: (self.hide_characters(), self.check_term_spelling()))
         layout.addWidget(check)
@@ -436,9 +437,9 @@ class WorldMixin:
         word = word.strip().replace("\u0301", "")
         if word.isupper() and len(word) > 1:
             word = word[0] + word[1:].lower()       # ТЕРВЕНА -> Тервена
-        name, ok = ask_text(self, "Новый персонаж",
-                            "Как записать имя? Лучше в начальной форме: «Кира», а не «Киры» - "
-                            "остальные падежи найдутся сами.", text=word)
+        name, ok = ask_text(self, tr("Новый персонаж"),
+                            tr("Как записать имя? Лучше в начальной форме: «Кира», а не «Киры» - "
+                            "остальные падежи найдутся сами."), text=word)
         if ok:
             self.track_name(name)
 
@@ -447,16 +448,16 @@ class WorldMixin:
         if name.isupper() and len(name) > 1:
             name = name[0] + name[1:].lower()
         if not name or has_foreign(name):
-            self.toast.show_message("Имя должно быть русскими буквами")
+            self.toast.show_message(tr("Имя должно быть русскими буквами"))
             return
         if name_key(name) in {name_key(n) for n in self.names}:
-            self.toast.show_message(f"«{name}» уже в списке")
+            self.toast.show_message(tr("«{name}» уже в списке").format(name=name))
             return
         known = Lore(self.speller)
         known.build([LoreTerm(n) for n in self.names])
         match = known.spans(name)
         if match and match[0][0] == 0 and match[0][1] == len(name):
-            self.toast.show_message(f"«{name}» - это форма имени «{match[0][2].name}», оно уже в списке", 3500)
+            self.toast.show_message(tr("«{name}» - это форма имени «{name2}», оно уже в списке").format(name=name, name2=match[0][2].name), 3500)
             return
         self.names.append(name)
         save_names(self.names)
@@ -466,7 +467,7 @@ class WorldMixin:
         if self.speller.available and not self.speller.ok(name):
             self.speller.add(name, as_name=True)
             self._rehighlight()
-        self.toast.show_message(f"Слежу за персонажем «{name}»")
+        self.toast.show_message(tr("Слежу за персонажем «{name}»").format(name=name))
         if self.characters.isVisible():
             self.refresh_characters()
 
@@ -482,7 +483,7 @@ class WorldMixin:
             return
         name = item.data(Qt.UserRole)
         menu = rounded_menu(self)
-        menu.addAction(f"Не считать «{name}»", lambda: self._untrack(name))
+        menu.addAction(tr("Не считать «{name}»").format(name=name), lambda: self._untrack(name))
         menu.exec(self.names_list.viewport().mapToGlobal(pos))
 
     def _untrack(self, name):
@@ -506,8 +507,8 @@ class WorldMixin:
     def refresh_characters(self):
         self.names_list.clear()
         if not self.names:
-            self.names_info.setText("Пока никого. Добавь имя здесь или нажми правой кнопкой "
-                                    "на имя в тексте → «Считать персонажем».")
+            self.names_info.setText(tr("Пока никого. Добавь имя здесь или нажми правой кнопкой "
+                                    "на имя в тексте → «Считать персонажем»."))
             return
         self._name_counter = Lore(self.speller)
         self._name_counter.build([LoreTerm(name) for name in self.names])
@@ -544,8 +545,8 @@ class WorldMixin:
             if count_all == 0:
                 item.setForeground(QColor(C.DIM))
             self.names_list.addItem(item)
-        self.names_info.setText("Считаются и падежи: «Кира», «Киры», «Кирой». "
-                                "Клик ищет имя по всем главам, правый клик убирает из списка.")
+        self.names_info.setText(tr("Считаются и падежи: «Кира», «Киры», «Кирой». "
+                                "Клик ищет имя по всем главам, правый клик убирает из списка."))
 
     def _search_name(self, item):
         name = item.data(Qt.UserRole)

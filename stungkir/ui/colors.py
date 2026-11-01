@@ -18,6 +18,7 @@ from ..text.editor import ProseHighlighter
 from ..world.lore import Lore, LoreTerm
 from .style import build_style
 from .widgets import ClockFace, FoxWheel, GoalStrip
+from ..core.i18n import tr
 
 SAMPLE = ("Утро было серым. Туман стелился над рекой, и туман пах тиной.\n"
           "— Лодки не будет, - сказала Тервена.\n"
@@ -80,10 +81,10 @@ class ColorPreview(QFrame):
         self.panel.setObjectName("Panel")
         row = QHBoxLayout(self.panel)
         row.setContentsMargins(10, 8, 10, 8)
-        self.button = QPushButton("Кнопка")
-        self.important = QPushButton("Важное")
+        self.button = QPushButton(tr("Кнопка"))
+        self.important = QPushButton(tr("Важное"))
         self.important.setObjectName("Primary")
-        self.checked = QPushButton("Включено")
+        self.checked = QPushButton(tr("Включено"))
         self.checked.setCheckable(True)
         self.checked.setChecked(True)
         self.listing = QListWidget()
@@ -116,7 +117,7 @@ class ColorPreview(QFrame):
         self.die = PreviewDie(116)
         self.die.setMinimumWidth(120)
         self.die.setCursor(Qt.PointingHandCursor)
-        self.die.setToolTip("Щёлкни - кубик бросится")
+        self.die.setToolTip(tr("Щёлкни - кубик бросится"))
         self.fox = PreviewFox()
         self.fox.set_running(True)
         objects.addWidget(self.clock)
@@ -153,8 +154,8 @@ class ColorPreview(QFrame):
         dialogue = C.contrast(colors["BG"], colors["DIALOGUE"])
         def number(x):
             return f"{x:.1f}".replace(".", ",")
-        self.contrast.setText(f"Контраст текста {number(ratio)}:1 - {C.contrast_hint(ratio)}.\n"
-                              f"Реплики {number(dialogue)}:1. Для долгого чтения удобно примерно 7–12.")
+        self.contrast.setText(tr("Контраст текста {n}:1 - {n2}.\nРеплики {n3}:1. Для долгого чтения удобно "
+                                 "примерно 7–12.").format(n=number(ratio), n2=C.contrast_hint(ratio), n3=number(dialogue)))
 
 
 class ColorRow:
@@ -166,7 +167,7 @@ class ColorRow:
         self.swatch = QPushButton("")
         self.swatch.setFixedSize(38, 24)
         self.swatch.setCursor(Qt.PointingHandCursor)
-        self.swatch.setToolTip("Выбрать цвет в палитре")
+        self.swatch.setToolTip(tr("Выбрать цвет в палитре"))
         self.swatch.clicked.connect(self._pick)
         self.code = QLineEdit()
         self.code.setFixedWidth(104)
@@ -174,7 +175,7 @@ class ColorRow:
         self.code.editingFinished.connect(self._typed)
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setRange(0, 255)
-        self.slider.setToolTip("Темнее - светлее")
+        self.slider.setToolTip(tr("Темнее - светлее"))
         self.slider.valueChanged.connect(self._moved)
         grid.addWidget(self.swatch, row, 1)
         grid.addWidget(self.code, row, 2)
@@ -213,7 +214,7 @@ class ColorsDialog(Sheet):
     """Цвета и темы. Ничего не меняется в окне, пока не нажата «Сохранить»."""
 
     def __init__(self, parent, config, font):
-        super().__init__(parent, "Цвета и темы")
+        super().__init__(parent, tr("Цвета и темы"))
         self.setMinimumSize(1120, 760)
         self.config = dict(config)
         self.font = font
@@ -234,7 +235,7 @@ class ColorsDialog(Sheet):
         left.setSpacing(8)
 
         slots = QHBoxLayout()
-        slots.addWidget(QLabel("Настраиваю:"))
+        slots.addWidget(QLabel(tr("Настраиваю:")))
         self.slot_group = QButtonGroup(self)
         self.slot_buttons = {}
         for key, label in SLOTS.items():
@@ -255,13 +256,13 @@ class ColorsDialog(Sheet):
         self.theme.setMinimumWidth(210)
         self.theme.currentTextChanged.connect(self._theme_chosen)
         themes.addWidget(self.theme, 2)
-        save_as = QPushButton("Как свою…")
-        save_as.setToolTip("Сохранить эти цвета как свою тему с именем")
+        save_as = QPushButton(tr("Как свою…"))
+        save_as.setToolTip(tr("Сохранить эти цвета как свою тему с именем"))
         save_as.clicked.connect(self._save_as)
-        self.delete = QPushButton("Удалить")
+        self.delete = QPushButton(tr("Удалить"))
         self.delete.clicked.connect(self._delete_theme)
-        reset = QPushButton("Сбросить")
-        reset.setToolTip("Вернуть цвета выбранной темы, убрать мои правки")
+        reset = QPushButton(tr("Сбросить"))
+        reset.setToolTip(tr("Вернуть цвета выбранной темы, убрать мои правки"))
         reset.clicked.connect(self._reset)
         for button in (save_as, self.delete, reset):
             themes.addWidget(button)
@@ -290,19 +291,19 @@ class ColorsDialog(Sheet):
         left.addWidget(scroll, 1)
 
         warm_row = QHBoxLayout()
-        warm_row.addWidget(QLabel("Холоднее"))
+        warm_row.addWidget(QLabel(tr("Холоднее")))
         self.warmth = QSlider(Qt.Horizontal)
         self.warmth.setRange(-100, 100)
         self.warmth.setValue(int(self.config.get("warmth", 0) or 0))
-        self.warmth.setToolTip("Сдвигает все цвета обеих тем разом")
+        self.warmth.setToolTip(tr("Сдвигает все цвета обеих тем разом"))
         self.warmth.valueChanged.connect(lambda _v: self.preview_timer.start())
         warm_row.addWidget(self.warmth, 1)
-        warm_row.addWidget(QLabel("Теплее"))
+        warm_row.addWidget(QLabel(tr("Теплее")))
         left.addLayout(warm_row)
 
         schedule = QGridLayout()
         schedule.setHorizontalSpacing(8)
-        self.use_day = QCheckBox("Днём включать дневную тему")
+        self.use_day = QCheckBox(tr("Днём включать дневную тему"))
         self.use_day.setChecked(bool(self.config.get("day_theme")))
         schedule.addWidget(self.use_day, 0, 0, 1, 6)
         self.day_from = QTimeEdit(self._time(self.config.get("day_from"), 8 * 60))
@@ -312,20 +313,20 @@ class ColorsDialog(Sheet):
         self.transition = QSpinBox()
         self.transition.setRange(0, 120)
         self.transition.setSingleStep(5)
-        self.transition.setSuffix(" мин")
+        self.transition.setSuffix(tr(" мин"))
         self.transition.setValue(int(self.config.get("transition", 40) or 0))
-        for col, widget in enumerate((QLabel("с"), self.day_from, QLabel("до"), self.day_to,
-                                      QLabel("переход"), self.transition)):
+        for col, widget in enumerate((QLabel(tr("с")), self.day_from, QLabel(tr("до")), self.day_to,
+                                      QLabel(tr("переход")), self.transition)):
             schedule.addWidget(widget, 1, col)
-        hint = QLabel("Перед сменой дневная тема плавно темнеет, а потом за пару секунд перетекает в ночную. "
-                      "Утром наоборот. Прочитать текст можно в любой момент перехода.")
+        hint = QLabel(tr("Перед сменой дневная тема плавно темнеет, а потом за пару секунд перетекает в ночную. "
+                      "Утром наоборот. Прочитать текст можно в любой момент перехода."))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         schedule.addWidget(hint, 2, 0, 1, 6)
         left.addLayout(schedule)
 
         right = QVBoxLayout()
-        title = QLabel("Как будет выглядеть")
+        title = QLabel(tr("Как будет выглядеть"))
         title.setObjectName("Section")
         right.addWidget(title)
         self.preview = ColorPreview()
@@ -337,9 +338,9 @@ class ColorsDialog(Sheet):
 
         buttons = QHBoxLayout()
         buttons.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        ok = QPushButton("Сохранить")
+        ok = QPushButton(tr("Сохранить"))
         ok.setObjectName("Primary")
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
@@ -410,12 +411,12 @@ class ColorsDialog(Sheet):
         self._show_rows()
 
     def _save_as(self):
-        name, ok = ask_text(self, "Своя тема", "Как назвать тему?", text=f"{self.names[self.slot]} (своя)")
+        name, ok = ask_text(self, tr("Своя тема"), tr("Как назвать тему?"), text=f"{self.names[self.slot]} (своя)")
         name = name.strip()
         if not ok or not name:
             return
         if name in C.THEMES:
-            show_warning(self, "Своя тема", "Так называется встроенная тема, выбери другое имя.")
+            show_warning(self, tr("Своя тема"), tr("Так называется встроенная тема, выбери другое имя."))
             return
         self._store(name, self.colors())
         self.names[self.slot] = name

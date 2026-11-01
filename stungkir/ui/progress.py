@@ -12,6 +12,7 @@ from ..core.textutil import plural, signed, words_label
 from ..core.storage import load_stats, save_goals, save_marks, save_plan, save_stats, streaks
 from .dialogs import ask_int
 from .windows import StatsDialog
+from ..core.i18n import tr
 
 
 class ProgressMixin:
@@ -85,12 +86,12 @@ class ProgressMixin:
         parts = []                             # (простой текст, текст с цветом)
         if self.timer_deadline is not None:
             left = max(0, (self.timer_deadline - self.session.elapsed()) // 1000)
-            text = f"таймер {left // 60}:{left % 60:02}"
+            text = tr("таймер {minutes}:{seconds:02}").format(minutes=left // 60, seconds=left % 60)
             parts.append((text, text))
         chapter = self.chapter_goal()
         words_now = self.shown_number("chapter", self.words)
         if chapter:
-            tail = f" из {chapter} {plural(chapter, 'слова', 'слов', 'слов')}"
+            tail = tr(" из {n} {words}").format(n=chapter, words=plural(chapter, 'слова', 'слов', 'слов'))
             parts.append((f"{self.words}{tail}", number(str(words_now), "chapter") + html.escape(tail)))
         else:
             label = words_label(self.words)
@@ -98,22 +99,24 @@ class ProgressMixin:
             rest = words_label(words_now).partition(" ")[2]
             parts.append((label, number(str(words_now), "chapter") + " " + html.escape(rest)))
         today = self.today_words()
-        tail = f" из {self.goal}" if self.goal else ""
+        tail = tr(" из {goal}").format(goal=self.goal) if self.goal else ""
         if today >= 0:
             day_now = self.shown_number("day", today)
-            parts.append((f"за день {signed(today)}{tail}", "за день " + number(signed(day_now), "day") + tail))
+            day = tr("за день")
+            parts.append((f"{day} {signed(today)}{tail}", f"{day} " + number(signed(day_now), "day") + tail))
         else:
             # стирать - тоже работа, но в минус день не уходит: сколько сократил, видно отдельно
-            cut = f", сокращено на {-today}"
-            parts.append((f"за день 0{tail}{cut}", "за день " + number("0", "day") + tail + cut))
+            cut = tr(", сокращено на {n}").format(n=-today)
+            day = tr("за день")
+            parts.append((f"{day} 0{tail}{cut}", f"{day} " + number("0", "day") + tail + cut))
         today = max(0, today)
         streak = self.current_streak()
         self._celebrate_streak(streak)
         if streak >= 2 and self.screen_shown("streak"):
-            tail = f" {plural(streak, 'день', 'дня', 'дней')} подряд"
+            tail = tr(" {days} подряд").format(days=plural(streak, 'день', 'дня', 'дней'))
             parts.append((f"{streak}{tail}", number(str(streak), "streak") + tail))
         if self.screen_shown("session"):
-            text = f"сессия {h}:{m:02}:{s:02}"
+            text = tr("сессия {h}:{m:02}:{s:02}").format(h=h, m=m, s=s)
             parts.append((text, text))
         modes = self.active_modes()
         if modes:
@@ -122,10 +125,10 @@ class ProgressMixin:
         self.status_plain = "   ·   ".join(p for p, _ in parts)
         self.status.setText("&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;".join(r for _, r in parts))
         pasted = getattr(self, "pasted_today", 0)
-        self.status.setToolTip("Первое число - слов в открытой главе. «За день» - сколько написано сегодня "
+        self.status.setToolTip(tr("Первое число - слов в открытой главе. «За день» - сколько написано сегодня "
                                "во всех главах вместе, поэтому при переходе в другую главу не обнуляется. "
-                               "Вставленное из буфера в «за день» не идёт"
-                               + (f" (сегодня вставлено {words_label(pasted)})." if pasted else "."))
+                               "Вставленное из буфера в «за день» не идёт")
+                               + (tr(" (сегодня вставлено {n}).").format(n=words_label(pasted)) if pasted else "."))
         self.goal_strip.set("day", today / self.goal if self.goal else 0,
                             bool(self.goal) and today >= self.goal, bool(self.goal))
         self.goal_strip.set("chapter", self.words / chapter if chapter else 0,
@@ -155,7 +158,7 @@ class ProgressMixin:
                 self._chapter_toasted.add(key)
                 self.fox_wheel.celebrate()
                 self._goal_burst("chapter")
-                self.toast.show_message(f"Цель главы выполнена: {words_label(self.words)}", 3000)
+                self.toast.show_message(tr("Цель главы выполнена: {n}").format(n=words_label(self.words)), 3000)
                 return
         if not self.goal or self.today_words() < self.goal:
             return
@@ -163,7 +166,7 @@ class ProgressMixin:
             self.settings.setValue("goal_done", self.today)
             self.fox_wheel.celebrate()
             self._goal_burst("day")
-            self.toast.show_message(f"Цель на сегодня выполнена: {words_label(self.today_words())}", 3000)
+            self.toast.show_message(tr("Цель на сегодня выполнена: {n}").format(n=words_label(self.today_words())), 3000)
 
     def _goal_burst(self, kind):
         """Звёздочки и конфетти над строкой (если окно их умеет и кадры на месте)."""
@@ -178,11 +181,11 @@ class ProgressMixin:
     def set_chapter_goal(self, path=None):
         path = path or self.path
         if path is None:
-            self.toast.show_message("Сначала открой главу")
+            self.toast.show_message(tr("Сначала открой главу"))
             return
         key = self._position_key(path)
         value, ok = ask_int(
-            self, "Цель главы", f"Сколько слов должно быть в «{path.stem}» (0 - без цели):",
+            self, tr("Цель главы"), tr("Сколько слов должно быть в «{stem}» (0 - без цели):").format(stem=path.stem),
             self.chapter_goals.get(key, C.CHAPTER_GOAL), 0, 1_000_000, 100)
         if not ok:
             return
@@ -215,10 +218,10 @@ class ProgressMixin:
         self.settings.setValue("streak_voice", voice)
         from .widgets import STREAK_VOICES, streak_line
         line = streak_line(3, voice)
-        self.toast.show_message(f"Огонёк серии: {STREAK_VOICES[voice].lower()}" + (f" - «{line}»" if line else ""))
+        self.toast.show_message(tr("Огонёк серии: {n}").format(n=STREAK_VOICES[voice].lower()) + (f" - «{line}»" if line else ""))
 
     def set_goal(self):
-        value, ok = ask_int(self, "Цель на день", "Сколько слов в день (0 - без цели):",
+        value, ok = ask_int(self, tr("Цель на день"), tr("Сколько слов в день (0 - без цели):"),
                                         self.goal, 0, 100000, 50)
         if ok:
             self.goal = value
@@ -255,10 +258,10 @@ class ProgressMixin:
     def toggle_timer(self):
         if self.timer_deadline is not None:
             self.timer_deadline = None
-            self._timer_label("Старт")
+            self._timer_label(tr("Старт"))
             self.fox_wheel.set_running(False)
             self.fox_wheel.set_left(None)
-            self.toast.show_message("Таймер остановлен")
+            self.toast.show_message(tr("Таймер остановлен"))
             self.update_status()
             return
         self.count_words()
@@ -268,10 +271,10 @@ class ProgressMixin:
         self.fox_wheel.set_left(1.0)
         self.timer_words_start = self.today_words()
         self.timer_warned = minutes <= 1
-        self._timer_label("Стоп")
+        self._timer_label(tr("Стоп"))
         self.fox_wheel.set_running(True)
         end = "потом сохраню и закрою" if self.timer_close.isChecked() else "потом скажу"
-        self.toast.show_message(f"Таймер на {minutes} мин: {end}")
+        self.toast.show_message(tr("Таймер на {minutes} мин: {end}").format(minutes=minutes, end=end))
         self.update_status()
         self.editor.setFocus()
 
@@ -318,14 +321,14 @@ class ProgressMixin:
             self.fox_wheel.set_left(left / max(1, getattr(self, "timer_total", left)))
             if not self.timer_warned and left <= 60_000:
                 self.timer_warned = True
-                self.toast.show_message("Осталась минута", 2000)
+                self.toast.show_message(tr("Осталась минута"), 2000)
         self.update_status()
 
     def finish_timer(self):
         self.count_words()
         written = self.today_words() - self.timer_words_start
         self.timer_deadline = None
-        self._timer_label("Старт")
+        self._timer_label(tr("Старт"))
         self.fox_wheel.set_running(False)
         self.fox_wheel.set_left(None)
         self.update_status()
@@ -333,7 +336,7 @@ class ProgressMixin:
         self.store_stats()
         result = f"Время вышло. За это время {signed(written)} {plural(written, 'слово', 'слова', 'слов')}"
         if self.timer_close.isChecked() and saved:
-            self.toast.show_message(result + ". Всё сохранено, закрываю…", 3000)
+            self.toast.show_message(result + tr(". Всё сохранено, закрываю…"), 3000)
             QTimer.singleShot(3600, self, self.close)
         else:
             self.toast.show_message(result, 4000)

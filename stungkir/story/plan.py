@@ -21,6 +21,7 @@ from ..core.storage import LockedFile, files_in, read_text, save_order, save_pla
 from ..ui.style import rounded_menu
 from ..core.textutil import WORD_RE, is_prose, is_timeline, plural
 from ..world.timeline import load_events, year_label
+from ..core.i18n import tr
 
 STATUSES = [("idea", "Идея"), ("draft", "Черновик"), ("edit", "Правка"), ("done", "Готово")]
 STATUS_NAMES = dict(STATUSES)
@@ -110,7 +111,7 @@ class PlanDialog(Sheet):
     NAME, STATUS, POV, YEAR, WORDS, ABOUT = range(6)
 
     def __init__(self, parent, chapters, plan, key, on_change, on_order, people=(), years=None, born=None):
-        super().__init__(parent, "План книги")
+        super().__init__(parent, tr("План книги"))
         self.setMinimumSize(980, 580)
         self.chapters = chapters          # [(папка, [(путь, слов)])]
         self.plan, self.key = plan, key
@@ -125,7 +126,7 @@ class PlanDialog(Sheet):
         self.content.addWidget(self.summary)
         self.tree = PlanTree(self._moved)
         self.tree.setColumnCount(6)
-        self.tree.setHeaderLabels(["Глава", "Статус", "Чей взгляд", "Год", "Слов", "О чём"])
+        self.tree.setHeaderLabels([tr(name) for name in ["Глава", "Статус", "Чей взгляд", "Год", "Слов", "О чём"]])
         self.tree.setRootIsDecorated(False)
         self.tree.setIndentation(14)
         self.tree.setUniformRowHeights(True)
@@ -138,13 +139,13 @@ class PlanDialog(Sheet):
         for column in (self.NAME, self.STATUS, self.POV, self.YEAR, self.WORDS):
             header.setSectionResizeMode(column, QHeaderView.ResizeToContents)
         self.content.addWidget(self.tree, 1)
-        hint = QLabel("Щелчок по статусу или «Чей взгляд» - выбрать. Двойной щелчок по году или «О чём» - "
+        hint = QLabel(tr("Щелчок по статусу или «Чей взгляд» - выбрать. Двойной щелчок по году или «О чём» - "
                       "написать, по названию - открыть главу. Перетащи главу, чтобы поменять порядок. "
-                      "Год главы - в летоисчислении книги; без него возраст героев не посчитать.")
+                      "Год главы - в летоисчислении книги; без него возраст героев не посчитать."))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         self.content.addWidget(hint)
-        close = QPushButton("Закрыть")
+        close = QPushButton(tr("Закрыть"))
         close.clicked.connect(self.accept)
         buttons = QHBoxLayout()
         buttons.addStretch()
@@ -200,7 +201,7 @@ class PlanDialog(Sheet):
             item.setForeground(self.POV, QColor(C.DIM))
         if year is not None and not own:
             item.setForeground(self.YEAR, QColor(C.DIM))
-            item.setToolTip(self.YEAR, "Из хронологии: событие, связанное с этой главой")
+            item.setToolTip(self.YEAR, tr("Из хронологии: событие, связанное с этой главой"))
         item.setTextAlignment(self.WORDS, Qt.AlignRight | Qt.AlignVCenter)
         item.setTextAlignment(self.YEAR, Qt.AlignRight | Qt.AlignVCenter)
         item.setToolTip(self.ABOUT, entry.get("about", ""))
@@ -209,7 +210,7 @@ class PlanDialog(Sheet):
             italic.setItalic(True)
             item.setFont(self.NAME, italic)
             item.setForeground(self.NAME, QColor(C.DIM))
-            item.setToolTip(self.NAME, "Не в книгу: при сборке эта глава не отмечена")
+            item.setToolTip(self.NAME, tr("Не в книгу: при сборке эта глава не отмечена"))
         return item
 
     @staticmethod
@@ -245,7 +246,7 @@ class PlanDialog(Sheet):
             action.setCheckable(True)
             action.setChecked(code == current)
         menu.addSeparator()
-        skip = menu.addAction("Не в книгу", lambda _c=False: self.choose(path, "skip", "" if self.entry(path).get(
+        skip = menu.addAction(tr("Не в книгу"), lambda _c=False: self.choose(path, "skip", "" if self.entry(path).get(
             "skip") else "yes"))
         skip.setCheckable(True)
         skip.setChecked(bool(self.entry(path).get("skip")))
@@ -262,12 +263,12 @@ class PlanDialog(Sheet):
             action.setChecked(name == current)
         if names:
             menu.addSeparator()
-        menu.addAction("Другое имя…", lambda: self.ask_pov(path))
-        menu.addAction("Ничей", lambda: self.choose(path, "pov", ""))
+        menu.addAction(tr("Другое имя…"), lambda: self.ask_pov(path))
+        menu.addAction(tr("Ничей"), lambda: self.choose(path, "pov", ""))
         return menu
 
     def ask_pov(self, path):
-        name, ok = ask_text(self, "Чей взгляд", f"От чьего лица «{path.stem}»:", self.entry(path).get("pov", ""))
+        name, ok = ask_text(self, tr("Чей взгляд"), tr("От чьего лица «{stem}»:").format(stem=path.stem), self.entry(path).get("pov", ""))
         if ok:
             self.choose(path, "pov", " ".join(name.split()))
 
@@ -364,12 +365,12 @@ class PlanMixin:
         for name in dict.fromkeys(self.plan_people() + ([entry["pov"]] if entry.get("pov") else [])):
             self._toggle(pov, name, lambda _c=False, n=name: self.plan_set(path, "pov", n), name == entry.get("pov"))
         pov.addSeparator()
-        pov.addAction("Другое имя…", lambda: self.ask_plan_field(path, "pov"))
-        pov.addAction("Ничей", lambda: self.plan_set(path, "pov", ""))
+        pov.addAction(tr("Другое имя…"), lambda: self.ask_plan_field(path, "pov"))
+        pov.addAction(tr("Ничей"), lambda: self.plan_set(path, "pov", ""))
         self._toggle(menu, "Не в книгу", lambda _c=False: self.plan_set(
             path, "skip", "" if self.chapter_plan(path).get("skip") else "yes"), bool(entry.get("skip")))
-        menu.addAction("Год главы…", lambda: self.ask_plan_field(path, "year"))
-        menu.addAction("О чём глава…", lambda: self.ask_plan_field(path, "about"))
+        menu.addAction(tr("Год главы…"), lambda: self.ask_plan_field(path, "year"))
+        menu.addAction(tr("О чём глава…"), lambda: self.ask_plan_field(path, "about"))
 
     def edit_chapter_about(self, path):
         self.ask_plan_field(path, "about")
@@ -388,7 +389,7 @@ class PlanMixin:
         if field == "year" and value:
             year = parse_year(value)
             if year is None:
-                self.toast.show_message("Год - это число, например 1203 или -40")
+                self.toast.show_message(tr("Год - это число, например 1203 или -40"))
                 return
             value = year_label(year)
         self.plan_set(path, field, value)

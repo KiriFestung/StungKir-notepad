@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from ..core import config as C
 from ..ui.dialogs import Sheet
+from ..core.i18n import tr
 
 PHI = (1 + 5 ** 0.5) / 2
 
@@ -660,7 +661,7 @@ class RandomDialog(Sheet):
     рулетка. Всё выпавшее попадает и в историю бросков."""
 
     def __init__(self, parent, names, terms, settings, on_result, open_term=None, history=None):
-        super().__init__(parent, "Рандомайзеры")
+        super().__init__(parent, tr("Рандомайзеры"))
         self.history = history if history is not None else []      # список окна: новое - первым
         self.setMinimumWidth(820)                      # шесть вкладок в ряд
         self.names, self.terms, self.settings = list(names), list(terms), settings
@@ -715,7 +716,7 @@ class RandomDialog(Sheet):
         # из чего: плитки с кубиком d20 каждого материала (список - внутри, для истории и настроек)
         row = QHBoxLayout()
         row.setSpacing(4)
-        row.addWidget(QLabel("Из чего:"))
+        row.addWidget(QLabel(tr("Из чего:")))
         self.material = QComboBox()
         for key, (title, *_rest) in MATERIALS.items():
             self.material.addItem(title, key)
@@ -752,7 +753,7 @@ class RandomDialog(Sheet):
         page = QWidget()
         row = QHBoxLayout(page)
         row.setContentsMargins(0, 0, 0, 0)
-        row.addWidget(QLabel("от"))
+        row.addWidget(QLabel(tr("от")))
         self.low = QSpinBox()
         self.high = QSpinBox()
         for box, value in ((self.low, int(settings.value("random_low", 1))),
@@ -761,7 +762,7 @@ class RandomDialog(Sheet):
             box.setValue(value)
             box.setAlignment(Qt.AlignCenter)
         row.addWidget(self.low, 1)
-        row.addWidget(QLabel("до"))
+        row.addWidget(QLabel(tr("до")))
         row.addWidget(self.high, 1)
         self.pages.addWidget(page)
         # список
@@ -769,11 +770,11 @@ class RandomDialog(Sheet):
         column = QVBoxLayout(page)
         column.setContentsMargins(0, 0, 0, 0)
         self.list_edit = QPlainTextEdit()
-        self.list_edit.setPlaceholderText("Каждый вариант - с новой строки.\nНапример: дождь\nтуман\nясно")
+        self.list_edit.setPlaceholderText(tr("Каждый вариант - с новой строки.\nНапример: дождь\nтуман\nясно"))
         self.list_edit.setPlainText(settings.value("random_list", "") or "")
         self.list_edit.setFixedHeight(120)
         column.addWidget(self.list_edit)
-        self.cross_out = QCheckBox("Вычёркивать выпавшее (без повторов)")
+        self.cross_out = QCheckBox(tr("Вычёркивать выпавшее (без повторов)"))
         column.addWidget(self.cross_out)
         self.pages.addWidget(page)
         # персонаж или термин
@@ -782,8 +783,8 @@ class RandomDialog(Sheet):
         row.setContentsMargins(0, 0, 0, 0)
         self.cast_group = QButtonGroup(self)
         self.cast_buttons = {}
-        for key, title in (("names", f"Персонаж ({len(self.names)})"), ("terms", f"Термин мира ({len(self.terms)})"),
-                           ("any", "Любой")):
+        for key, title in (("names", tr("Персонаж ({n})").format(n=len(self.names))), ("terms", tr("Термин мира ({n})").format(n=len(self.terms))),
+                           ("any", tr("Любой"))):
             box = QPushButton(title)
             box.setCheckable(True)
             box.setStyleSheet(f"QPushButton:checked {{ background: {C.SELECT}; }}")
@@ -798,13 +799,13 @@ class RandomDialog(Sheet):
         page = QWidget()
         column = QVBoxLayout(page)
         column.setContentsMargins(0, 0, 0, 0)
-        info = QLabel("Крутани барабан и жми «Спуск»: щёлк - пронесло, бах - писательский вызов. "
-                      "Без прокрутки шанс с каждым щелчком растёт.")
+        info = QLabel(tr("Крутани барабан и жми «Спуск»: щёлк - пронесло, бах - писательский вызов. "
+                      "Без прокрутки шанс с каждым щелчком растёт."))
         info.setObjectName("Status")
         info.setWordWrap(True)
         column.addWidget(info)
         row = QHBoxLayout()
-        row.addWidget(QLabel("Заряжено:"))
+        row.addWidget(QLabel(tr("Заряжено:")))
         self.load_box = QComboBox()
         for key, title, _live in LOADS:
             self.load_box.addItem(title, key)
@@ -812,23 +813,23 @@ class RandomDialog(Sheet):
         self.load_box.setCurrentIndex(max(0, self.load_box.findData(load)))
         self.load_box.currentIndexChanged.connect(self._load_changed)
         row.addWidget(self.load_box, 1)
-        row.addWidget(QLabel("Вызовы:"))
+        row.addWidget(QLabel(tr("Вызовы:")))
         self.level_box = QComboBox()
         for key, title in LEVELS:
             self.level_box.addItem(title, key)
         level = int(settings.value("roulette_level", 0) or 0)
         self.level_box.setCurrentIndex(max(0, self.level_box.findData(level)))
-        self.level_box.setToolTip("Насколько жёсткие вызовы выпадают: от безобидных до адища")
+        self.level_box.setToolTip(tr("Насколько жёсткие вызовы выпадают: от безобидных до адища"))
         self.level_box.currentIndexChanged.connect(
             lambda: self.settings.setValue("roulette_level", self.level_box.currentData()))
         row.addWidget(self.level_box, 1)
         column.addLayout(row)
         row = QHBoxLayout()                              # кнопки - вторым рядом, чтобы ничего не обрезалось
-        own = QPushButton("Свои вызовы…")
+        own = QPushButton(tr("Свои вызовы…"))
         own.clicked.connect(self.edit_own)
         row.addWidget(own)
         row.addStretch()
-        self.spin_button = QPushButton("Крутануть барабан")
+        self.spin_button = QPushButton(tr("Крутануть барабан"))
         self.spin_button.clicked.connect(self.spin)
         row.addWidget(self.spin_button)
         column.addLayout(row)
@@ -855,18 +856,18 @@ class RandomDialog(Sheet):
         self.content.addWidget(self.note)
 
         buttons = QHBoxLayout()
-        self.history_button = QPushButton("История")
-        self.history_button.setToolTip("Что выпадало, пока открыт блокнот")
+        self.history_button = QPushButton(tr("История"))
+        self.history_button.setToolTip(tr("Что выпадало, пока открыт блокнот"))
         self.history_button.clicked.connect(self.show_history)
         buttons.addWidget(self.history_button)
-        self.open_button = QPushButton("Открыть статью")
+        self.open_button = QPushButton(tr("Открыть статью"))
         self.open_button.setVisible(False)
         self.open_button.clicked.connect(self._open_term)
         buttons.addWidget(self.open_button)
         buttons.addStretch()
-        close = QPushButton("Закрыть")
+        close = QPushButton(tr("Закрыть"))
         close.clicked.connect(self.accept)
-        self.go = QPushButton("Бросить")
+        self.go = QPushButton(tr("Бросить"))
         self.go.setObjectName("Primary")
         self.go.setDefault(True)
         self.go.clicked.connect(self.draw)
@@ -877,9 +878,9 @@ class RandomDialog(Sheet):
 
     def _coin_text(self):
         self.coin_note.setText(
-            f"Сейчас сверху - {self.coin_up.lower()}. Как в жизни: монетка чуть чаще падает той стороной, "
-            "что лежала сверху (50,8 на 49,2 - опыт на 350 757 бросках), а на ребро встаёт примерно "
-            "раз из 6000. Подлетит, покрутится и упадёт на стол.")
+            tr("Сейчас сверху - {n}. Как в жизни: монетка чуть чаще падает той стороной, что лежала сверху "
+               "(50,8 на 49,2 - опыт на 350 757 бросках), а на ребро встаёт примерно раз из 6000. Подлетит, "
+               "покрутится и упадёт на стол.").format(n=self.coin_up.lower()))
 
     def _coin_landed(self, side):
         if side in COIN_SIDES:                    # подняли - и она лежит той же стороной вверх
@@ -887,7 +888,7 @@ class RandomDialog(Sheet):
             self.settings.setValue("coin_up", side)
             self._coin_text()
         self._done_big("Монетка: на ребро! Такое бывает раз из 6000" if side == COIN_EDGE
-                       else f"Монетка: {side.lower()}", "На ребро!" if side == COIN_EDGE else side)
+                       else f"Монетка: {side.lower()}", tr("На ребро!") if side == COIN_EDGE else side)
 
     def _material_changed(self, index):
         button = self.material_group.button(index)
@@ -960,7 +961,7 @@ class RandomDialog(Sheet):
             self.settings.setValue("random_list", self.list_edit.toPlainText())
             items = list_items(self.list_edit.toPlainText())
             if not items:
-                self.note.setText("Список пуст: впиши варианты, каждый с новой строки")
+                self.note.setText(tr("Список пуст: впиши варианты, каждый с новой строки"))
                 return
             choice = random.choice(items)
             if self.cross_out.isChecked():
@@ -970,11 +971,11 @@ class RandomDialog(Sheet):
                 self.settings.setValue("random_list", self.list_edit.toPlainText())
             left = len(items) - 1 if self.cross_out.isChecked() else None
             self.shuffle.run(items, choice, lambda v: self._done(
-                f"Из списка: {v}", "" if left is None else f"Осталось вариантов: {left}"))
+                f"Из списка: {v}", "" if left is None else tr("Осталось вариантов: {left}").format(left=left)))
         else:
             pool = self._pool()
             if not pool:
-                self.note.setText("Пока не из чего выбирать: добавь персонажей или справочник мира")
+                self.note.setText(tr("Пока не из чего выбирать: добавь персонажей или справочник мира"))
                 return
             title, term = random.choice(pool)
             self.picked_term = term
@@ -995,7 +996,7 @@ class RandomDialog(Sheet):
         self.revolver.hide_all()
         self.revolver.turn_to(self.roulette.current, duration=200)
         self.shuffle.setText("")
-        self.note.setText(f"Заряжено: {self.load_box.currentText()}. Крутани барабан")
+        self.note.setText(tr("Заряжено: {n}. Крутани барабан").format(n=self.load_box.currentText()))
 
     def edit_own(self):
         from .roulette import OwnChallengesDialog
@@ -1039,16 +1040,16 @@ class RandomDialog(Sheet):
         if self.needs_load:                              # барабан только что перезаряжен - сначала зарядка
             self.needs_load = False
             self.shuffle.setText("")
-            self.note.setText("Заряжаю…")
+            self.note.setText(tr("Заряжаю…"))
             self.revolver.load(self.roulette.chambers, on_done=self.spin)
             return
         self.revolver.hide_all()
         self.roulette.spin()
         self._sound("drum_spin")
         self.shuffle.setText("")
-        self.note.setText("Барабан крутится…")
+        self.note.setText(tr("Барабан крутится…"))
         self.revolver.turn_to(self.roulette.current, turns=3, duration=1300,
-                              on_done=lambda: self.note.setText(f"Жми «Спуск»: {self.roulette.chance_text()}"))
+                              on_done=lambda: self.note.setText(tr("Жми «Спуск»: {n}").format(n=self.roulette.chance_text())))
 
     def pull(self):
         if not self._roulette_ready():
@@ -1064,7 +1065,7 @@ class RandomDialog(Sheet):
             challenge = self._challenge()
             self.shuffle.setStyleSheet(f"color: {C.IMPORTANT};")
             self.shuffle.setText(challenge)
-            self.note.setText("Бах! Вот твой вызов. Барабан перезаряжен - крутани заново")
+            self.note.setText(tr("Бах! Вот твой вызов. Барабан перезаряжен - крутани заново"))
             self.roulette.reload()
             self.needs_load = True
             self._result(f"Рулетка: {challenge}")
@@ -1073,7 +1074,7 @@ class RandomDialog(Sheet):
         self._sound("trigger_click")
         self.revolver.puff()
         self.shuffle.setText("")
-        self.note.setText(f"Щёлк. Пронесло. Дальше: {self.roulette.chance_text()}")
+        self.note.setText(tr("Щёлк. Пронесло. Дальше: {n}").format(n=self.roulette.chance_text()))
         self.revolver.turn_to(self.roulette.current, duration=260)
 
     def _pool(self):
@@ -1098,12 +1099,12 @@ class RandomDialog(Sheet):
         from ..ui.style import rounded_menu
         menu = rounded_menu(self)
         if not self.history:
-            menu.addAction("Пока ничего не выпадало").setEnabled(False)
+            menu.addAction(tr("Пока ничего не выпадало")).setEnabled(False)
         for entry in self.history[:30]:
             menu.addAction(entry).setEnabled(False)
         if self.history:
             menu.addSeparator()
-            menu.addAction("Стереть историю", self.history.clear)
+            menu.addAction(tr("Стереть историю"), self.history.clear)
         menu.exec(self.history_button.mapToGlobal(self.history_button.rect().topLeft()))
 
     def _done(self, entry, note=""):

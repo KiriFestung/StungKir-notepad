@@ -17,6 +17,7 @@ from ..core.snapshots import SnapshotError, delete_snapshot, make_snapshot, rest
 from ..core.storage import (append_to_order, load_goals, load_names, load_order, load_plan, notes_path, os_message,
     save_text, unique_path)
 from ..core.textutil import plural
+from ..core.i18n import tr
 
 
 class ProjectMixin:
@@ -51,9 +52,8 @@ class ProjectMixin:
             names = ", ".join(f"«{name}»" for name, _ in chapters[:3])
             more = f" и ещё {len(chapters) - 3}" if len(chapters) > 3 else ""
             choice = ask_choice(
-                self, "Импорт",
-                f"В «{source.name}» {len(chapters)} {plural(len(chapters), 'глава', 'главы', 'глав')}: "
-                f"{names}{more}.\n\nРазрезать на главы или положить одним файлом?",
+                self, tr("Импорт"),
+                tr("В «{name}» {n} {n2}: {names}{more}.\n\nРазрезать на главы или положить одним файлом?").format(name=source.name, n=len(chapters), n2=plural(len(chapters), 'глава', 'главы', 'глав'), names=names, more=more),
                 [("one", "Одним файлом"), ("split", f"Разрезать на {len(chapters)} "
                                                     f"{plural(len(chapters), 'главу', 'главы', 'глав')}")])
             if choice is None:
@@ -76,18 +76,18 @@ class ProjectMixin:
         try:
             name, items = read_scrivener(folder)
         except ScrivenerError as error:
-            show_warning(self, "Импорт из Scrivener", f"Не получилось: {error}.")
+            show_warning(self, tr("Импорт из Scrivener"), tr("Не получилось: {error}.").format(error=error))
             return
         plan, skipped = scrivener_plan(name, items)
         if not plan:
-            show_warning(self, "Импорт из Scrivener", "В проекте не нашлось текстов.")
+            show_warning(self, tr("Импорт из Scrivener"), tr("В проекте не нашлось текстов."))
             return
         lines = "\n".join(f"• {category}: {len(chapters)} {plural(len(chapters), 'глава', 'главы', 'глав')}"
                           for category, chapters in plan)
-        answer = ask_choice(self, "Импорт из Scrivener",
-                            f"Из «{name}» будут созданы категории:\n{lines}\n\n"
-                            "Сцены внутри папки станут одной главой через «* * *», синопсисы и заметки - "
-                            "заметками на полях. Сам проект Scrivener не меняется.",
+        answer = ask_choice(self, tr("Импорт из Scrivener"),
+                            tr("Из «{name}» будут созданы категории:\n{lines}\n\nСцены внутри папки станут "
+                               "одной главой через «* * *», синопсисы и заметки - заметками на полях. Сам "
+                               "проект Scrivener не меняется.").format(name=name, lines=lines),
                             [("cancel", "Отмена"), ("go", "Импортировать")])
         if answer != "go":
             return
@@ -120,7 +120,7 @@ class ProjectMixin:
                         "не-текстов (PDF, картинки, веб-страницы): их можно открыть прямо из папки проекта.")
         if errors:
             message += "\n\nНе получилось:\n" + "\n".join("• " + e for e in errors)
-        show_warning(self, "Импорт из Scrivener", message)
+        show_warning(self, tr("Импорт из Scrivener"), message)
 
     def _save_imported_notes(self, target, lines, notes):
         data = []
@@ -138,44 +138,44 @@ class ProjectMixin:
         SnapshotsDialog(self).exec()
 
     def take_snapshot(self):
-        title, ok = ask_text(self, "Точка возврата", "Как назвать точку? Например: «перед правкой второй части».",
+        title, ok = ask_text(self, tr("Точка возврата"), tr("Как назвать точку? Например: «перед правкой второй части»."),
                              text=f"Точка {datetime.now():%d.%m.%Y %H:%M}")
         if not ok:
             return None
         if not self.save_everything():
-            show_warning(self, "Точка возврата", "Не получилось сохранить главу, точка не поставлена.")
+            show_warning(self, tr("Точка возврата"), tr("Не получилось сохранить главу, точка не поставлена."))
             return None
         try:
             path = make_snapshot(title.strip() or "Точка")
         except SnapshotError as error:
-            show_error(self, "Точка возврата", f"Точка не поставлена: {error}")
+            show_error(self, tr("Точка возврата"), tr("Точка не поставлена: {error}").format(error=error))
             return None
-        self.toast.show_message("Точка возврата поставлена")
+        self.toast.show_message(tr("Точка возврата поставлена"))
         return path
 
     def restore_snapshot(self, path, info):
         when = info.get("created", "")[:16].replace("T", " ")
-        if ask_question(self, "Вернуться к точке",
-                        f"Вернуть всю книгу к точке «{info.get('title', '')}» ({when})?\n\n"
-                        "Нынешнее состояние сначала сохранится отдельной точкой, так что это можно "
-                        "отменить. История версий глав и статистика останутся как есть.") != QMessageBox.Yes:
+        if ask_question(self, tr("Вернуться к точке"),
+                        tr("Вернуть всю книгу к точке «{n}» ({when})?\n\nНынешнее состояние сначала "
+                           "сохранится отдельной точкой, так что это можно отменить. История версий глав и "
+                           "статистика останутся как есть.").format(n=info.get('title', ''), when=when)) != QMessageBox.Yes:
             return False
         if not self.save_everything():
-            show_warning(self, "Вернуть книгу", "Не получилось сохранить текущую главу, ничего не менял.")
+            show_warning(self, tr("Вернуть книгу"), tr("Не получилось сохранить текущую главу, ничего не менял."))
             return False
         try:
             make_snapshot(f"Перед возвратом к «{info.get('title', '')}»")
             restore_snapshot(path)
         except SnapshotError as error:
-            show_error(self, "Вернуть книгу", f"Книга не возвращена, всё осталось как было: {error}")
+            show_error(self, tr("Вернуть книгу"), tr("Книга не возвращена, всё осталось как было: {error}").format(error=error))
             return False
         self._reload_project()
-        self.toast.show_message("Книга возвращена к точке", 3500)
+        self.toast.show_message(tr("Книга возвращена к точке"), 3500)
         return True
 
     def delete_snapshot(self, path, info):
-        if ask_question(self, "Удалить точку возврата",
-                        f"Удалить точку «{info.get('title', '')}»? Её не вернуть.") != QMessageBox.Yes:
+        if ask_question(self, tr("Удалить точку возврата"),
+                        tr("Удалить точку «{n}»? Её не вернуть.").format(n=info.get('title', ''))) != QMessageBox.Yes:
             return False
         delete_snapshot(path)
         return True

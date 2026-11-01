@@ -24,14 +24,20 @@ class TranslateTest(Sandbox):
         self.assertEqual(i18n.tr("Язык"), "Language")
         self.assertEqual(i18n.tr("Такой надписи в словаре нет"), "Такой надписи в словаре нет")
         self.assertEqual(i18n.tr("Язык", "ru"), "Язык")             # явный язык важнее текущего
+        i18n.set_language("en-GB")
+        self.assertEqual(i18n.tr("Цвет"), "Colour")                       # британское написание
+        self.assertEqual(i18n.tr("Цвет", "en"), "Color")
+        self.assertEqual(i18n.british("Pick a color, neighbors"), "Pick a colour, neighbours")
+        self.assertEqual(i18n.tr("Такой надписи в словаре нет"), "Такой надписи в словаре нет")
         i18n.set_language("klingon")
         self.assertEqual(i18n.LANG, "ru")
 
     def test_dictionary_is_clean(self):
         for source, english in EN.items():
             self.assertTrue(english.strip(), source)
-            self.assertNotRegex(english, "[а-яё]", source)                   # перевод без русских букв
-            self.assertEqual(sorted(re.findall(r"\{\w*\}", source)), sorted(re.findall(r"\{\w*\}", english)),
+            # без русских букв - кроме примеров русского текста в «…» и [ … ]
+            self.assertNotRegex(re.sub(r"«[^»]*»|\[[^\]]*\]", "", english), "[а-яё]", source)
+            self.assertEqual(sorted(re.findall(r"\{[^{}]*\}", source)), sorted(re.findall(r"\{[^{}]*\}", english)),
                              source)                                          # подстановки те же
 
 

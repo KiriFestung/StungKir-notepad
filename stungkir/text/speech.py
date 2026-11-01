@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QTextEdit
 from ..core import config as C
 from .rhythm import sentences
 from ..core.textutil import MARKER_RE, plain_markup, position_map
+from ..core.i18n import tr
 
 RATES = {"Медленно": -0.3, "Обычно": 0.0, "Быстрее": 0.25, "Быстро": 0.5}
 
@@ -67,12 +68,12 @@ class SpeechMixin:
 
     def start_reading(self):
         if self.view is not None:
-            self.toast.show_message("Вслух читается глава, а не таблица, доска или хронология")
+            self.toast.show_message(tr("Вслух читается глава, а не таблица, доска или хронология"))
             return
         tts = self._speech()
         if tts is None:
             from ..ui.dialogs import show_warning
-            show_warning(self, "Чтение вслух", missing_voice_hint())
+            show_warning(self, tr("Чтение вслух"), missing_voice_hint())
             return
         tts.setRate(RATES.get(self.settings.value("speech_rate", "Обычно"), 0.0))
         wanted = self.settings.value("speech_voice", "") or ""
@@ -87,11 +88,11 @@ class SpeechMixin:
         queue = [self._sentence_cursor(s) for s in queue if speakable(s[4])]
         queue = [c for c in queue if c is not None]
         if not queue:
-            self.toast.show_message("Дальше курсора читать нечего: поставь курсор выше")
+            self.toast.show_message(tr("Дальше курсора читать нечего: поставь курсор выше"))
             return
         self._reading = queue
         self._typed_at = 0.0
-        self.toast.show_message("Читаю вслух - можно править дальше. F5 - остановить", 2600)
+        self.toast.show_message(tr("Читаю вслух - можно править дальше. F5 - остановить"), 2600)
         self._speak_next()
 
     def _sentence_cursor(self, sentence):
@@ -144,7 +145,7 @@ class SpeechMixin:
             else:
                 self.stop_reading()
         elif state == QTextToSpeech.State.Error:
-            self.toast.show_message("Голос перестал читать: " + self._tts.errorString(), 3500)
+            self.toast.show_message(tr("Голос перестал читать: ") + self._tts.errorString(), 3500)
             self.stop_reading()
 
     def stop_reading(self):
