@@ -8,6 +8,7 @@ import json
 from ..core import config as C
 from ..world.lore import load_lore_config, save_lore_config
 from ..core.storage import save_order, save_text
+from ..core.i18n import tr
 
 BOOK = "Пример · Туман над рекой"
 WORLD = "Пример · Мир"
@@ -140,13 +141,13 @@ class SampleMixin:
         self.rebuild_lore()
         self.refresh_tree()
         self.open_path(readme)
-        self.toast.show_message("Пример добавлен. Убрать - «Ещё → Файлы и импорт → Убрать пример»", 4000)
+        self.toast.show_message(tr("Пример добавлен. Убрать - «Ещё → Файлы и импорт → Убрать пример»"), 4000)
 
     def drop_sample(self):
         from PySide6.QtWidgets import QMessageBox
         from ..ui.dialogs import ask_question
         from ..core.trash import move_to_trash
-        answer = ask_question(self, "Убрать пример", "Убрать пример в корзину? Оттуда его можно вернуть 30 дней.")
+        answer = ask_question(self, tr("Убрать пример"), tr("Убрать пример в корзину? Оттуда его можно вернуть 30 дней."))
         if answer != QMessageBox.Yes:
             return
         if self.path is not None and any(f in self.path.parents for f in sample_folders()):
@@ -159,4 +160,4 @@ class SampleMixin:
         self.lore_cfg = load_lore_config()
         self.rebuild_lore()
         self.refresh_tree()
-        self.toast.show_message("Пример в корзине. Чистый лист!")
+        self.toast.show_message(tr("Пример в корзине. Чистый лист!"))

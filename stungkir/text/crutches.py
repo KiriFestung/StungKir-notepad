@@ -13,6 +13,7 @@ from ..ui.dialogs import Sheet, ask_text, show_warning
 from ..core.storage import LockedFile, files_in, load_crutches, read_text, save_crutches, save_text, snapshot
 from ..ui.style import rounded_menu
 from ..core.textutil import WORD_RE, Crutches, is_prose, plural, position_map, py_index, replace_span
+from ..core.i18n import tr
 
 
 def parse_entries(text):
@@ -65,7 +66,7 @@ class CrutchesDialog(Sheet):
     """Список штампов и сколько их в каждой главе."""
 
     def __init__(self, parent, entries, texts, key_of):
-        super().__init__(parent, "Мои штампы")
+        super().__init__(parent, tr("Мои штампы"))
         self.setMinimumSize(980, 560)
         self.texts = texts
         self.key_of = key_of
@@ -73,24 +74,24 @@ class CrutchesDialog(Sheet):
         body = QHBoxLayout()
         body.setSpacing(18)
         left = QVBoxLayout()
-        hint = QLabel("По слову или обороту в строке. Формы слова находятся сами: «вздохнул» - это и "
-                      "«вздохнула», и «вздохнули». Добавлять можно и из текста: правый клик по слову.")
+        hint = QLabel(tr("По слову или обороту в строке. Формы слова находятся сами: «вздохнул» - это и "
+                      "«вздохнула», и «вздохнули». Добавлять можно и из текста: правый клик по слову."))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         left.addWidget(hint)
         self.edit = QPlainTextEdit("\n".join(entries))
-        self.edit.setPlaceholderText("вдруг\nвнезапно\nоднако\nвздохнул\nпочувствовал, как")
+        self.edit.setPlaceholderText(tr("вдруг\nвнезапно\nоднако\nвздохнул\nпочувствовал, как"))
         left.addWidget(self.edit, 1)
         self.totals = QLabel("")
         self.totals.setWordWrap(True)
         left.addWidget(self.totals)
         body.addLayout(left, 1)
         right = QVBoxLayout()
-        title = QLabel("По главам: больше всего штампов сверху")
+        title = QLabel(tr("По главам: больше всего штампов сверху"))
         title.setObjectName("Section")
         right.addWidget(title)
         self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(["Глава", "Слов", "Штампов", "На 1000 слов"])
+        self.table.setHorizontalHeaderLabels([tr(name) for name in ["Глава", "Слов", "Штампов", "На 1000 слов"]])
         self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.setSelectionMode(QTableWidget.NoSelection)
@@ -102,25 +103,25 @@ class CrutchesDialog(Sheet):
         body.addLayout(right, 2)
         self.content.addLayout(body, 1)
         tools = QHBoxLayout()
-        find = QPushButton("Найти все места")
-        find.setToolTip("Список мест по всем главам: клик - открыть, правый клик - убрать или заменить")
+        find = QPushButton(tr("Найти все места"))
+        find.setToolTip(tr("Список мест по всем главам: клик - открыть, правый клик - убрать или заменить"))
         find.clicked.connect(lambda: self._finish("find"))
         tools.addWidget(find)
         tools.addSpacing(18)
-        tools.addWidget(QLabel("Заменить везде:"))
+        tools.addWidget(QLabel(tr("Заменить везде:")))
         self.which = QComboBox()
         self.which.setMinimumWidth(200)
         tools.addWidget(self.which)
-        replace = QPushButton("Выбрать места…")
+        replace = QPushButton(tr("Выбрать места…"))
         replace.clicked.connect(lambda: self._finish("replace"))
         tools.addWidget(replace)
         tools.addStretch()
         self.content.addLayout(tools)
         row = QHBoxLayout()
         row.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        save = QPushButton("Сохранить")
+        save = QPushButton(tr("Сохранить"))
         save.setDefault(True)
         save.clicked.connect(lambda: self._finish("save"))
         row.addWidget(cancel)
@@ -169,11 +170,11 @@ class ReplaceAllDialog(Sheet):
     """Все места одного штампа с галочками: заменяются только отмеченные."""
 
     def __init__(self, parent, entry, places, key_of):
-        super().__init__(parent, f"Заменить «{entry}»")
+        super().__init__(parent, tr("Заменить «{entry}»").format(entry=entry))
         self.setMinimumSize(720, 520)
         self.places = places
-        text = QLabel(f"Найдено: {len(places)}. Сними галочки там, где «{entry}» нужно оставить. "
-                      "Перед заменой каждая глава кладётся в «Версии файла» - всё можно вернуть.")
+        text = QLabel(tr("Найдено: {n}. Сними галочки там, где «{entry}» нужно оставить. Перед заменой каждая "
+                         "глава кладётся в «Версии файла» - всё можно вернуть.").format(n=len(places), entry=entry))
         text.setWordWrap(True)
         self.content.addWidget(text)
         self.list = QListWidget()
@@ -186,22 +187,22 @@ class ReplaceAllDialog(Sheet):
             self.list.addItem(item)
         self.content.addWidget(self.list, 1)
         row = QHBoxLayout()
-        row.addWidget(QLabel("Заменить на:"))
+        row.addWidget(QLabel(tr("Заменить на:")))
         self.replacement = QLineEdit()
-        self.replacement.setPlaceholderText("пусто - просто убрать слово")
+        self.replacement.setPlaceholderText(tr("пусто - просто убрать слово"))
         row.addWidget(self.replacement, 1)
-        none = QPushButton("Снять все")
+        none = QPushButton(tr("Снять все"))
         none.clicked.connect(lambda: self._check_all(Qt.Unchecked))
-        every = QPushButton("Отметить все")
+        every = QPushButton(tr("Отметить все"))
         every.clicked.connect(lambda: self._check_all(Qt.Checked))
         row.addWidget(none)
         row.addWidget(every)
         self.content.addLayout(row)
         buttons = QHBoxLayout()
         buttons.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        ok = QPushButton("Заменить отмеченные")
+        ok = QPushButton(tr("Заменить отмеченные"))
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
         buttons.addWidget(cancel)
@@ -234,14 +235,13 @@ class CrutchesMixin:
     def add_crutch(self, phrase):
         phrase = " ".join(phrase.split())
         if phrase.lower().replace("ё", "е") in {e.lower().replace("ё", "е") for e in self.crutch_entries}:
-            self.toast.show_message(f"«{phrase}» уже в моих штампах")
+            self.toast.show_message(tr("«{phrase}» уже в моих штампах").format(phrase=phrase))
             return
         self.crutch_entries.append(phrase)
         save_crutches(self.crutch_entries)
         self.apply_crutches()
         found = sum(Crutches([phrase]).count(text).get(phrase, 0) for _p, text in self.crutch_texts())
-        self.toast.show_message(f"«{phrase}» в моих штампах: по главам {found} "
-                                f"{plural(found, 'раз', 'раза', 'раз')}", 3000)
+        self.toast.show_message(tr("«{phrase}» в моих штампах: по главам {found} {n}").format(phrase=phrase, found=found, n=plural(found, 'раз', 'раза', 'раз')), 3000)
 
     def crutch_texts(self):
         """Главы для штампов: все текстовые файлы, кроме справочников мира, досок и таблиц."""
@@ -279,7 +279,7 @@ class CrutchesMixin:
         self.global_results.setFocus()
         if not self.crutch_entries:
             self.global_results.clear()
-            self.global_count.setText("Список пуст: «Ещё → Мои штампы» или правый клик по слову в тексте")
+            self.global_count.setText(tr("Список пуст: «Ещё → Мои штампы» или правый клик по слову в тексте"))
             return
         crutches = Crutches(self.crutch_entries)
         paths = {p for p, _t in self.crutch_texts()}
@@ -295,15 +295,15 @@ class CrutchesMixin:
     def crutch_menu(self, item, pos):
         path, position, length, found, entry = item.data(Qt.UserRole)
         menu = rounded_menu(self)
-        menu.addAction(f"Убрать «{found}» здесь", lambda: self._edit_place(item, ""))
-        menu.addAction("Заменить здесь на…", lambda: self._replace_here(item))
+        menu.addAction(tr("Убрать «{found}» здесь").format(found=found), lambda: self._edit_place(item, ""))
+        menu.addAction(tr("Заменить здесь на…"), lambda: self._replace_here(item))
         menu.addSeparator()
-        menu.addAction(f"Заменить «{entry}» везде…", lambda: self.replace_crutch_everywhere(entry))
+        menu.addAction(tr("Заменить «{entry}» везде…").format(entry=entry), lambda: self.replace_crutch_everywhere(entry))
         menu.exec(self.global_results.viewport().mapToGlobal(pos))
 
     def _replace_here(self, item):
         found = item.data(Qt.UserRole)[3]
-        text, ok = ask_text(self, "Заменить", f"Чем заменить «{found}»? Пусто - просто убрать.")
+        text, ok = ask_text(self, tr("Заменить"), tr("Чем заменить «{found}»? Пусто - просто убрать.").format(found=found))
         if ok:
             self._edit_place(item, text)
 
@@ -318,7 +318,7 @@ class CrutchesMixin:
         start = py_index(line, position - block.position())
         end = start + len(found)
         if line[start:end] != found:
-            show_warning(self, "Мои штампы", "Текст в этом месте уже изменился. Обновляю список.")
+            show_warning(self, tr("Мои штампы"), tr("Текст в этом месте уже изменился. Обновляю список."))
             self.show_crutch_places()
             return
         new, cursor_at = replace_span(line, start, end, replacement)
@@ -337,7 +337,7 @@ class CrutchesMixin:
             return
         places = crutch_places(crutches, self.crutch_texts())
         if not places:
-            show_warning(self, "Мои штампы", f"«{entry}» в главах не встречается.")
+            show_warning(self, tr("Мои штампы"), tr("«{entry}» в главах не встречается.").format(entry=entry))
             return
         dialog = ReplaceAllDialog(self, entry, places, self._position_key)
         if not dialog.exec():
@@ -359,11 +359,10 @@ class CrutchesMixin:
                     done += count
                     files += 1
             except (OSError, LockedFile) as error:
-                show_warning(self, "Мои штампы", f"«{self._position_key(path)}» не изменена:\n{error}")
+                show_warning(self, tr("Мои штампы"), tr("«{n}» не изменена:\n{error}").format(n=self._position_key(path), error=error))
         if self.path in by_file and self.view is None:
             self.check_external()                  # открытая глава перечитывается с диска
         self.remember_replace(changes)
-        self.toast.show_message(f"Заменено {done} в {files} {plural(files, 'главе', 'главах', 'главах')}. "
-                                "Нажми сюда - отменить", 6000, action=self.undo_replace)
+        self.toast.show_message(tr("Заменено {done} в {files} {n}. Нажми сюда - отменить").format(done=done, files=files, n=plural(files, 'главе', 'главах', 'главах')), 6000, action=self.undo_replace)
         if self.global_search.isVisible() and self.overlay_mode == "crutches":
             self.show_crutch_places()

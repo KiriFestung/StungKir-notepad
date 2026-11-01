@@ -13,6 +13,7 @@ from ..ui.dialogs import Sheet, show_warning
 from ..world.lore import Lore, LoreTerm, lore_stem
 from ..core.storage import LockedFile, files_in, read_text, save_text, snapshot
 from ..core.textutil import is_prose, name_key, plural, replace_span
+from ..core.i18n import tr
 
 
 def _case_like(word, sample):
@@ -108,27 +109,27 @@ class ReplaceDialog(Sheet):
     """Что искать, на что менять, и список всех мест с галочками."""
 
     def __init__(self, parent, query, texts, speller):
-        super().__init__(parent, "Найти и заменить во всех главах")
+        super().__init__(parent, tr("Найти и заменить во всех главах"))
         self.setMinimumSize(760, 600)
         self.texts = texts
         self.speller = speller
         self.places = []
         grid = QGridLayout()
         grid.setHorizontalSpacing(10)
-        grid.addWidget(QLabel("Найти:"), 0, 0)
+        grid.addWidget(QLabel(tr("Найти:")), 0, 0)
         self.find = QLineEdit(query)
         grid.addWidget(self.find, 0, 1)
-        grid.addWidget(QLabel("Заменить на:"), 1, 0)
+        grid.addWidget(QLabel(tr("Заменить на:")), 1, 0)
         self.new = QLineEdit()
-        self.new.setPlaceholderText("пусто - просто убрать")
+        self.new.setPlaceholderText(tr("пусто - просто убрать"))
         grid.addWidget(self.new, 1, 1)
         self.content.addLayout(grid)
         boxes = QHBoxLayout()
-        self.case = QCheckBox("С учётом регистра")
-        self.whole = QCheckBox("Целое слово")
+        self.case = QCheckBox(tr("С учётом регистра"))
+        self.whole = QCheckBox(tr("Целое слово"))
         self.whole.setChecked(True)
-        self.forms = QCheckBox("Все падежи (для имён и названий)")
-        self.forms.setToolTip("«Кира → Мира» заменит и «Киры» на «Миры», и «Кирой» на «Мирой»")
+        self.forms = QCheckBox(tr("Все падежи (для имён и названий)"))
+        self.forms.setToolTip(tr("«Кира → Мира» заменит и «Киры» на «Миры», и «Кирой» на «Мирой»"))
         for box in (self.case, self.whole, self.forms):
             boxes.addWidget(box)
             box.toggled.connect(self._later)
@@ -142,16 +143,16 @@ class ReplaceDialog(Sheet):
         self.list.setWordWrap(True)
         self.content.addWidget(self.list, 1)
         row = QHBoxLayout()
-        none = QPushButton("Снять все")
+        none = QPushButton(tr("Снять все"))
         none.clicked.connect(lambda: self._check_all(Qt.Unchecked))
-        every = QPushButton("Отметить все")
+        every = QPushButton(tr("Отметить все"))
         every.clicked.connect(lambda: self._check_all(Qt.Checked))
         row.addWidget(none)
         row.addWidget(every)
         row.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        self.ok = QPushButton("Заменить отмеченные")
+        self.ok = QPushButton(tr("Заменить отмеченные"))
         self.ok.setDefault(True)
         self.ok.clicked.connect(self.accept)
         row.addWidget(cancel)
@@ -187,13 +188,12 @@ class ReplaceDialog(Sheet):
             item.setCheckState(Qt.Checked)
             self.list.addItem(item)
         if not query:
-            self.count.setText("Напиши, что искать")
+            self.count.setText(tr("Напиши, что искать"))
         elif self.places:
-            self.count.setText(f"{len(self.places)} {plural(len(self.places), 'место', 'места', 'мест')} в "
-                               f"{len(files)} {plural(len(files), 'файле', 'файлах', 'файлах')}. Сними галочки там, "
-                               "где менять не надо. Перед заменой каждый файл кладётся в «Версии файла».")
+            self.count.setText(tr("{n} {n2} в {n3} {n4}. Сними галочки там, где менять не надо. Перед заменой "
+                                  "каждый файл кладётся в «Версии файла».").format(n=len(self.places), n2=plural(len(self.places), 'место', 'места', 'мест'), n3=len(files), n4=plural(len(files), 'файле', 'файлах', 'файлах')))
         else:
-            self.count.setText("Ничего не нашлось")
+            self.count.setText(tr("Ничего не нашлось"))
         self.ok.setEnabled(bool(self.places))
 
     def chosen(self):
@@ -224,7 +224,7 @@ class ReplaceMixin:
         """Отменить последнюю замену везде. Главы, которые с тех пор правили, не трогаются."""
         changes = getattr(self, "last_replace", None)
         if not changes:
-            self.toast.show_message("Нечего отменять: замен во всех главах ещё не было")
+            self.toast.show_message(tr("Нечего отменять: замен во всех главах ещё не было"))
             return
         if self.is_modified():
             self.save()
@@ -275,12 +275,11 @@ class ReplaceMixin:
                     done += count
                     files += 1
             except (OSError, LockedFile) as error:
-                show_warning(self, "Замена", f"«{path.stem}» не изменён:\n{error}")
+                show_warning(self, tr("Замена"), tr("«{stem}» не изменён:\n{error}").format(stem=path.stem, error=error))
         if self.path in by_file and self.view is None:
             self.check_external()
         self.rebuild_lore()
         self.remember_replace(changes)
-        self.toast.show_message(f"Заменено {done} в {files} {plural(files, 'файле', 'файлах', 'файлах')}. "
-                                "Нажми сюда - отменить", 6000, action=self.undo_replace)
+        self.toast.show_message(tr("Заменено {done} в {files} {n}. Нажми сюда - отменить").format(done=done, files=files, n=plural(files, 'файле', 'файлах', 'файлах')), 6000, action=self.undo_replace)
         if self.global_search.isVisible() and self.overlay_mode == "search":
             self.run_global_search()

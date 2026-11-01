@@ -19,26 +19,27 @@ from ..ui.style import frameless_menu, rounded_menu
 from ..ui.dialogs import Sheet, ask_question, ask_text
 from ..ui.widgets import RussianLineEdit, RussianTextEdit
 from .corkboard import FreeBoard, card_id
+from ..core.i18n import tr
 
 
 class CardDialog(Sheet):
     """Карточка сцены: название, описание, цвет, связанная глава."""
 
     def __init__(self, parent, card, chapters, on_foreign, existing):
-        super().__init__(parent, "Карточка сцены")
+        super().__init__(parent, tr("Карточка сцены"))
         self.setMinimumSize(480, 420)
         self.deleted = False
         layout = self.content
         self.title = RussianLineEdit(on_foreign)
-        self.title.setPlaceholderText("Название сцены")
+        self.title.setPlaceholderText(tr("Название сцены"))
         self.title.setText(card.get("title", ""))
         layout.addWidget(self.title)
         self.text = RussianTextEdit(on_foreign)
-        self.text.setPlaceholderText("Что происходит в сцене…")
+        self.text.setPlaceholderText(tr("Что происходит в сцене…"))
         self.text.setPlainText(card.get("text", ""))
         layout.addWidget(self.text, 1)
         row = QHBoxLayout()
-        row.addWidget(QLabel("Цвет:"))
+        row.addWidget(QLabel(tr("Цвет:")))
         self.swatches = []
         for name, color in C.CARD_COLORS:
             swatch = QPushButton("")
@@ -61,13 +62,13 @@ class CardDialog(Sheet):
         layout.addWidget(self.chapter)
         buttons = QHBoxLayout()
         if existing:
-            delete = QPushButton("Удалить карточку")
+            delete = QPushButton(tr("Удалить карточку"))
             delete.clicked.connect(self._delete)
             buttons.addWidget(delete)
         buttons.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        ok = QPushButton("Готово")
+        ok = QPushButton(tr("Готово"))
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
         buttons.addWidget(cancel)
@@ -170,7 +171,7 @@ class ColumnHeader(QWidget):
         self.column = column
         self._press = None
         self.setCursor(Qt.OpenHandCursor)
-        self.setToolTip("Перетащи, чтобы поменять колонки местами. Двойной клик - переименовать")
+        self.setToolTip(tr("Перетащи, чтобы поменять колонки местами. Двойной клик - переименовать"))
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -209,7 +210,7 @@ class BoardColumn(QFrame):
         self.title.setAttribute(Qt.WA_TransparentForMouseEvents)   # клики уходят заголовку
         top.addWidget(self.title, 1)
         add = QPushButton("+")
-        add.setToolTip("Новая карточка")
+        add.setToolTip(tr("Новая карточка"))
         add.setCursor(Qt.PointingHandCursor)
         add.clicked.connect(lambda: self.board.new_card(self))
         top.addWidget(add)
@@ -307,8 +308,8 @@ class BoardView(QWidget):
         self.mode = "columns"
         self.links = []                   # нитки пробковой доски: [[id, id]]
         self.mode_buttons = {}
-        for key, title, tip in (("columns", "Колонки", "Карточки стопками по колонкам"),
-                                ("free", "Пробка", "Карточки лежат где угодно, их можно связать нитками")):
+        for key, title, tip in (("columns", tr("Колонки"), tr("Карточки стопками по колонкам")),
+                                ("free", tr("Пробка"), tr("Карточки лежат где угодно, их можно связать нитками"))):
             button = QPushButton(title)
             button.setCheckable(True)
             button.setAutoExclusive(True)
@@ -321,12 +322,12 @@ class BoardView(QWidget):
             self.mode_buttons[key] = button
         self.mode_buttons["columns"].setChecked(True)
         row.addSpacing(10)
-        self.add_button = QPushButton("+ колонка")
+        self.add_button = QPushButton(tr("+ колонка"))
         self.add_button.setCursor(Qt.PointingHandCursor)
         self.add_button.clicked.connect(self.add_column)
         row.addWidget(self.add_button)
-        self.fit_button = QPushButton("Вписать")
-        self.fit_button.setToolTip("Показать все карточки целиком")
+        self.fit_button = QPushButton(tr("Вписать"))
+        self.fit_button.setToolTip(tr("Показать все карточки целиком"))
         self.fit_button.setCursor(Qt.PointingHandCursor)
         self.fit_button.clicked.connect(lambda: self.free.fit())
         row.addWidget(self.fit_button)
@@ -425,10 +426,10 @@ class BoardView(QWidget):
         self.pages.setCurrentWidget(self.free if free else self.scroll)
         self.add_button.setVisible(not free)
         self.fit_button.setVisible(free)
-        self.hint.setText("двойной клик - карточка · правый клик - нитка, цвет · Ctrl+колесо - масштаб · "
-                          "Shift+мышь - двигать" if free else
-                          "двойной клик - новая карточка или изменить; карточки и колонки (за заголовок) "
-                          "перетаскиваются мышкой")
+        self.hint.setText(tr("двойной клик - карточка · правый клик - нитка, цвет · Ctrl+колесо - масштаб · "
+                          "Shift+мышь - двигать") if free else
+                          tr("двойной клик - новая карточка или изменить; карточки и колонки (за заголовок) "
+                          "перетаскиваются мышкой"))
 
     def _sync_from_free(self):
         """Что поменялось на пробке (место, правки) - обратно в карточки колонок."""
@@ -487,23 +488,23 @@ class BoardView(QWidget):
     def free_menu(self, placed, where, global_pos):
         menu = rounded_menu(self)
         if placed is None:
-            menu.addAction("Новая карточка здесь", lambda: self.new_free_card(where))
-            menu.addAction("Вписать всё", self.free.fit)
+            menu.addAction(tr("Новая карточка здесь"), lambda: self.new_free_card(where))
+            menu.addAction(tr("Вписать всё"), self.free.fit)
         else:
             card = placed.card
-            menu.addAction("Изменить", lambda: self.edit_free_card(placed))
-            menu.addAction("Протянуть нитку… (потом щёлкни другую карточку)", lambda: self.free.start_link(placed))
+            menu.addAction(tr("Изменить"), lambda: self.edit_free_card(placed))
+            menu.addAction(tr("Протянуть нитку… (потом щёлкни другую карточку)"), lambda: self.free.start_link(placed))
             if any(placed in (l.first, l.second) for l in self.free.links):
-                menu.addAction("Убрать нитки", lambda: self.free.remove_links(placed))
+                menu.addAction(tr("Убрать нитки"), lambda: self.free.remove_links(placed))
             if card.get("chapter"):
-                menu.addAction("Открыть главу", lambda: self.open_chapter(card["chapter"]))
-            colors = frameless_menu(menu.addMenu("Цвет"))
+                menu.addAction(tr("Открыть главу"), lambda: self.open_chapter(card["chapter"]))
+            colors = frameless_menu(menu.addMenu(tr("Цвет")))
             names = {"none": "Без цвета", "purple": "Фиолетовый", "amber": "Янтарный",
                      "green": "Зелёный", "coral": "Коралловый"}
             for name, _ in C.CARD_COLORS:
                 colors.addAction(names[name], lambda n=name: self._free_color(placed, n))
             menu.addSeparator()
-            menu.addAction("Удалить", lambda: self._free_delete(placed))
+            menu.addAction(tr("Удалить"), lambda: self._free_delete(placed))
         menu.exec(global_pos)
 
     def _free_color(self, placed, color):
@@ -562,21 +563,21 @@ class BoardView(QWidget):
 
     # ---- колонки ----
     def add_column(self, index=None):
-        name, ok = ask_text(self, "Новая колонка", "Название колонки:")
+        name, ok = ask_text(self, tr("Новая колонка"), tr("Название колонки:"))
         if ok:
             self._make_column(name.strip() or "Без названия", index)
             self.changed()
 
     def rename_column(self, column):
-        name, ok = ask_text(self, "Колонка", "Название колонки:", text=column.title.text())
+        name, ok = ask_text(self, tr("Колонка"), tr("Название колонки:"), text=column.title.text())
         if ok:
             column.title.setText(name.strip() or "Без названия")
             self.changed()
 
     def remove_column(self, column):
         if column.list.count():
-            answer = ask_question(self, "Удалить колонку",
-                                          f"Удалить колонку «{column.title.text()}» вместе с карточками?")
+            answer = ask_question(self, tr("Удалить колонку"),
+                                          tr("Удалить колонку «{n}» вместе с карточками?").format(n=column.title.text()))
             if answer != QMessageBox.Yes:
                 return
         self.columns.remove(column)
@@ -633,13 +634,13 @@ class BoardView(QWidget):
 
     def column_menu(self, column, button):
         menu = rounded_menu(self)
-        menu.addAction("Новая карточка", lambda: self.new_card(column))
-        menu.addAction("Переименовать", lambda: self.rename_column(column))
-        menu.addAction("Сдвинуть влево", lambda: self.move_column(column, -1))
-        menu.addAction("Сдвинуть вправо", lambda: self.move_column(column, 1))
-        menu.addAction("Вставить колонку справа", lambda: self.add_column(self.columns.index(column) + 1))
+        menu.addAction(tr("Новая карточка"), lambda: self.new_card(column))
+        menu.addAction(tr("Переименовать"), lambda: self.rename_column(column))
+        menu.addAction(tr("Сдвинуть влево"), lambda: self.move_column(column, -1))
+        menu.addAction(tr("Сдвинуть вправо"), lambda: self.move_column(column, 1))
+        menu.addAction(tr("Вставить колонку справа"), lambda: self.add_column(self.columns.index(column) + 1))
         menu.addSeparator()
-        menu.addAction("Удалить колонку", lambda: self.remove_column(column))
+        menu.addAction(tr("Удалить колонку"), lambda: self.remove_column(column))
         menu.exec(button.mapToGlobal(QPoint(0, button.height())))
 
     # ---- карточки ----
@@ -673,19 +674,19 @@ class BoardView(QWidget):
         item = column.list.itemAt(pos)
         menu = rounded_menu(self)
         if item is None:
-            menu.addAction("Новая карточка", lambda: self.new_card(column))
+            menu.addAction(tr("Новая карточка"), lambda: self.new_card(column))
         else:
             card = json.loads(item.data(Qt.UserRole) or "{}")
-            menu.addAction("Изменить", lambda: self.edit_card(column, item))
+            menu.addAction(tr("Изменить"), lambda: self.edit_card(column, item))
             if card.get("chapter"):
-                menu.addAction("Открыть главу", lambda: self.open_chapter(card["chapter"]))
-            colors = frameless_menu(menu.addMenu("Цвет"))
+                menu.addAction(tr("Открыть главу"), lambda: self.open_chapter(card["chapter"]))
+            colors = frameless_menu(menu.addMenu(tr("Цвет")))
             names = {"none": "Без цвета", "purple": "Фиолетовый", "amber": "Янтарный",
                      "green": "Зелёный", "coral": "Коралловый"}
             for name, _ in C.CARD_COLORS:
                 colors.addAction(names[name], lambda n=name: self.set_color(item, n))
             menu.addSeparator()
-            menu.addAction("Удалить", lambda: (column.list.takeItem(column.list.row(item)), self.changed()))
+            menu.addAction(tr("Удалить"), lambda: (column.list.takeItem(column.list.row(item)), self.changed()))
         menu.exec(column.list.viewport().mapToGlobal(pos))
 
     # ---- поиск и знаки ----

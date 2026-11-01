@@ -130,6 +130,7 @@ LEVEL_CHALLENGES = {
     ]),
 }
 from .challenges_extra import MORE  # noqa: E402 - ещё по сорок на ступень и шестая, самая чёрная
+from ..core.i18n import tr
 
 for _level, _items in MORE.items():
     if _level in LEVEL_CHALLENGES:
@@ -525,30 +526,30 @@ class OwnChallengesDialog(Sheet):
     """Свои вызовы: каждый с новой строки. Выпадают вместе со встроенными или только они."""
 
     def __init__(self, parent, text, only_own):
-        super().__init__(parent, "Свои вызовы")
+        super().__init__(parent, tr("Свои вызовы"))
         self.setMinimumWidth(640)
-        hint = QLabel("Каждый вызов - с новой строки. Например: «Сцена в темноте - только звуки и запахи».")
+        hint = QLabel(tr("Каждый вызов - с новой строки. Например: «Сцена в темноте - только звуки и запахи»."))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         self.content.addWidget(hint)
         self.edit = QPlainTextEdit()
         self.edit.setPlainText(text)
-        self.edit.setPlaceholderText("Напиши свои вызовы здесь…")
+        self.edit.setPlaceholderText(tr("Напиши свои вызовы здесь…"))
         self.edit.setMinimumHeight(220)
         self.content.addWidget(self.edit, 1)
-        self.only = QCheckBox("Только свои - встроенные не выпадают")
+        self.only = QCheckBox(tr("Только свои - встроенные не выпадают"))
         self.only.setChecked(only_own)
         self.content.addWidget(self.only)
         row = QHBoxLayout()
-        builtin = QPushButton("Вставить встроенные")
-        builtin.setToolTip("Встроенные вызовы допишутся в список: лишние удали, остальные поправь, "
-                           "и поставь галочку «Только свои»")
+        builtin = QPushButton(tr("Вставить встроенные"))
+        builtin.setToolTip(tr("Встроенные вызовы допишутся в список: лишние удали, остальные поправь, "
+                           "и поставь галочку «Только свои»"))
         builtin.clicked.connect(self._insert_builtin)
         row.addWidget(builtin)
         row.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        ok = QPushButton("Сохранить")
+        ok = QPushButton(tr("Сохранить"))
         ok.setObjectName("Primary")
         ok.setDefault(True)
         ok.clicked.connect(self.accept)

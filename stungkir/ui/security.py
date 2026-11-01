@@ -11,14 +11,15 @@ from ..core.storage import (LockedFile, build_lock, check_password, content_file
 from .dialogs import (
     CodeEntryDialog, PasswordDialog, RecoveryCodeDialog, ask_question, show_error, show_warning,
 )
+from ..core.i18n import tr
 
 
 def recover_with_code(parent):
     """«Забыл пароль»: вход по коду восстановления и новый пароль. True - вошли."""
     if lock_version() == 1:
-        show_warning(parent, "Код восстановления",
-                     "Код восстановления появился в новой версии StungKir, а пароль ставили раньше - "
-                     "для этих текстов кода ещё нет. Войди паролем: блокнот сразу предложит создать код.")
+        show_warning(parent, tr("Код восстановления"),
+                     tr("Код восстановления появился в новой версии StungKir, а пароль ставили раньше - "
+                     "для этих текстов кода ещё нет. Войди паролем: блокнот сразу предложит создать код."))
         return False
     if not CodeEntryDialog(parent, S.unlock_recovery).exec():
         return False
@@ -27,7 +28,7 @@ def recover_with_code(parent):
         try:
             rewrap_lock(password=dialog.password)
         except OSError as error:
-            show_error(parent, "Новый пароль", f"Не получилось записать файл ключа, пароль прежний:\n{error}")
+            show_error(parent, tr("Новый пароль"), tr("Не получилось записать файл ключа, пароль прежний:\n{error}").format(error=error))
     return True
 
 
@@ -40,7 +41,7 @@ def offer_recovery_code(parent, password):
     try:
         rewrap_lock(password=password, code=code)
     except OSError as error:
-        show_error(parent, "Код восстановления", f"Не получилось записать файл ключа:\n{error}")
+        show_error(parent, tr("Код восстановления"), tr("Не получилось записать файл ключа:\n{error}").format(error=error))
         return False
     return True
 
@@ -105,25 +106,25 @@ class SecurityMixin:
         failed = self._write_all(texts, S.CRYPTO)
         done = len(texts) - len(failed)
         if done:
-            self.toast.show_message(f"Дошифровал файлов: {done}", 3000)
+            self.toast.show_message(tr("Дошифровал файлов: {done}").format(done=done), 3000)
         if failed or len(texts) < len(plain):
-            self._report("Не всё зашифровано",
+            self._report(tr("Не всё зашифровано"),
                          "Эти файлы остаются открытыми, их не получилось зашифровать:",
                          failed + [p for p in plain if p not in texts])
 
     def set_password(self):
         if not crypto_available():
-            show_warning(self, "Пароль", "Для шифрования нужна библиотека cryptography.\n"
-                                "Запусти install.sh ещё раз, он её поставит.")
+            show_warning(self, tr("Пароль"), tr("Для шифрования нужна библиотека cryptography.\n"
+                                "Запусти install.sh ещё раз, он её поставит."))
             return
         warning = ask_question(
-            self, "Поставить пароль",
-            "Все тексты будут храниться зашифрованными.\n\n"
+            self, tr("Поставить пароль"),
+            tr("Все тексты будут храниться зашифрованными.\n\n"
             "• Ты получишь код восстановления. Если потеряешь и пароль, и код, вернуть тексты не получится никак.\n"
             "• На телефоне через Syncthing файлы будут нечитаемы, "
             "пока не появится своя версия StungKir для телефона.\n"
             "• Названия глав и категорий остаются видны.\n\n"
-            "Продолжить?")
+            "Продолжить?"))
         if warning != QMessageBox.Yes:
             return
         dialog = PasswordDialog(self, "Новый пароль", "Придумай пароль. Лучше фраза из нескольких слов.",
@@ -142,19 +143,19 @@ class SecurityMixin:
         lock = build_lock(master, password, code)
         texts, unreadable = self._read_all()
         if unreadable:
-            self._report("Пароль не поставлен",
+            self._report(tr("Пароль не поставлен"),
                          "Эти файлы не получилось прочитать, поэтому я ничего не менял:", unreadable)
             return
         try:
             write_lock(lock)
         except OSError as error:
-            show_error(self, "Пароль не поставлен", f"Не получилось записать файл ключа:\n{error}")
+            show_error(self, tr("Пароль не поставлен"), tr("Не получилось записать файл ключа:\n{error}").format(error=error))
             return
         # с этого момента всё новое сохраняется зашифрованным
         S.CRYPTO, S.KEY = crypto, master
         failed = self._write_all(texts, crypto)
         if failed:
-            self._report("Пароль поставлен, но не везде",
+            self._report(tr("Пароль поставлен, но не везде"),
                          "Эти файлы пока остались незашифрованными. Пароль уже стоит, а при "
                          "следующем запуске StungKir попробует дошифровать их сам:", failed)
             return
@@ -165,7 +166,7 @@ class SecurityMixin:
             message += f" Старые копии с открытым текстом удалены ({purged}), сделана новая зашифрованная."
         else:
             message += " Новую резервную копию сделать не получилось, проверь папку копий в настройках."
-        show_warning(self, "Пароль поставлен", message)
+        show_warning(self, tr("Пароль поставлен"), message)
 
     def change_password(self):
         current = PasswordDialog(self, "Сменить пароль", "Сначала введи нынешний пароль.",
@@ -173,7 +174,7 @@ class SecurityMixin:
         if not current.exec():
             return
         if current.recovered:
-            self.toast.show_message("Пароль сменён")    # по коду новый пароль уже поставлен
+            self.toast.show_message(tr("Пароль сменён"))    # по коду новый пароль уже поставлен
             return
         dialog = PasswordDialog(self, "Новый пароль", "Придумай новый пароль. Тексты перешифровывать "
                                 "не нужно - сменится только замок.", confirm=True)
@@ -186,9 +187,9 @@ class SecurityMixin:
             else:
                 rewrap_lock(password=dialog.password)
         except OSError as error:
-            show_error(self, "Пароль", f"Не получилось записать файл ключа, пароль остался прежним:\n{error}")
+            show_error(self, tr("Пароль"), tr("Не получилось записать файл ключа, пароль остался прежним:\n{error}").format(error=error))
             return
-        self.toast.show_message("Пароль сменён")
+        self.toast.show_message(tr("Пароль сменён"))
 
     def new_recovery_code(self):
         current = PasswordDialog(self, "Новый код восстановления",
@@ -203,9 +204,9 @@ class SecurityMixin:
         try:
             rewrap_lock(password=password if lock_version() == 1 else None, code=code)
         except OSError as error:
-            show_error(self, "Код восстановления", f"Не получилось записать файл ключа:\n{error}")
+            show_error(self, tr("Код восстановления"), tr("Не получилось записать файл ключа:\n{error}").format(error=error))
             return
-        self.toast.show_message("Новый код восстановления сохранён, старый больше не работает")
+        self.toast.show_message(tr("Новый код восстановления сохранён, старый больше не работает"))
 
     def remove_password(self):
         dialog = PasswordDialog(self, "Снять пароль",
@@ -217,7 +218,7 @@ class SecurityMixin:
             return
         texts, unreadable = self._read_all()
         if unreadable:
-            self._report("Пароль не снят",
+            self._report(tr("Пароль не снят"),
                          "Эти файлы не открываются этим паролем. Чтобы они не остались без ключа, "
                          "я ничего не менял, пароль остаётся:", unreadable)
             return
@@ -225,7 +226,7 @@ class SecurityMixin:
         if failed:
             # часть файлов уже открыта, часть ещё нет: ключ и шифрование оставляем,
             # так что всё по-прежнему читается, а новое сохраняется зашифрованным
-            self._report("Пароль не снят",
+            self._report(tr("Пароль не снят"),
                          "Эти файлы не получилось расшифровать. Пароль остаётся, всё читается как раньше. "
                          "Можно попробовать ещё раз:", failed)
             return
@@ -234,11 +235,11 @@ class SecurityMixin:
         try:
             lock_path().unlink(missing_ok=True)
         except OSError as error:
-            show_error(self, "Пароль", f"Файлы расшифрованы, но файл ключа не удалился:\n{error}")
+            show_error(self, tr("Пароль"), tr("Файлы расшифрованы, но файл ключа не удалился:\n{error}").format(error=error))
             return
         backup = make_backup()
         self.recode_snapshots(old_crypto, None)
         message = f"Пароль снят: расшифровано файлов {len(texts)}."
         if not backup:
             message += " Новую резервную копию сделать не получилось."
-        show_warning(self, "Пароль снят", message)
+        show_warning(self, tr("Пароль снят"), message)

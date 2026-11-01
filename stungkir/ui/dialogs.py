@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 from ..core import config as C
 from ..core.storage import LockBroken, lock_path
 from .style import translucency_ok
+from ..core.i18n import tr
 
 
 # ---------------- окна в стиле программы ----------------
@@ -211,31 +212,31 @@ class NoteDialog(Sheet):
     """Окно одной заметки на полях."""
 
     def __init__(self, parent, text="", existing=False, paragraph=""):
-        super().__init__(parent, "Заметка на полях")
+        super().__init__(parent, tr("Заметка на полях"))
         self.setMinimumWidth(460)
         self.action = None
         if paragraph.strip():
             quote = paragraph.strip()
             quote = quote if len(quote) <= 90 else quote[:90].rstrip() + "…"
-            label = QLabel(f"К абзацу: {quote}")
+            label = QLabel(tr("К абзацу: {quote}").format(quote=quote))
             label.setObjectName("Status")
             label.setWordWrap(True)
             self.content.addWidget(label)
         self.field = QPlainTextEdit(text)
-        self.field.setPlaceholderText("Мысль, вопрос к себе, что проверить… В книгу не попадает.")
+        self.field.setPlaceholderText(tr("Мысль, вопрос к себе, что проверить… В книгу не попадает."))
         self.field.setMinimumHeight(130)
         self.content.addWidget(self.field)
         row = QHBoxLayout()
         if existing:
-            remove = QPushButton("Удалить")
+            remove = QPushButton(tr("Удалить"))
             remove.setAutoDefault(False)
             remove.clicked.connect(lambda: self._finish("delete"))
             row.addWidget(remove)
         row.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.setAutoDefault(False)
         cancel.clicked.connect(self.reject)
-        ok = QPushButton("Готово")
+        ok = QPushButton(tr("Готово"))
         ok.clicked.connect(lambda: self._finish("save"))
         row.addWidget(cancel)
         row.addWidget(ok)
@@ -317,10 +318,10 @@ class HotkeysDialog(Sheet):
 
     def __init__(self, parent, keys=None):
         from PySide6.QtWidgets import QKeySequenceEdit, QScrollArea, QWidget
-        super().__init__(parent, "Горячие клавиши")
+        super().__init__(parent, tr("Горячие клавиши"))
         self.setMinimumSize(620, 560)
         self.keys = dict(keys or DEFAULT_KEYS)
-        hint = QLabel("Щёлкни по клавишам и нажми новое сочетание. Пустое - без клавиши.")
+        hint = QLabel(tr("Щёлкни по клавишам и нажми новое сочетание. Пустое - без клавиши."))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         self.content.addWidget(hint)
@@ -336,18 +337,18 @@ class HotkeysDialog(Sheet):
             edit.keySequenceChanged.connect(self._check)
             self.edits[code] = edit
             grid.addWidget(edit, row, 0)
-            grid.addWidget(QLabel(what), row, 1)
+            grid.addWidget(QLabel(tr(what)), row, 1)
         for row, (keys_text, what) in enumerate(KEY_TRICKS, len(KEY_ACTIONS)):
             key = QLabel(keys_text)
             key.setObjectName("Section")
             grid.addWidget(key, row, 0)
-            grid.addWidget(QLabel(what), row, 1)
+            grid.addWidget(QLabel(tr(what)), row, 1)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
         scroll.setWidget(holder)
         self.content.addWidget(scroll, 1)
-        tip = QLabel("Подвести мышь к левому краю окна - файлы, к правому - знаки, таймер и кубики.")
+        tip = QLabel(tr("Подвести мышь к левому краю окна - файлы, к правому - знаки, таймер и кубики."))
         tip.setObjectName("Status")
         tip.setWordWrap(True)
         self.content.addWidget(tip)
@@ -356,13 +357,13 @@ class HotkeysDialog(Sheet):
         self.problem.setStyleSheet(f"color: {C.SPELL};")
         self.content.addWidget(self.problem)
         row = QHBoxLayout()
-        reset = QPushButton("Вернуть как было")
+        reset = QPushButton(tr("Вернуть как было"))
         reset.clicked.connect(self.reset)
         row.addWidget(reset)
         row.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        self.ok = QPushButton("Сохранить")
+        self.ok = QPushButton(tr("Сохранить"))
         self.ok.setObjectName("Primary")
         self.ok.setDefault(True)
         self.ok.clicked.connect(self.accept)
@@ -445,11 +446,11 @@ class PasswordDialog(Sheet):
         layout.addWidget(label)
         self.first = QLineEdit()
         self.first.setEchoMode(QLineEdit.Password)
-        self.first.setPlaceholderText("Пароль")
+        self.first.setPlaceholderText(tr("Пароль"))
         layout.addWidget(self.first)
         self.second = QLineEdit()
         self.second.setEchoMode(QLineEdit.Password)
-        self.second.setPlaceholderText("Ещё раз")
+        self.second.setPlaceholderText(tr("Ещё раз"))
         self.second.setVisible(confirm)
         layout.addWidget(self.second)
         self.error = QLabel("")
@@ -458,13 +459,13 @@ class PasswordDialog(Sheet):
         layout.addWidget(self.error)
         row = QHBoxLayout()
         row.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        ok = QPushButton("Готово")
+        ok = QPushButton(tr("Готово"))
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
         self.ok_button = ok
-        self.forgot = QPushButton("Забыл пароль? Войти по коду")
+        self.forgot = QPushButton(tr("Забыл пароль? Войти по коду"))
         self.forgot.setObjectName("Link")
         self.forgot.setAutoDefault(False)
         self.forgot.clicked.connect(self._recover)
@@ -509,22 +510,27 @@ class PasswordDialog(Sheet):
             self._succeeded()
             super().accept()
 
+    @staticmethod
+    def _waiting_prefix():
+        """Начало надписи «подожди» на языке интерфейса - по нему видно, что сейчас идёт отсчёт."""
+        return tr("Неверный пароль. Следующая попытка через {left} с").split("{")[0]
+
     def _countdown(self):
         self._show_forgot()
         left = self._wait_left()
         self.first.setEnabled(not left)
         self.ok_button.setEnabled(not left)
         if left:
-            wrapped = self.error.text().startswith("Неверный пароль. Следующая")
-            self.error.setText(f"Неверный пароль. Следующая попытка через {left} с")
+            wrapped = self.error.text().startswith(self._waiting_prefix())
+            self.error.setText(tr("Неверный пароль. Следующая попытка через {left} с").format(left=left))
             if not wrapped:
                 self.adjustSize()
             if not self.tick.isActive():
                 self.tick.start()
         else:
             self.tick.stop()
-            if self.error.text().startswith("Неверный пароль. Следующая"):
-                self.error.setText("Неверный пароль")
+            if self.error.text().startswith(self._waiting_prefix()):
+                self.error.setText(tr("Неверный пароль"))
             self.first.setFocus()
 
     def _failed(self):
@@ -544,13 +550,13 @@ class PasswordDialog(Sheet):
     def accept(self):
         password = self.first.text()
         if not password:
-            self.error.setText("Введи пароль")
+            self.error.setText(tr("Введи пароль"))
             return
         if self.confirm and len(password) < 6:
-            self.error.setText("Нужно хотя бы 6 символов")
+            self.error.setText(tr("Нужно хотя бы 6 символов"))
             return
         if self.confirm and password != self.second.text():
-            self.error.setText("Пароли не совпадают")
+            self.error.setText(tr("Пароли не совпадают"))
             return
         if self.check and self._wait_left():
             self._countdown()
@@ -558,10 +564,10 @@ class PasswordDialog(Sheet):
         try:
             accepted = self.check(password) if self.check else True
         except LockBroken:
-            self.error.setText(f"Файл ключа повреждён ({lock_path().name}). Возьми его из резервной копии.")
+            self.error.setText(tr("Файл ключа повреждён ({name}). Возьми его из резервной копии.").format(name=lock_path().name))
             return
         if not accepted:
-            self.error.setText("Неверный пароль")
+            self.error.setText(tr("Неверный пароль"))
             self.first.clear()
             if self.check:
                 self._failed()
@@ -576,12 +582,12 @@ class RecoveryCodeDialog(Sheet):
     """Показывает код восстановления один раз. Дальше - только с галочкой «записал»."""
 
     def __init__(self, parent, code, intro=""):
-        super().__init__(parent, "Код восстановления")
+        super().__init__(parent, tr("Код восстановления"))
         self.setMinimumWidth(520)
         text = QLabel((intro + "\n\n" if intro else "") +
-                      "Если забудешь пароль, этим кодом можно будет войти и поставить новый. "
+                      tr("Если забудешь пароль, этим кодом можно будет войти и поставить новый. "
                       "Запиши его на бумагу или в менеджер паролей - больше он нигде не покажется. "
-                      "Не храни его в папке StungKir: кто найдёт код, тот откроет тексты.")
+                      "Не храни его в папке StungKir: кто найдёт код, тот откроет тексты."))
         text.setWordWrap(True)
         self.content.addWidget(text)
         shown = QLabel(code)
@@ -594,17 +600,17 @@ class RecoveryCodeDialog(Sheet):
         font.setLetterSpacing(font.SpacingType.AbsoluteSpacing, 2)
         shown.setFont(font)
         self.content.addWidget(shown)
-        self.written = QCheckBox("Я записал код")
+        self.written = QCheckBox(tr("Я записал код"))
         self.content.addWidget(self.written)
         row = QHBoxLayout()
-        copy = QPushButton("Скопировать")
+        copy = QPushButton(tr("Скопировать"))
         copy.setAutoDefault(False)
         copy.clicked.connect(lambda: QApplication.clipboard().setText(code))
         row.addWidget(copy)
         row.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        self.ok = QPushButton("Готово")
+        self.ok = QPushButton(tr("Готово"))
         self.ok.setDefault(True)
         self.ok.setEnabled(False)
         self.ok.clicked.connect(self.accept)
@@ -618,11 +624,11 @@ class CodeEntryDialog(Sheet):
     """Ввод кода восстановления. check(code) -> подошёл ли."""
 
     def __init__(self, parent, check):
-        super().__init__(parent, "Вход по коду")
+        super().__init__(parent, tr("Вход по коду"))
         self.setMinimumWidth(520)
         self.check = check
-        label = QLabel("Введи код восстановления, который блокнот показал, когда ставили пароль. "
-                       "Дефисы и регистр не важны.")
+        label = QLabel(tr("Введи код восстановления, который блокнот показал, когда ставили пароль. "
+                       "Дефисы и регистр не важны."))
         label.setWordWrap(True)
         self.content.addWidget(label)
         self.field = QLineEdit()
@@ -634,9 +640,9 @@ class CodeEntryDialog(Sheet):
         self.content.addWidget(self.error)
         row = QHBoxLayout()
         row.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        ok = QPushButton("Войти")
+        ok = QPushButton(tr("Войти"))
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
         row.addWidget(cancel)
@@ -648,10 +654,10 @@ class CodeEntryDialog(Sheet):
         try:
             accepted = self.check(self.field.text())
         except LockBroken:
-            self.error.setText(f"Файл ключа повреждён ({lock_path().name}). Возьми его из резервной копии.")
+            self.error.setText(tr("Файл ключа повреждён ({name}). Возьми его из резервной копии.").format(name=lock_path().name))
             return
         if not accepted:
-            self.error.setText("Код не подходит. Проверь, нет ли опечатки.")
+            self.error.setText(tr("Код не подходит. Проверь, нет ли опечатки."))
             self.adjustSize()
             return
         super().accept()

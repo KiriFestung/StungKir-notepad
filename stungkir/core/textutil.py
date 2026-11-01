@@ -38,6 +38,10 @@ EMPH_RE = re.compile(r"\*\*(?=\S)(.+?)(?<=\S)\*\*|(?<![*\w])\*(?=\S)([^*\n]+?)(?
 
 # ---------------- мелкие помощники ----------------
 def plural(n, one, few, many):
+    from .i18n import english_plural
+    english = english_plural(n, (one, few, many))
+    if english is not None:
+        return english
     n = abs(n)
     if n % 10 == 1 and n % 100 != 11:
         return one

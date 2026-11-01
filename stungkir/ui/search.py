@@ -12,6 +12,7 @@ from ..core import config as C
 from .style import fade
 from ..core.textutil import MARKER_FILLED_RE, plural, searchable_text, utf16_len
 from ..core.storage import LockedFile, files_in, read_text
+from ..core.i18n import tr
 
 
 class SearchMixin:
@@ -51,7 +52,7 @@ class SearchMixin:
         query = self.find_edit.text()
         if self.table_mode:
             current, total = self.view.find(query, backward) if query else (0, 0)
-            self.find_count.setText("" if not query else (f"{current} из {total}" if total else "нет"))
+            self.find_count.setText("" if not query else (tr("{current} из {total}").format(current=current, total=total) if total else tr("нет")))
             return
         if query:
             doc = self.editor.document()
@@ -76,7 +77,7 @@ class SearchMixin:
         query = self.find_edit.text()
         if self.table_mode:
             current, total = self.view.count(query) if query else (0, 0)
-            self.find_count.setText("" if not query else (f"{current} из {total}" if total else "нет"))
+            self.find_count.setText("" if not query else (tr("{current} из {total}").format(current=current, total=total) if total else tr("нет")))
             return
         selections, total, current = [], 0, 0
         if query:
@@ -101,9 +102,9 @@ class SearchMixin:
         if not query:
             self.find_count.setText("")
         elif total:
-            self.find_count.setText(f"{current} из {total}")
+            self.find_count.setText(tr("{current} из {total}").format(current=current, total=total))
         else:
-            self.find_count.setText("нет")
+            self.find_count.setText(tr("нет"))
 
     # ---------------- поиск по всем файлам и пометки ----------------
     def _open_overlay(self, mode):
@@ -147,7 +148,7 @@ class SearchMixin:
         if len(query) < 2:
             self.global_results.clear()
             self._empty_picture(None)
-            self.global_count.setText("Напиши хотя бы две буквы")
+            self.global_count.setText(tr("Напиши хотя бы две буквы"))
             return
         self._fill_results(re.compile(re.escape(query), re.IGNORECASE))
 
@@ -216,15 +217,15 @@ class SearchMixin:
                 extra += ": " + " · ".join(f"{k} {v}" for k, v in sorted(per_label.items(), key=lambda x: -x[1]))
                 extra += ". Правый клик - убрать или заменить"
             self.global_count.setText(
-                f"{total} {what} в {files_hit} {plural(files_hit, 'файле', 'файлах', 'файлах')}{extra}")
+                tr("{total} {what} в {files_hit} {n}{extra}").format(total=total, what=what, files_hit=files_hit, n=plural(files_hit, 'файле', 'файлах', 'файлах'), extra=extra))
         elif self.overlay_mode == "markers":
-            self.global_count.setText("Пометок нет. Поставь [вот так] в тексте или нажми F7")
+            self.global_count.setText(tr("Пометок нет. Поставь [вот так] в тексте или нажми F7"))
         elif self.overlay_mode == "crutches":
-            self.global_count.setText("Ни одного штампа из списка - чисто")
+            self.global_count.setText(tr("Ни одного штампа из списка - чисто"))
         elif self.overlay_mode == "speakers":
-            self.global_count.setText("Везде понятно, кто говорит")
+            self.global_count.setText(tr("Везде понятно, кто говорит"))
         else:
-            self.global_count.setText("Ничего не нашлось")
+            self.global_count.setText(tr("Ничего не нашлось"))
 
     def _empty_picture(self, name):
         """Посреди пустого списка: ласка с лупой (ничего не нашлось) или чистая закладка (пометок нет)."""

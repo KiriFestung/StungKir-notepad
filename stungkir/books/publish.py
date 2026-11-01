@@ -20,6 +20,7 @@ from ..ui.dialogs import Sheet
 from .export import IMAGE_LINE_RE
 from ..core.storage import LockedFile, files_in, read_text
 from ..core.textutil import is_prose, plural
+from ..core.i18n import tr
 
 API = "https://api.github.com"
 TOKEN_HELP = ("Ключ: github.com → значок профиля → Settings → Developer settings → Personal access tokens → "
@@ -169,14 +170,14 @@ class PublishDialog(Sheet):
     """Где сайт и ключ, что изменится - и только потом «Выложить»."""
 
     def __init__(self, parent, folder, collect, opener=None):
-        super().__init__(parent, f"Выложить на сайт · {folder.name}")
+        super().__init__(parent, tr("Выложить на сайт · {name}").format(name=folder.name))
         self.setMinimumWidth(620)
         self.folder, self.collect, self.opener = folder, collect, opener
         self.store = QSettings(C.APP_ID, C.APP_ID)
         self.pending = None
         grid = QGridLayout()
         self.repo = QLineEdit(self.store.value("publish_repo", ""))
-        self.repo.setPlaceholderText("владелец/репозиторий, например KiriFesTung/SeMo")
+        self.repo.setPlaceholderText(tr("владелец/репозиторий, например KiriFesTung/SeMo"))
         self.token = QLineEdit(self.store.value("publish_token", ""))
         self.token.setEchoMode(QLineEdit.Password)
         self.token.setPlaceholderText("github_pat_…")
@@ -184,21 +185,21 @@ class PublishDialog(Sheet):
             grid.addWidget(QLabel(label), row, 0)
             grid.addWidget(widget, row, 1)
         self.content.addLayout(grid)
-        hint = QLabel(TOKEN_HELP + "\nНа сайт уходят только главы со статусом «Готово» (правый клик по главе → Статус). "
-                      "В интернет StungKir выходит только по этой кнопке.")
+        hint = QLabel(TOKEN_HELP + tr("\nНа сайт уходят только главы со статусом «Готово» (правый клик по главе → Статус). "
+                      "В интернет StungKir выходит только по этой кнопке."))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         self.content.addWidget(hint)
-        self.report = QLabel("Нажми «Проверить» - покажу, что изменится на сайте.")
+        self.report = QLabel(tr("Нажми «Проверить» - покажу, что изменится на сайте."))
         self.report.setWordWrap(True)
         self.content.addWidget(self.report)
         buttons = QHBoxLayout()
         buttons.addStretch()
-        self.check_button = QPushButton("Проверить")
-        self.go_button = QPushButton("Выложить")
+        self.check_button = QPushButton(tr("Проверить"))
+        self.go_button = QPushButton(tr("Выложить"))
         self.go_button.setDefault(True)
         self.go_button.setEnabled(False)
-        close = QPushButton("Закрыть")
+        close = QPushButton(tr("Закрыть"))
         for button in (close, self.check_button, self.go_button):
             buttons.addWidget(button)
         self.content.addLayout(buttons)
@@ -250,12 +251,13 @@ class PublishDialog(Sheet):
             hub = self._hub()
             local, cover = self.collect()
         except (PublishError, OSError, LockedFile) as error:
-            self.report.setText(str(error) if isinstance(error, PublishError) else f"Не прочиталась глава: {error}")
+            self.report.setText(str(error) if isinstance(error, PublishError) else tr("Не прочиталась глава: "
+                                                                                      "{error}").format(error=error))
             return
         if not any(name.endswith(".txt") for name in local):
-            self.report.setText("Ни одна глава не отмечена «Готово». Правый клик по главе → Статус → Готово.")
+            self.report.setText(tr("Ни одна глава не отмечена «Готово». Правый клик по главе → Статус → Готово."))
             return
-        self.report.setText("Смотрю, что сейчас на сайте…")
+        self.report.setText(tr("Смотрю, что сейчас на сайте…"))
         base = f"книги/{self.folder.name}/"
 
         def work():
@@ -269,7 +271,7 @@ class PublishDialog(Sheet):
             return
         hub, commit, tree, (changes, added, updated, removed) = result
         if not changes:
-            self.report.setText("На сайте уже всё так же, как здесь. Выкладывать нечего.")
+            self.report.setText(tr("На сайте уже всё так же, как здесь. Выкладывать нечего."))
             return
         lines = []
         if added:
@@ -289,15 +291,15 @@ class PublishDialog(Sheet):
             return
         hub, commit, tree, changes, count = self.pending
         self.pending = None
-        self.report.setText("Выкладываю…")
+        self.report.setText(tr("Выкладываю…"))
         message = f"«{self.folder.name}»: {count} {plural(count, 'глава', 'главы', 'глав')} из StungKir"
         self.run(lambda: hub.commit("main", commit, tree, changes, message), self._published)
 
     def _published(self, result):
         if isinstance(result, PublishError):
-            self.report.setText(f"{result}\nНичего не изменилось - можно «Проверить» ещё раз.")
+            self.report.setText(tr("{result}\nНичего не изменилось - можно «Проверить» ещё раз.").format(result=result))
             return
-        self.report.setText("Готово! Сайт обновится сам через пару минут.")
+        self.report.setText(tr("Готово! Сайт обновится сам через пару минут."))
 
 
 class PublishMixin:

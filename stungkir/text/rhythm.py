@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QScrollArea, QTo
 from ..core import config as C
 from ..ui.dialogs import Sheet
 from ..core.textutil import MARKER_RE, WORD_RE, plain_markup, plural, position_map
+from ..core.i18n import tr
 
 SHORT, LONG = 6, 25          # до 6 слов - короткое, от 25 - длинное
 SENTENCE_END = re.compile(r"[.!?…]+[»\"”)]*(?=\s|$)")
@@ -129,15 +130,15 @@ class RhythmChart(QWidget):
 
 class RhythmDialog(Sheet):
     def __init__(self, parent, title, items, on_pick):
-        super().__init__(parent, f"Ритм главы · {title}")
+        super().__init__(parent, tr("Ритм главы · {title}").format(title=title))
         self.setMinimumSize(900, 560)
         self.on_pick = on_pick
         info = QLabel(summary(items))
         info.setWordWrap(True)
         self.content.addWidget(info)
-        legend = QLabel(f"Каждый столбик - предложение по порядку. Жёлтые - короткие (до {SHORT} слов), "
-                        f"красные - длинные (от {LONG}), линия - средняя длина. Наведи - видно предложение, "
-                        "клик - перейти к нему.")
+        legend = QLabel(tr("Каждый столбик - предложение по порядку. Жёлтые - короткие (до {SHORT} слов), "
+                           "красные - длинные (от {LONG}), линия - средняя длина. Наведи - видно предложение, "
+                           "клик - перейти к нему.").format(SHORT=SHORT, LONG=LONG))
         legend.setObjectName("Status")
         legend.setWordWrap(True)
         self.content.addWidget(legend)
@@ -149,7 +150,7 @@ class RhythmDialog(Sheet):
         self.content.addWidget(scroll, 1)
         row = QHBoxLayout()
         row.addStretch()
-        close = QPushButton("Закрыть")
+        close = QPushButton(tr("Закрыть"))
         close.setDefault(True)
         close.clicked.connect(self.accept)
         row.addWidget(close)
@@ -165,7 +166,7 @@ class RhythmMixin:
 
     def show_rhythm(self):
         if self.view is not None:
-            self.toast.show_message("Ритм считается для главы, а не для таблицы или доски")
+            self.toast.show_message(tr("Ритм считается для главы, а не для таблицы или доски"))
             return
         items = sentences(self.editor.toPlainText())
         title = self.path.stem if self.path else "без названия"

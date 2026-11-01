@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QComboBox, QDateEdit, QGridLayout, QHBoxLayout, QL
 from ..ui.dialogs import Sheet
 from ..core.storage import LockedFile, deadline_pace, files_in, load_deadlines, read_text, save_deadlines
 from ..core.textutil import WORD_RE, is_prose, plural, words_label
+from ..core.i18n import tr
 
 
 def pace_text(name, words_now, deadline, today=None):
@@ -27,26 +28,26 @@ def pace_text(name, words_now, deadline, today=None):
 
 class DeadlineDialog(Sheet):
     def __init__(self, parent, categories, current, deadlines, words_of):
-        super().__init__(parent, "Дедлайн книги")
+        super().__init__(parent, tr("Дедлайн книги"))
         self.setMinimumWidth(520)
         self.deadlines, self.words_of = deadlines, words_of
         self.removed = False
         grid = QGridLayout()
         grid.setHorizontalSpacing(12)
-        grid.addWidget(QLabel("Книга (категория):"), 0, 0)
+        grid.addWidget(QLabel(tr("Книга (категория):")), 0, 0)
         self.category = QComboBox()
         for folder in categories:
             self.category.addItem(folder.name, folder)
         if current is not None:
             self.category.setCurrentIndex(max(0, self.category.findText(current.name)))
         grid.addWidget(self.category, 0, 1)
-        grid.addWidget(QLabel("Сколько слов:"), 1, 0)
+        grid.addWidget(QLabel(tr("Сколько слов:")), 1, 0)
         self.words = QSpinBox()
         self.words.setRange(1000, 2_000_000)
         self.words.setSingleStep(5000)
         self.words.setGroupSeparatorShown(True)
         grid.addWidget(self.words, 1, 1)
-        grid.addWidget(QLabel("К какому числу:"), 2, 0)
+        grid.addWidget(QLabel(tr("К какому числу:")), 2, 0)
         self.date = QDateEdit()
         self.date.setCalendarPopup(True)
         self.date.setDisplayFormat("dd.MM.yyyy")
@@ -57,13 +58,13 @@ class DeadlineDialog(Sheet):
         self.info.setWordWrap(True)
         self.content.addWidget(self.info)
         row = QHBoxLayout()
-        self.remove = QPushButton("Убрать дедлайн")
+        self.remove = QPushButton(tr("Убрать дедлайн"))
         self.remove.clicked.connect(self._remove)
         row.addWidget(self.remove)
         row.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        ok = QPushButton("Сохранить")
+        ok = QPushButton(tr("Сохранить"))
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
         row.addWidget(cancel)
@@ -149,7 +150,7 @@ class DeadlineMixin:
     def show_deadline(self):
         categories = [f for f in self.categories() if f.name not in self.lore_cfg["categories"]]
         if not categories:
-            self.toast.show_message("Сначала создай категорию для книги")
+            self.toast.show_message(tr("Сначала создай категорию для книги"))
             return
         current = self.path.parent if self.path else None
         dialog = DeadlineDialog(self, categories, current, self.deadlines, self.book_words)

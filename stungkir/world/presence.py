@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QComboBox, QHBoxLayout, QHeaderView, QLabel, QPush
 from ..core import config as C
 from ..ui.dialogs import Sheet
 from ..core.textutil import position_map
+from ..core.i18n import tr
 
 
 def presence(lore, texts):
@@ -35,7 +36,7 @@ class PresenceDialog(Sheet):
     """Строки - персонажи и термины, столбцы - главы. Ярче клетка - чаще упоминание."""
 
     def __init__(self, parent, lore, texts, open_place):
-        super().__init__(parent, "Кто в какой главе")
+        super().__init__(parent, tr("Кто в какой главе"))
         self.setMinimumSize(900, 560)
         self.lore, self.texts, self.open_place = lore, texts, open_place
         self.counts, self.first = presence(lore, texts)
@@ -49,8 +50,8 @@ class PresenceDialog(Sheet):
             row.addWidget(combo)
         row.addStretch()
         self.content.addLayout(row)
-        hint = QLabel("Число - сколько раз упомянут в главе. Клик по клетке - открыть главу на этом месте. "
-                      "Справа - сколько глав подряд термин отсутствовал посреди книги.")
+        hint = QLabel(tr("Число - сколько раз упомянут в главе. Клик по клетке - открыть главу на этом месте. "
+                      "Справа - сколько глав подряд термин отсутствовал посреди книги."))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         self.content.addWidget(hint)
@@ -59,7 +60,7 @@ class PresenceDialog(Sheet):
         self.table.setSelectionMode(QTableWidget.NoSelection)
         self.table.cellClicked.connect(self._clicked)
         self.content.addWidget(self.table, 1)
-        close = QPushButton("Закрыть")
+        close = QPushButton(tr("Закрыть"))
         close.clicked.connect(self.accept)
         buttons = QHBoxLayout()
         buttons.addStretch()
@@ -88,7 +89,7 @@ class PresenceDialog(Sheet):
         self.table.clear()
         self.table.setRowCount(len(terms))
         self.table.setColumnCount(chapters + 2)
-        headers = [f"{i + 1}" for i in range(chapters)] + ["Всего", "Пропал"]
+        headers = [f"{i + 1}" for i in range(chapters)] + [tr("Всего"), tr("Пропал")]
         self.table.setHorizontalHeaderLabels(headers)
         for i, (path, _text) in enumerate(self.texts):
             self.table.horizontalHeaderItem(i).setToolTip(f"{path.parent.name} · {path.stem}")
@@ -103,7 +104,7 @@ class PresenceDialog(Sheet):
                 if n:
                     share = 0.25 + 0.75 * (n / top) ** 0.5
                     cell.setBackground(C.mix(base, strong, share))
-                    cell.setToolTip(f"{term.name}: {n} в «{self.texts[c][0].stem}»")
+                    cell.setToolTip(tr("{name}: {n} в «{stem}»").format(name=term.name, n=n, stem=self.texts[c][0].stem))
                 self.table.setItem(r, c, cell)
             total = QTableWidgetItem(str(sum(row)))
             total.setTextAlignment(Qt.AlignCenter)

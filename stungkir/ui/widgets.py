@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 
 from ..core import config as C
 from ..core.textutil import has_foreign
+from ..core.i18n import tr
 
 
 class GoalStrip(QWidget):
@@ -253,7 +254,7 @@ class FoxWheel(QWidget):
     def __init__(self):
         super().__init__()
         self.setFixedHeight(120)
-        self.setToolTip("Пока идёт таймер, ласка бежит")
+        self.setToolTip(tr("Пока идёт таймер, ласка бежит"))
         self.running = False
         self.phase = 0.0
         self.angle = 0.0

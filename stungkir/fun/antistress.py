@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QButtonGroup, QHBoxLayout, QLabel, QPushButton, QS
 
 from ..core import config as C
 from ..ui.dialogs import Sheet
+from ..core.i18n import tr
 
 COLUMNS, ROWS = 9, 6
 def _body():
@@ -1826,7 +1827,7 @@ HINTS = {
 
 class StressDialog(Sheet):
     def __init__(self, parent=None):
-        super().__init__(parent, "Антистресс")
+        super().__init__(parent, tr("Антистресс"))
         sounds = getattr(parent, "sounds", None)
         self._play = sounds.play if sounds is not None else (lambda *_a: None)
         tabs = QHBoxLayout()
@@ -1864,9 +1865,9 @@ class StressDialog(Sheet):
         self.count = QLabel("")
         self.count.setObjectName("Status")
         row.addWidget(self.count, 1)
-        self.refill = refill = QPushButton("Новый лист")
+        self.refill = refill = QPushButton(tr("Новый лист"))
         refill.clicked.connect(self._refill)
-        close = QPushButton("Закрыть")
+        close = QPushButton(tr("Закрыть"))
         close.setProperty("minor", True)
         close.clicked.connect(self.accept)
         row.addWidget(refill)
@@ -1889,9 +1890,9 @@ class StressDialog(Sheet):
             self.toggle_mode.addItem(f"Головоломка: {title.lower()} ({cols}×{rows})", key)
         bar.addWidget(self.toggle_mode)
         bar.addStretch()
-        self.hint_button = QPushButton("Подсказка")
-        self.restart_button = QPushButton("Заново")
-        self.next_button = QPushButton("Дальше")
+        self.hint_button = QPushButton(tr("Подсказка"))
+        self.restart_button = QPushButton(tr("Заново"))
+        self.next_button = QPushButton(tr("Дальше"))
         for button, action in ((self.hint_button, self.toggles.show_hint), (self.restart_button, self._restart_level),
                                (self.next_button, self._next_level)):
             button.setAutoDefault(False)
@@ -1957,7 +1958,7 @@ class StressDialog(Sheet):
             self.blocks.setFocus()
         self.group.buttons()[index].setChecked(True)
         self.refill.setVisible(index in (0, 3))
-        self.refill.setText("Разровнять" if index == 3 else "Новый лист")
+        self.refill.setText(tr("Разровнять") if index == 3 else tr("Новый лист"))
         self._update_count()
 
     def _popped(self):
@@ -1981,14 +1982,14 @@ class StressDialog(Sheet):
             t = self.toggles
             title = PUZZLES[t.puzzle][0]
             if t.solved:
-                self.count.setText(f"{title}, уровень {t.level}: решено за {t.moves}! Жми «Дальше»")
+                self.count.setText(tr("{title}, уровень {level}: решено за {moves}! Жми «Дальше»").format(title=title, level=t.level, moves=t.moves))
             else:
-                self.count.setText(f"{title}, уровень {t.level} · ходов {t.moves} · зажги все клавиши. "
-                                   "Клавиша переключает и соседей")
+                self.count.setText(tr("{title}, уровень {level} · ходов {moves} · зажги все клавиши. Клавиша "
+                                      "переключает и соседей").format(title=title, level=t.level, moves=t.moves))
             self._update_toggle_buttons()
             return
         if index:
             self.count.setText(HINTS[index])
             return
         total = self.wrap.popped_total
-        self.count.setText(f"Лопнуто: {total}" if total else "Щёлкай по пузырькам или веди мышью с зажатой кнопкой")
+        self.count.setText(tr("Лопнуто: {total}").format(total=total) if total else tr("Щёлкай по пузырькам или веди мышью с зажатой кнопкой"))

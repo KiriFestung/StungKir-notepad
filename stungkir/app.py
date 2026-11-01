@@ -19,6 +19,7 @@ from .books.sample import create_sample, is_fresh
 from .core.safety import (clean_temp_files, crashed_last_time, enable_fault_log, install_crash_guard, mark_session,
     single_instance)
 from .ui.window import Notepad
+from .core.i18n import tr
 
 
 def load_bundled_fonts():
@@ -85,9 +86,9 @@ def main():
     instance = single_instance()
     if instance is None:
         apply_theme(app)
-        show_warning(None, C.APP_NAME, "StungKir уже открыт.\n\nДва окна на одни и те же главы затирали бы "
+        show_warning(None, C.APP_NAME, tr("StungKir уже открыт.\n\nДва окна на одни и те же главы затирали бы "
                      "правки друг друга, поэтому второе не открывается. Окно может быть свёрнуто "
-                     "или на другом рабочем столе.")
+                     "или на другом рабочем столе."))
         return 0
     crashed = crashed_last_time()
     app.setApplicationName(C.APP_ID)
@@ -107,22 +108,21 @@ def main():
     apply_theme(app)
     choose_language_once()
     if migration_error is not None:
-        show_error(None, C.APP_NAME, f"Не всё перенеслось из «{C.OLD_ROOT}» в «{C.ROOT}». Старая папка "
-                   f"осталась на месте, ничего не удалено.\n\n{migration_error}")
+        show_error(None, C.APP_NAME, tr("Не всё перенеслось из «{OLD_ROOT}» в «{ROOT}». Старая папка осталась "
+                                        "на месте, ничего не удалено.\n\n{migration_error}").format(OLD_ROOT=C.OLD_ROOT, ROOT=C.ROOT, migration_error=migration_error))
     if C.ROOT.is_dir():
         from .core.storage import tidy_root
         tidy_root()                     # служебные файлы прошлых версий - в одну скрытую папку .stungkir
     if lock_path().exists() and lock_problem() is not None:
-        show_error(None, C.APP_NAME, f"Файл ключа {lock_path()} повреждён, без него зашифрованные тексты "
-                   "не открыть.\n\nВозьми файл ключа из последней резервной копии (архив в "
-                   f"{C.BACKUP_DIR}: внутри StungKir/.stungkir/lock.json, в старых копиях - StungKir/.lock.json) "
-                   "и положи его на место.\n\n"
-                   f"Подробности: {lock_problem()}")
+        show_error(None, C.APP_NAME, tr("Файл ключа {n} повреждён, без него зашифрованные тексты не "
+                                        "открыть.\n\nВозьми файл ключа из последней резервной копии (архив в "
+                                        "{BACKUP_DIR}: внутри StungKir/.stungkir/lock.json, в старых копиях - "
+                                        "StungKir/.lock.json) и положи его на место.\n\nПодробности: {n2}").format(n=lock_path(), BACKUP_DIR=C.BACKUP_DIR, n2=lock_problem()))
         return 1
     if lock_path().exists():
         if not crypto_available():
-            show_error(None, C.APP_NAME, "Тексты зашифрованы, а библиотеки cryptography нет.\n"
-                                 "Запусти install.sh ещё раз.")
+            show_error(None, C.APP_NAME, tr("Тексты зашифрованы, а библиотеки cryptography нет.\n"
+                                 "Запусти install.sh ещё раз."))
             return 1
         from .ui.security import offer_recovery_code, recover_with_code
         dialog = PasswordDialog(None, C.APP_NAME, "Введи пароль, чтобы открыть тексты.", check=unlock,
@@ -151,10 +151,10 @@ def main():
 
     def recover():
         def ask(text):
-            return ask_question(window, "Восстановление", text, QMessageBox.Yes | QMessageBox.No,
+            return ask_question(window, tr("Восстановление"), text, QMessageBox.Yes | QMessageBox.No,
                                 QMessageBox.Yes) == QMessageBox.Yes
         if not window.offer_recovery(ask) and crashed:
-            window.toast.show_message("Прошлый раз блокнот закрылся аварийно, но всё было сохранено", 4000)
+            window.toast.show_message(tr("Прошлый раз блокнот закрылся аварийно, но всё было сохранено"), 4000)
     QTimer.singleShot(600, window, recover)
     code = app.exec()
     mark_session(False)                       # закрылись сами, а не упали

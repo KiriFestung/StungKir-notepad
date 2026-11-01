@@ -10,6 +10,7 @@ from PySide6.QtCore import Qt
 from ..core import config as C
 from ..ui.dialogs import Sheet, ask_question, ask_text
 from ..core.storage import write_atomic
+from ..core.i18n import tr
 
 BUILTIN = {
     "Персонаж": "Кто: \nВозраст: \nВнешность: \nХарактер: \nЧего хочет: \nЧего боится: \nСвязи: \nПрошлое: \n",
@@ -64,11 +65,11 @@ class TemplateDialog(Sheet):
     """Выбор шаблона для новой карточки справочника, с образцом справа."""
 
     def __init__(self, parent):
-        super().__init__(parent, "Шаблон карточки")
+        super().__init__(parent, tr("Шаблон карточки"))
         self.setMinimumSize(640, 420)
         self.own = user_templates()
-        hint = QLabel("Шаблон - пустые разделы, которые останется заполнить. Свой шаблон: правый клик "
-                      "по готовой карточке слева → «Сохранить как шаблон».")
+        hint = QLabel(tr("Шаблон - пустые разделы, которые останется заполнить. Свой шаблон: правый клик "
+                      "по готовой карточке слева → «Сохранить как шаблон»."))
         hint.setObjectName("Status")
         hint.setWordWrap(True)
         self.content.addWidget(hint)
@@ -88,13 +89,13 @@ class TemplateDialog(Sheet):
         body.addWidget(self.preview, 2)
         self.content.addLayout(body, 1)
         row = QHBoxLayout()
-        self.delete = QPushButton("Удалить свой шаблон")
+        self.delete = QPushButton(tr("Удалить свой шаблон"))
         self.delete.clicked.connect(self._delete)
         row.addWidget(self.delete)
         row.addStretch()
-        cancel = QPushButton("Отмена")
+        cancel = QPushButton(tr("Отмена"))
         cancel.clicked.connect(self.reject)
-        ok = QPushButton("Создать")
+        ok = QPushButton(tr("Создать"))
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
         row.addWidget(cancel)
@@ -121,7 +122,7 @@ class TemplateDialog(Sheet):
         if kind != "own":
             return
         from PySide6.QtWidgets import QMessageBox
-        if ask_question(self, "Шаблон", f"Удалить шаблон «{name}»?") != QMessageBox.Yes:
+        if ask_question(self, tr("Шаблон"), tr("Удалить шаблон «{name}»?").format(name=name)) != QMessageBox.Yes:
             return
         (templates_dir() / f"{name}.txt").unlink(missing_ok=True)
         self.own.pop(name, None)
@@ -141,15 +142,15 @@ class TemplatesMixin:
         try:
             text = self.current_text() if path == self.path else read_text(path)
         except OSError as error:
-            self.toast.show_message(f"Не прочиталось: {error}")
+            self.toast.show_message(tr("Не прочиталось: {error}").format(error=error))
             return
         empty = skeleton(text)
         if not empty:
-            self.toast.show_message("В карточке нет разделов вида «Название: …» - шаблону не из чего взяться")
+            self.toast.show_message(tr("В карточке нет разделов вида «Название: …» - шаблону не из чего взяться"))
             return
-        name, ok = ask_text(self, "Сохранить как шаблон", "Название шаблона:", path.stem)
+        name, ok = ask_text(self, tr("Сохранить как шаблон"), tr("Название шаблона:"), path.stem)
         name = name.strip().strip(".")
         if not ok or not name or any(ch in name for ch in '/\\:*?"<>|'):
             return
         save_template(name, empty)
-        self.toast.show_message(f"Шаблон «{name}» сохранён")
+        self.toast.show_message(tr("Шаблон «{name}» сохранён").format(name=name))

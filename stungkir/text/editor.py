@@ -25,6 +25,7 @@ from ..core.textutil import (CYR_PART, CYR_WORD, EMPH_RE, MARKER_RE, PUNCT_RE, S
     anchor_notes, clean_pasted, has_foreign, is_board, is_table, is_timeline, name_key, parse_table, position_map,
     stem, word_root)
 from ..core.storage import LockedFile, read_text
+from ..core.i18n import tr
 
 
 HEADING_LINE_RE = re.compile(r"^(\s*#{1,3}\s+)\S")
@@ -703,33 +704,33 @@ class Editor(QTextEdit):
                 action = menu.addAction(suggestion, lambda s=suggestion, c=cursor: c.insertText(s))
                 action.setProperty("noIcon", True)        # вариант слова - без значка
             if not suggestions:
-                menu.addAction("Нет вариантов").setEnabled(False)
-            menu.addAction(f"Добавить «{word}» в словарь", lambda: self._add_word(word))
+                menu.addAction(tr("Нет вариантов")).setEnabled(False)
+            menu.addAction(tr("Добавить «{word}» в словарь").format(word=word), lambda: self._add_word(word))
             menu.addSeparator()
         if self.track_name_callback and CYR_PART.fullmatch(word or "") and word[:1].isupper():
-            menu.addAction(f"Считать «{word}» персонажем", lambda: self.track_name_callback(word))
+            menu.addAction(tr("Считать «{word}» персонажем").format(word=word), lambda: self.track_name_callback(word))
             menu.addSeparator()
         if self.crutch_callback:
             selected = self.textCursor().selectedText().strip()
             phrase = selected if selected and len(selected) <= 40 and "\u2029" not in selected else word
             if phrase and WORD_RE.search(phrase):
-                menu.addAction(f"В мои штампы: «{phrase}»", lambda p=phrase: self.crutch_callback(p))
+                menu.addAction(tr("В мои штампы: «{phrase}»").format(phrase=phrase), lambda p=phrase: self.crutch_callback(p))
                 menu.addSeparator()
         if self.note_callback:
             block = cursor.block()
-            menu.addAction("Заметка на полях   Ctrl+M", lambda: self.note_callback(block))
+            menu.addAction(tr("Заметка на полях   Ctrl+M"), lambda: self.note_callback(block))
             menu.addSeparator()
-        undo = menu.addAction("Отменить", self.undo)
+        undo = menu.addAction(tr("Отменить"), self.undo)
         undo.setEnabled(self.document().isUndoAvailable() and not self.forward_only)
-        redo = menu.addAction("Вернуть", self.redo)
+        redo = menu.addAction(tr("Вернуть"), self.redo)
         redo.setEnabled(self.document().isRedoAvailable() and not self.forward_only)
         menu.addSeparator()
         has_selection = self.textCursor().hasSelection()
-        menu.addAction("Вырезать", self.cut).setEnabled(has_selection and not self.forward_only)
-        menu.addAction("Копировать", self.copy).setEnabled(has_selection)
-        menu.addAction("Вставить", self.paste).setEnabled(self.canPaste())
+        menu.addAction(tr("Вырезать"), self.cut).setEnabled(has_selection and not self.forward_only)
+        menu.addAction(tr("Копировать"), self.copy).setEnabled(has_selection)
+        menu.addAction(tr("Вставить"), self.paste).setEnabled(self.canPaste())
         menu.addSeparator()
-        menu.addAction("Выделить всё", self.selectAll)
+        menu.addAction(tr("Выделить всё"), self.selectAll)
         menu.exec(event.globalPos())
 
     def _add_word(self, word):
@@ -1134,21 +1135,21 @@ class SidePane(QFrame):
         head.addWidget(self.title, 1)
         self.swap = QPushButton("⇄")
         self.swap.setCursor(Qt.PointingHandCursor)
-        self.swap.setToolTip("Поменять местами: этот файл - в основное окно, чтобы править")
+        self.swap.setToolTip(tr("Поменять местами: этот файл - в основное окно, чтобы править"))
         self.swap.clicked.connect(lambda: self.path and open_callback(self.path))
         close = QPushButton("✕")
         close.setCursor(Qt.PointingHandCursor)
-        close.setToolTip("Закрыть панель   F4")
+        close.setToolTip(tr("Закрыть панель   F4"))
         for button in (self.swap, close):
             button.setStyleSheet("background: transparent; padding: 4px 10px;")
         close.clicked.connect(close_callback)
         # листать версии: старее / новее (видны, только когда в панели версия)
         self.older = QPushButton("◀")
-        self.older.setToolTip("Версия постарше")
+        self.older.setToolTip(tr("Версия постарше"))
         self.newer = QPushButton("▶")
-        self.newer.setToolTip("Версия поновее")
+        self.newer.setToolTip(tr("Версия поновее"))
         self.side_button = QPushButton("⇆")
-        self.side_button.setToolTip("Перенести панель на другую сторону от текста")
+        self.side_button.setToolTip(tr("Перенести панель на другую сторону от текста"))
         for button in (self.older, self.newer, self.side_button):
             button.setCursor(Qt.PointingHandCursor)
             button.setStyleSheet("background: transparent; padding: 4px 8px;")
@@ -1217,7 +1218,7 @@ class SidePane(QFrame):
         from ..core.textutil import old_side_html
         version = self.versions[self.version_index]
         position = self.view.verticalScrollBar().value() if keep_place else 0
-        self.title.setText(f"{self.path.stem} · версия от {version_label(version)}")
+        self.title.setText(tr("{stem} · версия от {n}").format(stem=self.path.stem, n=version_label(version)))
         try:
             old = read_text(version)
         except (OSError, LockedFile) as error:
@@ -1226,7 +1227,7 @@ class SidePane(QFrame):
         body, summary = old_side_html(old, self.current_text() if self.current_text else old)
         self.highlighter.paused = True                        # подсветка прозы здесь мешала бы отличиям
         self.view.setHtml(body)
-        self.note.setText(f"{self.version_index + 1} из {len(self.versions)}   ·   {summary}")
+        self.note.setText(tr("{n} из {n2}   ·   {summary}").format(n=self.version_index + 1, n2=len(self.versions), summary=summary))
         self.older.setEnabled(self.version_index + 1 < len(self.versions))
         self.newer.setEnabled(self.version_index > 0)
         self.view.verticalScrollBar().setValue(position)
