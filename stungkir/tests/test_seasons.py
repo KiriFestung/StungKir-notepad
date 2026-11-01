@@ -106,6 +106,8 @@ class WindowSeasonTest(WindowCase):
         super().setUp()
         self.addCleanup(setattr, C, "SEASON_ROOM", False)
         self.addCleanup(setattr, C, "SEASON", None)
+        from stungkir.fun.dice import use_season_coin
+        self.addCleanup(use_season_coin, False)                # монетка - снова ворон и ласка
 
     def test_room_turns_on_and_off(self):
         self.season(season="xmas")
@@ -184,6 +186,24 @@ class WindowSeasonTest(WindowCase):
         sounds = Path(__file__).resolve().parents[1] / "sounds"
         for name in VARIANTS["ice_hit"] + ["ice_settle"]:
             self.assertTrue((sounds / f"{name}.wav").is_file(), name)
+
+    def test_gingerbread_coin_at_christmas(self):
+        from stungkir.fun.artwork import pixmap
+        from stungkir.fun.dice import COIN_SIDES, PLAIN_SIDES, XMAS_SIDES, RandomDialog, toss_coin
+        self.season(season="xmas")
+        w = self.window()
+        w.update_palette()
+        self.assertEqual(COIN_SIDES, XMAS_SIDES)
+        for picture in XMAS_SIDES.values():
+            self.assertFalse(pixmap(picture).isNull(), picture)
+        w.settings.setValue("coin_up", "Ворон")                 # лежала вороном до праздника
+        dialog = RandomDialog(w, ["Кира"], [], w.settings, lambda *_: None)
+        self.assertIn(dialog.coin_up, XMAS_SIDES)
+        self.assertIn(toss_coin(up=dialog.coin_up), list(XMAS_SIDES) + ["Ребро"])
+        dialog.close()
+        self.season(season="off")
+        w.update_palette()
+        self.assertEqual(COIN_SIDES, PLAIN_SIDES)
 
     def test_settings_dialog(self):
         from stungkir.fun.season_settings import SeasonDialog

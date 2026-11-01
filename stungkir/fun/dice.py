@@ -152,7 +152,21 @@ def shape(kind):
     return points, _hull_faces(points)
 
 
-COIN_SIDES = {"Ворон": "coin-heads", "Ласка": "coin-tails"}    # рисунки сторон монетки (art/)
+PLAIN_SIDES = {"Ворон": "coin-heads", "Ласка": "coin-tails"}   # рисунки сторон монетки (art/)
+XMAS_SIDES = {"Ёлка": "seasons/xmas/coin-heads", "Снежинка": "seasons/xmas/coin-tails"}   # пряник в Рождество
+COIN_SIDES = dict(PLAIN_SIDES)                                  # нынешние стороны (меняются на месте)
+COIN_COLORS = {"plain": ("#c8962e", "#5a3f10", "#f3d58a", "#3a2a10", "#a8791f"),     # основа, тень, блик, ребро
+               "xmas": ("#a8682f", "#4e2a0e", "#e0a868", "#5a3212", "#c88a50")}       # пряник
+
+
+def use_season_coin(festive):
+    """Монетка-пряник (ёлка и снежинка) в праздник, ворон и ласка - в остальное время."""
+    COIN_SIDES.clear()
+    COIN_SIDES.update(XMAS_SIDES if festive else PLAIN_SIDES)
+
+
+def coin_colors():
+    return COIN_COLORS["xmas" if COIN_SIDES == XMAS_SIDES else "plain"]
 COIN_EDGE = "Ребро"
 # Настоящие цифры из опытов:
 # - на ребро монетка встаёт примерно раз из 6000 бросков (Murray, Teare, Physical Review E, 1993 -
@@ -503,11 +517,11 @@ class Die3D(QWidget):
         light = _norm((-0.45, 0.6, 0.9))
         coin = body.kind == "coin"
         # монетка - охристая (её стороны - рисунки: ворон и ласка), кубики - в цвет «Кубика»
-        color_body = QColor("#c8962e") if coin else QColor(C.DICE_BODY)
+        color_body = QColor(coin_colors()[0]) if coin else QColor(C.DICE_BODY)
         dark, bright = C.mix(color_body, "#000000", 0.55), C.mix(color_body, "#ffffff", 0.32)
         edge = C.mix(color_body, "#000000", 0.62)
         # ребро монетки - тёмная бронза с насечкой (через одну грань светлее), а не та же охра
-        rim_dark, rim_bright = QColor("#3a2a10"), QColor("#a8791f")
+        rim_dark, rim_bright = QColor(coin_colors()[3]), QColor(coin_colors()[4])
         ink = QColor(C.DICE_TEXT)
         drawn = []
         for i, face in enumerate(faces):
@@ -745,6 +759,8 @@ class RandomDialog(Sheet):
         self.pages.addWidget(page)
         # монетка на столе
         self.coin_up = settings.value("coin_up", "Ворон") or "Ворон"     # как монетка лежит перед броском
+        if self.coin_up not in COIN_SIDES:            # праздник: у монетки-пряника другие стороны
+            self.coin_up = next(iter(COIN_SIDES))
         coin = self.coin_note = QLabel("")
         coin.setObjectName("Status")
         coin.setWordWrap(True)

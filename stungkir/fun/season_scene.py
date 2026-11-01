@@ -749,6 +749,8 @@ class SeasonLook(QObject):
             return False
         self._state = state
         C.SEASON = key
+        from .dice import use_season_coin
+        use_season_coin(key == "xmas")                     # монетка-пряник: ёлка и снежинка
         window = self.window
         room_on = bool(key) and state[1]
         room_changed = room_on != C.SEASON_ROOM

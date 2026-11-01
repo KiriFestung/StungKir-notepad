@@ -22,8 +22,8 @@ from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from ..core import config as C
 from .dice import (
-    COIN_EDGE, COIN_SIDES, IDENTITY, Die3D, _apply, _cross, _dot, _mul, _norm, _sub, axis_angle, d100_parts,
-    d100_value, form, labels, rotation, shape,
+    COIN_EDGE, COIN_SIDES, IDENTITY, Die3D, _apply, _cross, _dot, _mul, _norm, _sub, axis_angle, coin_colors,
+    d100_parts, d100_value, form, labels, rotation, shape,
 )
 
 # материал: (основа, тёмная, светлая, цвет чисел, звук удара, звук «докатился»)
@@ -481,7 +481,8 @@ class DiceTable(QWidget):
         light = _norm((-0.45, 0.6, 0.9))
         coin = body.kind == "coin"
         if coin:
-            base, dark, bright, ink = "#c8962e", "#5a3f10", "#f3d58a", "#2e2a6e"
+            base, dark, bright, rim, shine = coin_colors()
+            ink = "#2e2a6e"
         else:
             _title, base, dark, bright, ink, _hit, _settle = MATERIALS[body.material]
         dark, bright, base = QColor(dark), QColor(bright), QColor(base)
@@ -500,7 +501,7 @@ class DiceTable(QWidget):
             lit = max(0.0, _dot(normal, light))
             polygon = QPolygonF([project(world[j]) for j in face])
             if coin and i >= 2:                                    # ребро монетки - бронза с насечкой
-                color = C.mix("#3a2a10", "#a8791f", (0.15 + 0.75 * lit) * (1.0 if i % 2 else 0.72))
+                color = C.mix(rim, shine, (0.15 + 0.75 * lit) * (1.0 if i % 2 else 0.72))
                 p.setPen(QPen(QColor("#2a1d0a"), 0.8))
             else:
                 color = C.mix(C.mix(dark, base, min(1.0, 0.25 + lit)), bright, max(0.0, lit - 0.55) * 1.6)
