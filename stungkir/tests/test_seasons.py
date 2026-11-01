@@ -72,6 +72,29 @@ class ArtTest(Sandbox):
         self.assertTrue(art.spec["tree"]["lights"])
         self.assertEqual(len(art.spec["fireplace"]["fire"]), 4)
 
+    def test_own_png_wins_and_broken_png_is_ignored(self):
+        app()
+        import shutil
+        import tempfile
+        from pathlib import Path
+        from PySide6.QtGui import QColor, QImage
+        from stungkir.fun import season_scene
+        folder = Path(tempfile.mkdtemp()) / "xmas"
+        shutil.copytree(season_scene.ART / "xmas", folder)
+        self.addCleanup(shutil.rmtree, folder.parent, ignore_errors=True)
+        own = QImage(648, 858, QImage.Format_ARGB32)                     # своя ёлка - вдвое крупнее
+        own.fill(QColor("#ff0000"))
+        own.save(str(folder / "tree.png"))
+        (folder / "rug.png").write_bytes(b"not a picture")                 # битый файл
+        self.addCleanup(setattr, season_scene, "ART", season_scene.ART)
+        season_scene.ART = folder.parent
+        art = season_scene.Art("xmas")
+        picture = art.pixmap("tree", 100).toImage()
+        self.assertEqual(picture.pixelColor(picture.width() // 2, 50).name(), "#ff0000")
+        self.assertAlmostEqual(art.width_for("tree", 858), 648, delta=1)
+        self.assertNotIn("rug", art.images)                                # битый - берётся старый SVG
+        self.assertFalse(art.pixmap("rug", 50).isNull())
+
     def test_room_layout_fits_window(self):
         app()
         from PySide6.QtCore import QPointF, QRectF, QSize

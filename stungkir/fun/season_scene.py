@@ -39,7 +39,8 @@ class Art:
         folder = ART / name
         self.spec = json.loads((folder / "scene.json").read_text(encoding="utf-8"))
         self.renderers = {p.stem: QSvgRenderer(str(p)) for p in folder.glob("*.svg")}
-        self.images = {p.stem: QImage(str(p)) for p in folder.glob("*.png")}      # ласка - рисунок автора
+        # PNG главнее SVG: свою картинку можно положить рядом (tree.png рядом с tree.svg). Битый файл - не в счёт
+        self.images = {p.stem: image for p in folder.glob("*.png") if not (image := QImage(str(p))).isNull()}
         self._cache = {}
 
     def width_for(self, name, height):
