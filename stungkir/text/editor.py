@@ -23,7 +23,7 @@ from ..core import config as C
 from ..ui.style import rounded_menu
 from ..core.textutil import (CYR_PART, CYR_WORD, EMPH_RE, MARKER_RE, PUNCT_RE, STOP_WORDS, WORD_RE, Crutches,
     anchor_notes, clean_pasted, has_foreign, is_board, is_table, is_timeline, name_key, parse_table, position_map,
-    quoted_spans, stem, word_root, CYRILLIC_RE, LATIN_WORD)
+    quoted_spans, stem, word_root, CYRILLIC_RE, ENGLISH_STOP_WORDS, LATIN_WORD, english_root)
 from ..core.storage import LockedFile, read_text
 from ..core.i18n import tr
 
@@ -138,7 +138,7 @@ class Speller:
     def _english(self):
         """Английский словарь: британский при интерфейсе English (UK), иначе американский.
         Грузится при первом английском абзаце (около секунды) - русским, кто так не пишет, не мешает."""
-        code = self.english_code()
+        code = (self.english_code(), tuple(DICTIONARY_DIRS))     # папки поменялись (проверки) - ищем заново
         if code not in Speller._english_cache:
             found = None
             try:
@@ -146,9 +146,10 @@ class Speller:
             except ImportError:
                 Dictionary = None
             for folder in (DICTIONARY_DIRS if Dictionary is not None else []):
-                if (folder / f"{code}.dic").is_file() and (folder / f"{code}.aff").is_file():
+                name = code[0]
+                if (folder / f"{name}.dic").is_file() and (folder / f"{name}.aff").is_file():
                     try:
-                        found = Dictionary.from_files(str(folder / code))
+                        found = Dictionary.from_files(str(folder / name))
                         break
                     except Exception:
                         continue
@@ -409,6 +410,11 @@ class ProseHighlighter(QSyntaxHighlighter):
         plain = [m for m in tokens if not in_lore(m.start())] if lore_spans else tokens
         for m in self._repeats(plain):
             add(rest, m.start(), m.end(), "repeat")
+        if not CYRILLIC_RE.search(text) and LATIN_WORD.search(text):        # английский абзац: свои повторы
+            latin = [m for m in LATIN_WORD.finditer(text)
+                     if not (markers and in_marker(m.start())) and not (lore_spans and in_lore(m.start()))]
+            for m in self._repeats(latin, english=True):
+                add(rest, m.start(), m.end(), "repeat")
         for start, end, _entry in self.crutches.spans(text):      # мои штампы - поверх повторов
             if not in_marker(start):
                 add(rest, start, end, "crutch")
@@ -423,7 +429,7 @@ class ProseHighlighter(QSyntaxHighlighter):
                 for part in CYR_PART.finditer(word):
                     if not ok(part.group()) and not in_lore(m.start() + part.start()):
                         add(rest, m.start() + part.start(), m.start() + part.end(), "spell")
-        if self.speller is not None and not CYRILLIC_RE.search(text):        # английский абзац
+        if self.speller is not None and not CYRILLIC_RE.search(text):        # английский абзац: орфография
             english = self.speller.ok_english
             for m in LATIN_WORD.finditer(text):
                 if (markers and in_marker(m.start())) or (lore_spans and in_lore(m.start())):
@@ -444,13 +450,14 @@ class ProseHighlighter(QSyntaxHighlighter):
                                       for base, limit in self.name_rules)
         return found
 
-    def _repeats(self, tokens):
+    def _repeats(self, tokens, english=False):
         keys = []
-        minimum, stops = C.REPEAT_MIN_LEN, STOP_WORDS
+        minimum, stops = C.REPEAT_MIN_LEN, ENGLISH_STOP_WORDS if english else STOP_WORDS
+        root = english_root if english else word_root
         for m in tokens:
-            word = name_key(m.group())
+            word = name_key(m.group()).replace("’", "'")
             usable = len(word) >= minimum and word not in stops and not self._is_name(word)
-            keys.append(word_root(word) if usable else None)
+            keys.append(root(word) if usable else None)
         marked = set()
         window = C.REPEAT_WINDOW
         last = {}

@@ -178,6 +178,7 @@ class WeeklyCopyTest(Sandbox):
         day = date(2026, 10, 21)
         self.assertIsNone(S.weekly_copy("", None, day))                          # папка не задана
         self.assertIsNone(S.weekly_copy(folder / "нет флешки", None, day))       # флешку вынули
+        self.assertIsNone(S.weekly_copy("ы" * 400, None, day))                   # нашла обезьяна: ерунда в поле
         self.assertEqual(S.weekly_copy(folder, None, day), "2026-10-21")
         self.assertEqual(len(list(folder.glob("*.zip"))), 1)
         self.assertIsNone(S.weekly_copy(folder, "2026-10-21", day + timedelta(days=3)))   # неделя не прошла

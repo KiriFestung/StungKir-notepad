@@ -650,6 +650,41 @@ CRUTCH_ENDINGS = set("""
 """.split()) | {""}
 
 
+# служебные английские слова: в повторах не считаются (как «это», «сказал» по-русски)
+ENGLISH_STOP_WORDS = frozenset("""
+about above after again against also among another anything around away because been before behind being below
+between both could didn does doesn done down each even ever every from further have having hers herself here
+himself into itself just many more most much must myself never next none nothing once only other ought ours over
+same shall should some something still such than that their theirs them themselves then there these they this
+those though through thus toward towards under until upon very well were what when where whether which while
+whom whose will with within without would your yours yourself said says asked answered replied
+""".split())
+
+
+def english_root(word):
+    """Основа английского слова для повторов и штампов: looked, looks, looking -> look; stories -> story;
+    Kira's -> kira. Грубо, но на «sighed / sighs / sighing» хватает."""
+    w = word.lower().replace("’", "'")
+    if w.endswith("'s"):
+        w = w[:-2]
+    if len(w) >= 5 and w.endswith(("ies", "ied")):
+        return w[:-3] + "y"
+    for suffix, minimum in (("ing", 6), ("ed", 5), ("ly", 6)):
+        if len(w) >= minimum and w.endswith(suffix):
+            w = w[:-len(suffix)]
+            break
+    else:
+        if len(w) >= 5 and w.endswith("es") and w[-3] in "sxz" or w.endswith(("ches", "shes")):
+            w = w[:-2]
+        elif len(w) >= 4 and w.endswith("s") and not w.endswith(("ss", "us", "is")):
+            w = w[:-1]
+    if len(w) >= 4 and w[-1] == w[-2] and w[-1] not in "lsz":        # stopped -> stopp -> stop
+        w = w[:-1]
+    if len(w) >= 4 and w.endswith("e"):                              # hope / hoped / hoping -> hop
+        w = w[:-1]
+    return w
+
+
 def crutch_base(word):
     """Основа штампа, к которой прибавляются окончания: «вздохнул» -> «вздохну» (+л, +ла, +ли).
     Короткие слова (до 4 букв) - только точное совпадение."""
@@ -666,6 +701,8 @@ def _crutch_word_ok(token, word, base):
     token = name_key(token)
     if token == word:
         return True
+    if isinstance(base, tuple):                    # английское слово: формы - по основе (sighed = sighs)
+        return english_root(token) == base[1]
     return base is not None and token.startswith(base) and token[len(base):] in CRUTCH_ENDINGS
 
 
@@ -681,9 +718,13 @@ class Crutches:
         for entry in entries:
             words = [m.group() for m in WORD_RE.finditer(entry)]
             if words:
-                item = (entry.strip(), [(name_key(w), crutch_base(w)) for w in words])
+                item = (entry.strip(), [(name_key(w), ("en", english_root(w)) if LATIN_WORD.fullmatch(w) and len(w) > 3
+                                         else crutch_base(w)) for w in words])
                 self.entries.append(item)
-                self.by_start.setdefault(item[1][0][0][:3], []).append(item)
+                first = item[1][0]
+                # английское: в строке ищем по первым буквам основы (у «sighed» и «sighs» они общие)
+                key = first[1][1][:3] if isinstance(first[1], tuple) else first[0][:3]
+                self.by_start.setdefault(key, []).append(item)
 
     def __bool__(self):
         return bool(self.entries)
@@ -696,7 +737,12 @@ class Crutches:
         keys = [name_key(t.group()) for t in tokens]
         found = []
         for i in range(len(tokens)):
-            for entry, words in self.by_start.get(keys[i][:3], ()):
+            candidates = self.by_start.get(keys[i][:3], ())
+            if LATIN_WORD.fullmatch(tokens[i].group()):
+                root = english_root(tokens[i].group())[:3]
+                if root != keys[i][:3]:
+                    candidates = list(candidates) + list(self.by_start.get(root, ()))
+            for entry, words in candidates:
                 if i + len(words) > len(tokens):
                     continue
                 ok = True
