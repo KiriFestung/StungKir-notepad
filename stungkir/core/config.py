@@ -291,6 +291,8 @@ def bar_defaults(colors):
 
 
 DEFAULT_THEME = "Индиго и охра"
+SEASON = None            # идущий праздник (core/seasons.py) - его комната под текстом и снег
+SEASON_ROOM = False      # комната праздника под текстом: поле текста прозрачное, комнату рисует оно само
 # старые имена тем (из прошлых версий) -> новые: выбранная тема не слетает
 THEME_RENAMES = {"Зелёная": "Мох", "Лиса": "Сирень"}
 
@@ -425,7 +427,19 @@ def contrast_hint(ratio):
 
 
 def current_palette(config, now=None):
-    """Цвета на этот момент: ночная (основная) тема, днём - дневная, плюс теплота."""
+    """Цвета на этот момент: ночная (основная) тема, днём - дневная, плюс теплота.
+    Идёт праздник с его цветами - его цвета вместо тем (свои цвета и теплота - поверх, как обычно)."""
+    from . import seasons
+    season = seasons.active(config, now.date() if now else None)
+    if season and seasons.option(config, "season_colors"):
+        colors = dict(THEMES[DEFAULT_THEME])
+        colors.update(seasons.palette(season))
+        colors.update(bar_defaults(colors))
+        try:
+            amount = max(-100, min(100, int(config.get("warmth", 0) or 0))) / 100
+        except (TypeError, ValueError):
+            amount = 0
+        return warm(colors, amount)
     night = theme_colors(config, config.get("theme") or DEFAULT_THEME)
     # старые «свои цвета» из первых версий настроек кладутся поверх основной темы
     for key in ("TEXT", "BG", "DIALOGUE", "PUNCT"):
@@ -511,6 +525,8 @@ class palette_override:
 
 def apply_config(config):
     g = globals()
+    from . import seasons
+    g["SEASON"] = seasons.active(config)
     set_palette(current_palette(config))
     if config.get("FONT_FAMILY"):
         g["FONT_FAMILY"] = config["FONT_FAMILY"]

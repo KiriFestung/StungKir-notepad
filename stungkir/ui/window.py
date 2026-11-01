@@ -315,6 +315,8 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
             C.TEXTURE = texture
             apply_theme(QApplication.instance())
         self.apply_backdrop()
+        from ..fun.season_scene import SeasonLook
+        self.season = SeasonLook(self)        # праздник: комната под текстом, гирлянда, снег (по датам)
         self.update_title()
         self.update_empty_hint()
         self.apply_places()                # где стоят часы, полоски и строка
@@ -368,6 +370,11 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         self.apply_palette(self._palette_now or C.palette())
         self.apply_backdrop()
 
+    def show_seasons(self):
+        """Праздники: Рождество по датам или всегда, комната, снег, гирлянда (fun/season_settings.py)."""
+        from ..fun.season_settings import SeasonDialog
+        SeasonDialog(self).exec()
+
     BACKDROP_DIMS = {35: "чуть", 55: "средне", 70: "сильно", 82: "очень сильно"}
 
     @staticmethod
@@ -378,6 +385,7 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
     def apply_backdrop(self):
         dim = int(self.settings.value("backdrop_dim", 55) or 55)
         shown = self.editor.set_backdrop(self.backdrop_file() if C.TEXTURE == "picture" else None, dim / 100)
+        shown = shown or getattr(self.editor, "scene", None) is not None      # праздничная комната
         layer = getattr(self, "backdrop_layer", None)
         if shown and layer is None:
             from ..text.editor import BackdropLayer
@@ -522,7 +530,8 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
         central = self.centralWidget()
         if hasattr(self, "corner_clock"):
             corner = self.place("clock")
-            x = 18 if corner.endswith("l") else central.width() - self.corner_clock.width() - 18
+            pad = 18 + getattr(self, "clock_pad", 0)          # в праздник вокруг часов венок - чуть дальше от края
+            x = pad if corner.endswith("l") else central.width() - self.corner_clock.width() - pad
             side = getattr(self, "side", None)
             covered = False
             if side is not None and side.isVisible():
@@ -532,13 +541,17 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
                 covered = corner.endswith("l") == side_on_left
             zen = getattr(self, "zen", False)
             self.corner_clock.setVisible(not covered and not zen and self.screen_shown("clock"))
-            y = 12
+            y = 12 + getattr(self, "clock_pad", 0)
             if corner.startswith("b"):
-                y = central.height() - self.corner_clock.height() - 12
+                y = central.height() - self.corner_clock.height() - 12 - getattr(self, "clock_pad", 0)
                 if self.place("bar") == "bottom" and self.status.isVisible():
                     y -= self.status.height() + self.goal_strip.height()     # не наезжать на строку
             elif self.place("bar") == "top" and self.status.isVisible():
                 y += self.status.height() + self.goal_strip.height()
+            spot = getattr(self, "clock_spot", None)       # праздник: часы висят на стене над окном комнаты
+            spot = spot() if spot is not None else None
+            if spot is not None:
+                x, y = spot.x(), spot.y()
             self.corner_clock.move(x, max(0, y))
         self.search_bar.move((central.width() - self.search_bar.width()) // 2, C.MARGIN)
         if hasattr(self, "streak_pop"):              # огонёк серии - рядом со строкой (снизу или сверху)
@@ -904,6 +917,9 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
     def update_palette(self, animate=False):
         """Сверяет цвета с темой и временем суток. Смена темы - растворением старого вида поверх
         нового (без промежуточных мутных цветов), мелкие шаги вечернего потемнения - сразу."""
+        season = getattr(self, "season", None)
+        if season is not None:
+            season.refresh()                      # начался или кончился праздник, поменяли его настройки
         target = C.current_palette(load_config_raw())
         current = self._palette_now or C.palette()
         jump = max(max(abs(a - b) for a, b in zip(QColor(current[k]).getRgb()[:3], QColor(target[k]).getRgb()[:3]))

@@ -2682,4 +2682,33 @@ EN = {
         "Pace over {days} days: {n} a day. At this pace you will add {month} in a month and {year} in a year.",
     "пунктир - цель {goal} в день":
         "dashed - a goal of {goal} a day",
+    # праздники (core/seasons.py, fun/season_settings.py)
+    "Праздники": "Holidays",
+    "Праздники…": "Holidays…",
+    "Само по датам": "By the dates",
+    "Всегда Рождество": "Christmas all the time",
+    "Выключено": "Off",
+    "мерцают": "twinkle",
+    "горят ровно": "steady",
+    "бегут огоньки": "chasing lights",
+    "волна": "wave",
+    "дышат": "breathing",
+    "вразнобой": "at random",
+    "разноцветные": "multicolored",
+    "тёплые": "warm",
+    "холодные": "cold",
+    "золотые": "golden",
+    "свои": "my own",
+    "Рождество: с 15 декабря по 14 января - ёлка, камин, кресла-качалки, гирлянда, венок на часах и снег. "
+    "Полоска цели заполняется снегом.":
+        "Christmas, 15 December to 14 January: a tree, a fireplace, rocking chairs, fairy lights, a wreath on "
+        "the clock and snow. The goal bar fills up with snow.",
+    "Праздничные цвета": "Holiday colors",
+    "Комната под текстом: ёлка, камин, кресла, фонарь": "Room under the text: tree, fireplace, chairs, lamp post",
+    "Снег под текстом": "Snow under the text",
+    "Снег поверх текста (затихает, пока печатаешь)": "Snow over the text (calms down while you type)",
+    "Движение: огонь, снег, огоньки, кресла": "Motion: fire, snow, lights, chairs",
+    "Гирлянда:": "Lights:",
+    "Свои цвета:": "My colors:",
+    "Цвет огонька": "Light color",
 }

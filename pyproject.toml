@@ -40,7 +40,7 @@ packages = ["stungkir", "stungkir.core", "stungkir.text", "stungkir.world", "stu
             "stungkir.ui", "stungkir.tests"]
 
 [tool.setuptools.package-data]
-stungkir = ["fonts/*.ttf", "fonts/*.txt", "sounds/*.wav", "art/*.png", "art/icons/*.png", "art/paper/*.png", "art/dice/*/*.png", "art/anim/*/*.png"]   # шрифты (OFL), звуки, рисунки
+stungkir = ["fonts/*.ttf", "fonts/*.txt", "sounds/*.wav", "art/*.png", "art/icons/*.png", "art/paper/*.png", "art/dice/*/*.png", "art/anim/*/*.png", "art/seasons/*/*.svg", "art/seasons/*/scene.json", "art/seasons/*/*.png"]   # шрифты (OFL), звуки, рисунки
 
 [tool.ruff]
 line-length = 120

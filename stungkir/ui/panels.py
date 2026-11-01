@@ -189,6 +189,7 @@ class PanelsMixin:
         for kind, label in TEXTURES.items():
             self._toggle(texture, label.capitalize(), lambda _c=False, k=kind: self.set_texture(k), C.TEXTURE == kind)
         texture.addAction(tr("Выбрать свою картинку…"), lambda: self.choose_backdrop())
+        look.addAction(tr("Праздники…"), self.show_seasons)
         if C.TEXTURE == "picture":
             dim = int(self.settings.value("backdrop_dim", 55) or 55)
             dims = self._submenu(texture, tr("Затемнение картинки: {n}").format(n=self.BACKDROP_DIMS.get(dim, dim)))
