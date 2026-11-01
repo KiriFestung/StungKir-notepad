@@ -478,7 +478,10 @@ def window_back(rng):
     defs += rad("moon-glow", [(0, "#fff6d8", 0.55), (0.5, "#cfe0ff", 0.12), (1, "#cfe0ff", 0)])
     defs += lin("drift", [(0, "#eef4fb", 1), (1, "#a9bcd6", 1)])
     defs += lin("far", [(0, "#c3d1e6", 1), (1, "#8fa3c2", 1)])
-    body = f'<rect x="{x0}" y="{y0}" width="{x1 - x0}" height="{y1 - y0}" fill="url(#sky)"/>'
+    defs += '<filter id="soft" x="-30%" y="-10%" width="160%" height="120%"><feGaussianBlur stdDeviation="5"/></filter>'
+    body = (f'<rect x="{x0 - 10}" y="{y0 - 6}" width="{x1 - x0 + 26}" height="{y1 - y0 + 36}" fill="#000" '
+            f'fill-opacity="0.45" filter="url(#soft)"/>')        # тень рамы на стене - под стеклом, не поверх вида
+    body += f'<rect x="{x0}" y="{y0}" width="{x1 - x0}" height="{y1 - y0}" fill="url(#sky)"/>'
     for _ in range(26):
         x, y = rng.uniform(x0 + 4, x1 - 4), rng.uniform(y0 + 4, y0 + 120)
         body += f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{rng.uniform(0.5, 1.3):.1f}" fill="#fff" fill-opacity="{rng.uniform(0.4, 0.9):.2f}"/>'
@@ -517,8 +520,6 @@ def window_front(rng):
     for left, right in ((x0, mid - 4), (mid + 4, x1)):                          # снег в нижних углах стёкол
         body += (f'<path d="M{left},{y1} L{left},{y1 - 14} Q{left + 16},{y1 - 8} {left + 34},{y1 - 3} '
                  f'L{right - 34},{y1 - 3} Q{right - 16},{y1 - 9} {right},{y1 - 16} L{right},{y1} Z" fill="url(#snow)"/>')
-    body += (f'<rect x="{x0 - 10}" y="{y0 - 6}" width="{x1 - x0 + 26}" height="{y1 - y0 + 36}" fill="#000" '
-             f'fill-opacity="0.45" filter="url(#soft)"/>')                    # тень рамы на стене
     # рама: внешняя коробка, переплёт крестом
     body += (f'<path d="M{x0 - 12},{y0 - 12} L{x1 + 12},{y0 - 12} L{x1 + 12},{y1 + 10} L{x0 - 12},{y1 + 10} Z '
              f'M{x0},{y0} L{x0},{y1} L{x1},{y1} L{x1},{y0} Z" fill="url(#frame)" fill-rule="evenodd"/>')

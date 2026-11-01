@@ -65,7 +65,9 @@ class Art:
                 self.renderers[name].render(painter, QRectF(0, 0, size.width(), size.height()))
             painter.end()
             if mirror:                     # зеркалим готовую картинку: узоры SVG (плед) при зеркальном пере рисуются плохо
-                pix = QPixmap.fromImage(pix.toImage().mirrored(True, False))
+                image = pix.toImage()                   # Qt 6.9+: flipped, раньше - mirrored
+                image = image.flipped(Qt.Horizontal) if hasattr(image, "flipped") else image.mirrored(True, False)
+                pix = QPixmap.fromImage(image)
             pix.setDevicePixelRatio(ratio)
             if len(self._cache) > 40:
                 self._cache.clear()
@@ -181,6 +183,9 @@ class Room:
         self.levels = {}
         self._lights = None
         self.chair_t = 0.0
+        from .snowman import Yard
+        self.yard = Yard()                                  # снеговик за окном
+        self.yard_dirty = True
 
     # ---- где что стоит ----
     def layout(self, size):
@@ -294,11 +299,9 @@ class Room:
         p.drawPixmap(win.topLeft(), self.art.pixmap("window-back", win.height(), self.ratio))
         p.save()
         p.setClipRect(self.glass())
-        for name in ("snowman", "lantern"):
-            rect = self._outside(name)
-            p.drawPixmap(rect.topLeft(), self.art.pixmap(name, rect.height(), self.ratio))
-        p.restore()
-        p.drawPixmap(win.topLeft(), self.art.pixmap("window-front", win.height(), self.ratio))
+        rect = self._outside("lantern")                    # снеговика за окном лепишь сам (fun/snowman.py)
+        p.drawPixmap(rect.topLeft(), self.art.pixmap("lantern", rect.height(), self.ratio))
+        p.restore()                                        # рама - отдельным слоем поверх снеговика и снега
 
     def _paint_floor(self, p, w, h, top):
         rng = random.Random(9)
@@ -437,6 +440,9 @@ class Room:
         if "window" in self.items:
             corner = self.glass().topLeft().toPoint()
             dirty += [rect.translated(corner) for rect in self.outside.step(dt, t)]
+            if self.yard.busy() or self.yard_dirty:          # едет машина или слепился новый кусок
+                self.yard_dirty = False
+                dirty.append(self.glass().toAlignedRect())
         return dirty
 
     def paint(self, painter, widget, canvas, colors, mode, region=None):
@@ -487,9 +493,13 @@ class Room:
             painter.setPen(Qt.NoPen)
             painter.setBrush(halo)
             painter.drawEllipse(center, radius, radius)
+            spot = self._outside("snowman")
+            self.yard.paint(painter, QPointF(spot.center().x(), spot.bottom()), spot.height(), glass.width(), t)
             painter.translate(glass.topLeft())
             self.outside.paint(painter, 0.9)
             painter.restore()
+            win = self.items["window"]
+            painter.drawPixmap(win.topLeft(), self.art.pixmap("window-front", win.height(), ratio))
         if self.snow:
             self.snow.paint(painter, 0.75, region)
         painter.restore()
@@ -823,10 +833,27 @@ class SeasonLook(QObject):
         if self.room is not None:
             canvas = window.centralWidget()
             self.room.resize(canvas.size(), max(1.0, canvas.devicePixelRatioF()))
+            if force or now - getattr(self, "_words_at", 0.0) > 1.0:      # снеговик за окном - раз в секунду
+                self._words_at = now
+                self.feed_yard()
             dirty = self.room.tick(self.t, dt, self.colors, self.mode, lights)
             self._invalidate(dirty)
         if self.overlay is not None:
             self.overlay.tick(self.t, dt, self.mode, typing, lights)
+
+    def feed_yard(self):
+        """Слова за сегодня - снеговику за окном: растёт, а на 300% цели его кто-нибудь сносит."""
+        window = self.window
+        if self.room is None or not hasattr(window, "today_words"):
+            return
+        try:
+            written = window.today_words()
+        except (AttributeError, TypeError):
+            return
+        from datetime import date
+        day = (seasons.FIXED_TODAY or date.today()).isoformat()
+        if self.room.yard.update(written, getattr(window, "goal", C.DAILY_GOAL), day, self.t):
+            self.room.yard_dirty = True
 
     def _invalidate(self, rects):
         canvas = self.window.centralWidget()

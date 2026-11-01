@@ -1833,6 +1833,7 @@ HINTS = {
     4: "Щёлк. А красный - под крышкой: откинь и попробуй",
     5: "Зажми мышь, оттяни вниз и отпусти. Колесо - угол: чем площе, тем больше блинчиков",
     6: "← → двигать, ↑ повернуть, ↓ быстрее, пробел - сразу вниз, P - пауза",
+    7: "Пиши - и снеговик лепится сам: от дневной цели, а на 300% его кто-нибудь снесёт",
 }
 
 
@@ -1869,6 +1870,19 @@ class StressDialog(Sheet):
             self.pages.addWidget(page)
             if index == 0:
                 button.setChecked(True)
+        if C.SEASON == "xmas":                           # Рождество: «Слепи снеговика» (fun/snowman.py)
+            from .snowman import SnowmanView
+            self.snowman = SnowmanView(parent)
+            button = QPushButton(tr("Снеговик"))
+            button.setCheckable(True)
+            button.setAutoDefault(False)
+            button.setProperty("noIcon", True)
+            button.setStyleSheet(f"QPushButton:checked {{ background: {C.IMPORTANT}; "
+                                 f"color: {C.on_color(C.IMPORTANT)}; }}")
+            button.clicked.connect(lambda _c=False, i=len(PAGES): self._show_page(i))
+            self.group.addButton(button)
+            tabs.addWidget(button)
+            self.pages.addWidget(self.snowman)
         tabs.addStretch()
         self.content.addLayout(tabs)
         self.content.addWidget(self.pages, 1)
@@ -1965,6 +1979,8 @@ class StressDialog(Sheet):
 
     def _show_page(self, index):
         self.pages.setCurrentIndex(index)
+        if getattr(self, "snowman", None) is self.pages.widget(index):
+            self.snowman.refresh()                        # слова могли прибавиться, пока была другая вкладка
         if self.pages.widget(index) is self.blocks:
             self.blocks.setFocus()
         self.group.buttons()[index].setChecked(True)
