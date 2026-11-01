@@ -720,7 +720,8 @@ class RandomDialog(Sheet):
         self.material = QComboBox()
         for key, (title, *_rest) in MATERIALS.items():
             self.material.addItem(tr(title), key)
-        self.material.setCurrentIndex(max(0, self.material.findData(settings.value("dice_material", "bone"))))
+        default = "ice" if C.SEASON == "xmas" else "bone"      # в Рождество - лёд, пока сам не выбрал другой
+        self.material.setCurrentIndex(max(0, self.material.findData(settings.value("dice_material", default))))
         self.material.hide()
         self.material_group = QButtonGroup(self)
         for index, (key, (title, *_rest)) in enumerate(MATERIALS.items()):

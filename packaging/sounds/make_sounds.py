@@ -227,6 +227,15 @@ def rattle(hit, gaps=((0.0, 1.0), (0.05, 0.5), (0.085, 0.28))):
     return finish(track, 0.5)
 
 
+def ice_hit(f0, length=0.3):
+    """Ледяной кубик о стол: звонкий стеклянный «цок» - высокие неровные призвуки гаснут быстро,
+    под ними - лёгкий хруст и тихий стук о сукно."""
+    ring = metal(length, f0, [1.0, 2.32, 3.86, 5.41], [1.0, 0.55, 0.32, 0.18], [0.07, 0.05, 0.035, 0.025])
+    t = t_axis(length)
+    crunch = highpass(rng.standard_normal(len(t)), 4500) * np.exp(-t / 0.004) * (0.6 + 0.4 * rng.random(len(t)))
+    return finish(0.35 * wood(length, 0.6) + 0.5 * ring + 0.3 * crunch, 0.6)
+
+
 def round_in():
     """Патрон входит в гнездо барабана: короткий металлический щелчок с притиром."""
     t = t_axis(0.09)
@@ -328,4 +337,7 @@ if __name__ == "__main__":
         save(f"water_skip_{i}.wav", water_skip(f0))
     save("water_plunk.wav", water_plunk())
     save("page_turn.wav", page_turn())
+    for i, f0 in enumerate((2600, 2900, 3250), 1):          # лёд - последним: старые звуки не меняются
+        save(f"ice_hit_{i}.wav", ice_hit(f0))
+    save("ice_settle.wav", rattle(lambda: ice_hit(3100, 0.16)))
     print("готово:", ", ".join(sorted(p.name for p in OUT.glob("*.wav"))))

@@ -167,6 +167,24 @@ class WindowSeasonTest(WindowCase):
         strip.items["day"].update(value=0.6, shown=True, done=True)
         self.assertFalse(strip.grab().isNull())
 
+    def test_ice_dice_by_default_at_christmas(self):
+        from stungkir.fun.dice import RandomDialog
+        from stungkir.fun.sounds import VARIANTS
+        self.season(season="xmas")
+        w = self.window()
+        w.update_palette()
+        dialog = RandomDialog(w, ["Кира"], [], w.settings, lambda *_: None)
+        self.assertEqual(dialog.material.currentData(), "ice")              # сам ничего не выбирал - лёд
+        dialog.close()
+        w.settings.setValue("dice_material", "oak")                         # выбрал сам - его выбор
+        dialog = RandomDialog(w, ["Кира"], [], w.settings, lambda *_: None)
+        self.assertEqual(dialog.material.currentData(), "oak")
+        dialog.close()
+        from pathlib import Path
+        sounds = Path(__file__).resolve().parents[1] / "sounds"
+        for name in VARIANTS["ice_hit"] + ["ice_settle"]:
+            self.assertTrue((sounds / f"{name}.wav").is_file(), name)
+
     def test_settings_dialog(self):
         from stungkir.fun.season_settings import SeasonDialog
         w = self.window()
