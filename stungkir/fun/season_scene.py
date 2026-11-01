@@ -14,7 +14,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject, QEvent, QPoint, QPointF, QRect, QRectF, QSize, Qt, QTimer
 from PySide6.QtGui import (QColor, QFont, QImage, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap,
-                           QRadialGradient, QRegion, QTransform)
+                           QRadialGradient, QRegion)
 from PySide6.QtWidgets import QWidget
 
 from ..core import config as C
@@ -59,13 +59,13 @@ class Art:
             painter = QPainter(pix)
             painter.setRenderHint(QPainter.Antialiasing)
             painter.setRenderHint(QPainter.SmoothPixmapTransform)
-            if mirror:
-                painter.setTransform(QTransform(-1, 0, 0, 1, size.width(), 0))
             if name in self.images:
                 painter.drawImage(QRectF(0, 0, size.width(), size.height()), self.images[name])
             else:
                 self.renderers[name].render(painter, QRectF(0, 0, size.width(), size.height()))
             painter.end()
+            if mirror:                     # зеркалим готовую картинку: узоры SVG (плед) при зеркальном пере рисуются плохо
+                pix = QPixmap.fromImage(pix.toImage().mirrored(True, False))
             pix.setDevicePixelRatio(ratio)
             if len(self._cache) > 40:
                 self._cache.clear()
@@ -768,6 +768,7 @@ class SeasonLook(QObject):
             self.overlay.deleteLater()
             self.overlay = None
         window.goal_strip.bar_painter = paint_snow_bar if key else None
+        window.clock_spot = self.clock_spot if room_on else None
         window.clock_pad = 16 if key else 0
         if room_changed:                  # фон поля: прозрачный под комнату или обычный
             window.apply_palette(window._palette_now or C.palette())
@@ -781,6 +782,22 @@ class SeasonLook(QObject):
             self.timer.stop()
         self.tick(force=True)
         return True
+
+    def clock_spot(self):
+        """Куда повесить часы в венке: на стену над окном, по его середине. Не влезает - None (угол как обычно)."""
+        if self.room is None:
+            return None
+        canvas = self.window.centralWidget()
+        self.room.resize(canvas.size(), max(1.0, canvas.devicePixelRatioF()))
+        win = self.room.items.get("window")
+        clock = self.window.corner_clock
+        if win is None:
+            return None
+        size = clock.width()
+        center_y = win.top() - size * 0.82                  # бант венка - чуть выше карниза
+        if center_y - size * 0.75 < 44:                     # сверху гирлянда: места нет
+            return None
+        return QPoint(round(win.center().x() - size / 2), round(center_y - clock.height() / 2))
 
     def eventFilter(self, watched, event):
         if event.type() == QEvent.KeyPress:

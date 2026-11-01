@@ -548,6 +548,10 @@ class Notepad(FilesMixin, SearchMixin, WorldMixin, ProgressMixin, SecurityMixin,
                     y -= self.status.height() + self.goal_strip.height()     # не наезжать на строку
             elif self.place("bar") == "top" and self.status.isVisible():
                 y += self.status.height() + self.goal_strip.height()
+            spot = getattr(self, "clock_spot", None)       # праздник: часы висят на стене над окном комнаты
+            spot = spot() if spot is not None else None
+            if spot is not None:
+                x, y = spot.x(), spot.y()
             self.corner_clock.move(x, max(0, y))
         self.search_bar.move((central.width() - self.search_bar.width()) // 2, C.MARGIN)
         if hasattr(self, "streak_pop"):              # огонёк серии - рядом со строкой (снизу или сверху)
