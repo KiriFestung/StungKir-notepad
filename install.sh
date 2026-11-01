@@ -18,7 +18,7 @@ if [ ! -f "$HERE/stungkir/__main__.py" ]; then
 fi
 
 echo "1/5  Системные пакеты (попросит пароль от sudo)…"
-sudo apt install -y python3 python3-venv libenchant-2-2 hunspell-ru fonts-dejavu-core libxcb-cursor0
+sudo apt install -y python3 python3-venv libenchant-2-2 hunspell-ru hunspell-en-us hunspell-en-gb fonts-dejavu-core libxcb-cursor0
 
 # голос для чтения вслух (F5): если пакетов нет в системе, без него всё остальное работает
 sudo apt install -y speech-dispatcher speech-dispatcher-rhvoice rhvoice rhvoice-russian libspeechd2 \

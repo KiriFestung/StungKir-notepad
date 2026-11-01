@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 
 from ..core import config as C
 from .style import fade, rounded_menu
-from ..core.textutil import has_foreign, is_board, is_table, is_timeline, name_key, position_map, stem
+from ..core.textutil import LATIN_WORD, has_foreign, is_board, is_table, is_timeline, name_key, position_map, stem
 from ..core.storage import LockedFile, files_in, notes_path, read_text, report_problem, save_names, save_text
 from ..world.lore import Lore, LoreTerm, birth_year, lore_note, lore_terms_from_table, lore_tooltip, save_lore_config
 from .dialogs import NoteDialog, ask_text, show_warning
@@ -447,8 +447,8 @@ class WorldMixin:
         name = name.strip().replace("\u0301", "")
         if name.isupper() and len(name) > 1:
             name = name[0] + name[1:].lower()
-        if not name or has_foreign(name):
-            self.toast.show_message(tr("Имя должно быть русскими буквами"))
+        if not name or (has_foreign(name) and not LATIN_WORD.fullmatch(name)):     # Кира или Kira, но не «Kiра»
+            self.toast.show_message(tr("Имя - русскими или латинскими буквами, не вперемешку"))
             return
         if name_key(name) in {name_key(n) for n in self.names}:
             self.toast.show_message(tr("«{name}» уже в списке").format(name=name))

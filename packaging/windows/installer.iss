@@ -40,6 +40,7 @@ Source: "..\..\AUTHORS.md"; DestDir: "{app}\licenses"; Flags: ignoreversion
 Source: "..\..\docs\ПРАВОВОЕ.md"; DestDir: "{app}\licenses"; DestName: "LEGAL-ru.md"; Flags: ignoreversion
 Source: "..\..\packaging\fonts\LICENSE-DejaVu.txt"; DestDir: "{app}\licenses"; Flags: ignoreversion
 Source: "..\..\packaging\dictionaries\LICENSE-ru_RU.txt"; DestDir: "{app}\licenses"; Flags: ignoreversion
+Source: "..\..\packaging\dictionaries\LICENSE-en_*.txt"; DestDir: "{app}\licenses"; Flags: ignoreversion
 
 [Registry]
 ; язык, выбранный в установщике, - программе (QSettings stungkir/stungkir): при первом запуске она не спросит

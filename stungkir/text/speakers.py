@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 from ..core import config as C
 from ..ui.dialogs import Sheet
 from ..world.lore import Lore, LoreTerm
-from ..core.textutil import MARKER_RE, WORD_RE, name_key, plain_markup, plural
+from ..core.textutil import MARKER_RE, WORD_RE, name_key, plain_markup, plural, quoted_spans
 from ..core.i18n import tr
 
 DASHES = ("—", "–")
@@ -58,6 +58,32 @@ def segments(line):
     return [p for p in parts if p[1] > p[0]]
 
 
+def quoted_segments(line, quoted):
+    """Английский абзац с репликами в кавычках: [(начало, конец, это ли речь)] - речь и слова автора
+    вперемешку, как в «“No,” Kira said. “Not today.”»."""
+    parts, position = [], 0
+    for start, end in quoted:
+        if start > position:
+            parts.append((position, start, False))
+        parts.append((start, end, True))
+        position = end
+    if position < len(line.rstrip()):
+        parts.append((position, len(line.rstrip()), False))
+    return [p for p in parts if line[p[0]:p[1]].strip()]
+
+
+def _english_pronoun(text):
+    """she/her - она, he/him/his - он, I - рассказчик; ничего - None."""
+    lower = f" {text.lower()} "
+    if re.search(r"\b(?:she|her)\b", lower):
+        return "f"
+    if re.search(r"\b(?:he|him|his)\b", lower):
+        return "m"
+    if re.search(r"(?<![\w’'])I(?![\w’'])", text):
+        return "I"
+    return None
+
+
 def _gender_of_verb(text):
     for word in re.findall(r"[а-яё]+", text.lower()):
         if PAST.fullmatch(word):
@@ -90,7 +116,7 @@ class Speakers:
         f, m = self.votes.get(name, (0, 0))
         if f != m:
             return "f" if f > m else "m"
-        return "f" if name_key(name)[-1:] in ("а", "я") else "m"     # Кира, Ния - она; Кев - он
+        return "f" if name_key(name)[-1:] in ("а", "я", "a") else "m"     # Кира, Ния, Mira - она; Кев - он
 
     def _vote(self, name, gender):
         f, m = self.votes.get(name, (0, 0))
@@ -108,16 +134,18 @@ class Speakers:
             if SCENE_BREAK.match(line):
                 recent, beat, exchange = [], None, []
                 continue
-            if not stripped.startswith(DASHES):
+            quoted = [] if stripped.startswith(DASHES) else quoted_spans(line)     # английский: “No,” Kira said.
+            if not stripped.startswith(DASHES) and not quoted:
                 found = [n for _s, _e, n, person in self.find(MARKER_RE.sub("", line)) if person]
                 recent += found
                 beat = found[0] if len(set(found)) == 1 else None
                 exchange = []
                 continue
-            parts = segments(line)
+            parts = quoted_segments(line, quoted) if quoted else segments(line)
             speech = [line[s:e] for s, e, is_speech in parts if is_speech]
             words = sum(len(WORD_RE.findall(MARKER_RE.sub("", plain_markup(t)))) for t in speech)
-            reply = Reply(number, parts[0][0] if parts else 0, len(line.rstrip()), words)
+            first = next((s for s, _e, is_speech in parts if is_speech), 0)
+            reply = Reply(number, first, len(line.rstrip()), words)
             for s, e, is_speech in parts:
                 if is_speech:
                     continue
@@ -127,13 +155,17 @@ class Speakers:
                 if reply.speaker is UNKNOWN and (people or names):
                     reply.speaker = people[0] if people else names[0][1]
                     reply.how = "name"
-                    verb = _gender_of_verb(author)
-                    if verb:
+                    verb = _english_pronoun(author) if quoted else _gender_of_verb(author)
+                    if verb in ("f", "m") and (not quoted or len(set(people)) <= 1):   # «Kira said, her voice…»
                         self._vote(reply.speaker, verb)
                 elif reply.speaker is UNKNOWN:
                     lower = f" {author.lower()} "
-                    pronoun = "f" if re.search(r"\bона\b", lower) else "m" if re.search(r"\bон\b", lower) else None
-                    if pronoun is None and re.search(r"\bя\b", lower):
+                    if quoted:
+                        pronoun = _english_pronoun(author)
+                    else:
+                        pronoun = "f" if re.search(r"\bона\b", lower) else "m" if re.search(r"\bон\b", lower) else None
+                        pronoun = "I" if pronoun is None and re.search(r"\bя\b", lower) else pronoun
+                    if pronoun == "I":
                         reply.speaker, reply.how = NARRATOR, "pronoun"
                     elif pronoun:
                         window = []
@@ -167,10 +199,11 @@ class Speakers:
         def close():
             if len(streak) >= run:
                 who = sorted({r.speaker for r in streak if r.speaker})
-                between = f" (похоже, {' и '.join(who)})" if 0 < len(who) <= 2 else ""
+                between = tr(" (похоже, {who})").format(who=tr(" и ").join(who)) if 0 < len(who) <= 2 else ""
                 out.append((streak[0].line, streak[-1].line, streak[0].start, streak[-1].end,
-                            f"{len(streak)} {plural(len(streak), 'реплика', 'реплики', 'реплик')} подряд "
-                            f"без «кто говорит»{between}"))
+                            tr("{n} {replies} подряд без «кто говорит»{between}").format(
+                                n=len(streak), replies=plural(len(streak), 'реплика', 'реплики', 'реплик'),
+                                between=between)))
         lines = text.split("\n")
         previous = None
         for reply in replies:
@@ -184,9 +217,9 @@ class Speakers:
                 streak.append(reply)
             if reply.ambiguous:
                 a, b = reply.ambiguous
-                pronoun = "она" if self.gender(a) == "f" else "он"
+                pronoun = tr("она") if self.gender(a) == "f" else tr("он")
                 out.append((reply.line, reply.line, reply.start, reply.end,
-                            f"«{pronoun}» - {a} или {b}?"))
+                            tr("«{pronoun}» - {a} или {b}?").format(pronoun=pronoun, a=a, b=b)))
             previous = reply
         close()
         out.sort()
@@ -284,7 +317,7 @@ class ReplyStatsDialog(Sheet):
         strong = QColor(C.IMPORTANT)
         for r, name in enumerate(people):
             entry = self.stats[name]
-            title = QTableWidgetItem(name if name is not None else "Не понять, кто")
+            title = QTableWidgetItem(tr(name) if name == NARRATOR else name if name is not None else tr("Не понять, кто"))
             if name is None:
                 title.setForeground(QColor(C.DIM))
             guessed = entry["how"].get("turn", 0)

@@ -2545,4 +2545,23 @@ EN = {
         "Screen",
     "Электронные чернила":
         "E-ink",
+    # «кто говорит»
+    " (похоже, {who})":
+        " (probably {who})",
+    " и ":
+        " and ",
+    "{n} {replies} подряд без «кто говорит»{between}":
+        "{n} {replies} in a row without «who speaks»{between}",
+    "она":
+        "she",
+    "он":
+        "he",
+    "«{pronoun}» - {a} или {b}?":
+        "«{pronoun}» - {a} or {b}?",
+    "Не понять, кто":
+        "Unclear who",
+    "Я (рассказчик)":
+        "I (narrator)",
+    "Имя - русскими или латинскими буквами, не вперемешку":
+        "A name must be in Russian or Latin letters, not mixed",
 }

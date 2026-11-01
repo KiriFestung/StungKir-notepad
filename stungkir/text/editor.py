@@ -23,7 +23,7 @@ from ..core import config as C
 from ..ui.style import rounded_menu
 from ..core.textutil import (CYR_PART, CYR_WORD, EMPH_RE, MARKER_RE, PUNCT_RE, STOP_WORDS, WORD_RE, Crutches,
     anchor_notes, clean_pasted, has_foreign, is_board, is_table, is_timeline, name_key, parse_table, position_map,
-    stem, word_root)
+    quoted_spans, stem, word_root, CYRILLIC_RE, LATIN_WORD)
 from ..core.storage import LockedFile, read_text
 from ..core.i18n import tr
 
@@ -126,6 +126,65 @@ class Speller:
                 good = self._check(word.replace("ё", "е").replace("Ё", "Е"))
             self.cache[word] = good
         return self.cache[word]
+
+    # ---- английский: латинские слова в абзацах без русских букв ----
+    _english_cache = {}     # код словаря -> spylls Dictionary или None (нет файлов)
+
+    @staticmethod
+    def english_code():
+        from ..core import i18n
+        return "en_GB" if i18n.LANG == "en-GB" else "en_US"
+
+    def _english(self):
+        """Английский словарь: британский при интерфейсе English (UK), иначе американский.
+        Грузится при первом английском абзаце (около секунды) - русским, кто так не пишет, не мешает."""
+        code = self.english_code()
+        if code not in Speller._english_cache:
+            found = None
+            try:
+                from spylls.hunspell import Dictionary
+            except ImportError:
+                Dictionary = None
+            for folder in (DICTIONARY_DIRS if Dictionary is not None else []):
+                if (folder / f"{code}.dic").is_file() and (folder / f"{code}.aff").is_file():
+                    try:
+                        found = Dictionary.from_files(str(folder / code))
+                        break
+                    except Exception:
+                        continue
+            Speller._english_cache[code] = found
+        return Speller._english_cache[code]
+
+    def ok_english(self, word):
+        word = word.replace("’", "'")
+        if len(word) < 2 or word in self.personal or word.lower() in self.personal:
+            return True
+        key = (self.english_code(), word)
+        if key not in self.cache:
+            dictionary = self._english()
+            if dictionary is None:
+                good = True
+            else:
+                good = dictionary.lookup(word) or (word[:1].isupper() and dictionary.lookup(word.lower()))
+                if not good and word.lower().endswith("'s") and len(word) > 3:
+                    good = self.ok_english(word[:-2])           # Tervena's - как Tervena
+            self.cache[key] = bool(good)
+        return self.cache[key]
+
+    def suggest_english(self, word):
+        dictionary = self._english()
+        if dictionary is None:
+            return []
+        found = []
+        try:
+            for suggestion in dictionary.suggest(word.replace("’", "'")):
+                if suggestion != word:
+                    found.append(suggestion)
+                if len(found) >= 6:
+                    break
+        except Exception:
+            return []
+        return found
 
     def suggest(self, word):
         """Варианты исправления. Запоминаются: раньше одно и то же слово то получало варианты,
@@ -249,6 +308,13 @@ class ProseHighlighter(QSyntaxHighlighter):
             else:
                 base.setForeground(self.text_dim)
             self.setFormat(0, to_qt(len(text)), base)
+        if not is_dialogue:
+            quoted = quoted_spans(text)                 # по-английски реплики - в кавычках внутри абзаца
+            if quoted:
+                quote = QTextCharFormat()
+                quote.setForeground(self.dialogue_dim if dim else self.dialogue)
+                for start, end in quoted:
+                    self.setFormat(to_qt(start), to_qt(end) - to_qt(start), quote)
         heading = HEADING_LINE_RE.match(text)
         if heading:
             # «# Пролог» - заголовок внутри главы: крупнее и плотнее, решётки приглушены
@@ -357,6 +423,13 @@ class ProseHighlighter(QSyntaxHighlighter):
                 for part in CYR_PART.finditer(word):
                     if not ok(part.group()) and not in_lore(m.start() + part.start()):
                         add(rest, m.start() + part.start(), m.start() + part.end(), "spell")
+        if self.speller is not None and not CYRILLIC_RE.search(text):        # английский абзац
+            english = self.speller.ok_english
+            for m in LATIN_WORD.finditer(text):
+                if (markers and in_marker(m.start())) or (lore_spans and in_lore(m.start())):
+                    continue
+                if not english(m.group()):
+                    add(rest, m.start(), m.end(), "spell")
         return emph, rest
 
     def set_names(self, names):
@@ -707,7 +780,18 @@ class Editor(QTextEdit):
                 menu.addAction(tr("Нет вариантов")).setEnabled(False)
             menu.addAction(tr("Добавить «{word}» в словарь").format(word=word), lambda: self._add_word(word))
             menu.addSeparator()
-        if self.track_name_callback and CYR_PART.fullmatch(word or "") and word[:1].isupper():
+        elif (self.speller and LATIN_WORD.fullmatch(word or "") and not CYRILLIC_RE.search(cursor.block().text())
+                and not self.speller.ok_english(word) and not self.forward_only):
+            suggestions = self.speller.suggest_english(word)
+            for suggestion in suggestions:
+                action = menu.addAction(suggestion, lambda s=suggestion, c=cursor: c.insertText(s))
+                action.setProperty("noIcon", True)
+            if not suggestions:
+                menu.addAction(tr("Нет вариантов")).setEnabled(False)
+            menu.addAction(tr("Добавить «{word}» в словарь").format(word=word), lambda: self._add_word(word))
+            menu.addSeparator()
+        if self.track_name_callback and (CYR_PART.fullmatch(word or "") or LATIN_WORD.fullmatch(word or "")) \
+                and word[:1].isupper():
             menu.addAction(tr("Считать «{word}» персонажем").format(word=word), lambda: self.track_name_callback(word))
             menu.addSeparator()
         if self.crutch_callback:

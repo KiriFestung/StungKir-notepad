@@ -22,6 +22,8 @@ datas = [
     (str(PACKAGING / "dictionaries" / "ru_RU.dic"), "stungkir/dictionaries"),
     (str(PACKAGING / "dictionaries" / "ru_RU.aff"), "stungkir/dictionaries"),
     (str(PACKAGING / "dictionaries" / "LICENSE-ru_RU.txt"), "stungkir/dictionaries"),
+    (str(PACKAGING / "dictionaries" / "en_*.*"), "stungkir/dictionaries"),             # английские: US и UK
+    (str(PACKAGING / "dictionaries" / "LICENSE-en_*.txt"), "stungkir/dictionaries"),
     (str(ROOT / "LICENSE"), "."),
 ]
 # кадры анимаций: каждая - своя папка в art/anim (ласка, огонёк, праздник цели, брызги ...)
