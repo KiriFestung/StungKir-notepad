@@ -22,48 +22,67 @@ import weasel as W  # noqa: E402
 FUR = QColor("#f4f7fb")
 
 
-SCALE = 1.35          # шапка чуть крупнее «настоящей»: в колесе ласка маленькая, а шапку должно быть видно
+SCALE = 1.18          # шапка чуть крупнее «настоящей»: в колесе ласка маленькая, а шапку должно быть видно
 
 
-def hat(p, point, flap=0.0):
-    """Колпак по точкам рисунка: point(x, y) - где точка (x, y) рисунка ласки оказалась в кадре."""
+def hat(p, point, flap=0.0, scale=SCALE):
+    """Колпак по точкам рисунка: point(x, y) - где точка (x, y) рисунка ласки оказалась в кадре.
+    Опушка обхватывает голову дугой и закрывает ухо, колпак поднимается над макушкой и свисает назад,
+    к шее (помпон ниже макушки - край кадра его не режет); flap - на сколько качнулся помпон."""
     raw = point
 
-    def point(x, y):                                        # увеличиваем вокруг макушки, опушка - на лбу
-        return raw(418 + (x - 418) * SCALE, 24 + (y - 24) * SCALE)
-    a, b = point(380, 14), point(456, 22)
-    tip = point(328, -14 + flap)
-    shape = QPainterPath(a)
-    shape.cubicTo(a + QPointF(-4, -38) * SCALE, point(350, -34 + flap * 0.5), tip)
-    shape.cubicTo(point(352, -22 + flap * 0.5), a + QPointF(40, -30) * SCALE, b)
-    shape.closeSubpath()
-    red = QLinearGradient(a, tip)
-    red.setColorAt(0, QColor("#e3423a"))
-    red.setColorAt(1, QColor("#9c1a1a"))
-    p.setPen(QPen(W.OCHRE, W.LINE))
+    def point(x, y):                                        # увеличиваем вокруг макушки
+        return raw(410 + (x - 410) * scale, 18 + (y - 18) * scale)
+    red = QLinearGradient(point(440, 20), point(350, 30))
+    red.setColorAt(0, QColor("#e8473e"))
+    red.setColorAt(0.6, QColor("#b8262a"))
+    red.setColorAt(1, QColor("#8a1717"))
+    pen = QPen(W.OCHRE, W.LINE)
+    pen.setJoinStyle(Qt.RoundJoin)
+    tail = QPainterPath(point(404, -11))                    # свисающий хвост колпака - сзади, под макушкой
+    tail.cubicTo(point(378, -16), point(350, -2 + flap * 0.4), point(344, 26 + flap))
+    tail.cubicTo(point(356, 22 + flap), point(372, 2), point(396, 2))
+    tail.closeSubpath()
+    crown = QPainterPath(point(370, 32))                    # сам колпак над головой
+    crown.cubicTo(point(372, -2), point(396, -16), point(414, -13))
+    crown.cubicTo(point(432, -10), point(448, 6), point(450, 28))
+    crown.closeSubpath()
+    p.setPen(pen)
     p.setBrush(red)
-    p.drawPath(shape)
-    shine = QPainterPath(a + QPointF(8, -10))                  # блик на ткани
-    shine.cubicTo(a + QPointF(6, -26), point(356, -26 + flap * 0.5), point(342, -16 + flap * 0.7))
-    p.setPen(QPen(QColor(255, 190, 180, 120), 3, Qt.SolidLine, Qt.RoundCap))
+    p.drawPath(tail)
+    p.drawPath(crown)
+    p.setPen(Qt.NoPen)
+    p.setBrush(QColor(0, 0, 0, 55))                         # складка: хвост уходит за колпак
+    fold = QPainterPath(point(398, -14))
+    fold.cubicTo(point(386, -12), point(378, -2), point(376, 8))
+    fold.cubicTo(point(386, 0), point(394, -6), point(404, -8))
+    p.drawPath(fold)
+    shine = QPainterPath(point(420, -8))                   # блик на ткани
+    shine.cubicTo(point(434, -8), point(442, 4), point(444, 18))
+    p.setPen(QPen(QColor(255, 200, 190, 130), 3.2, Qt.SolidLine, Qt.RoundCap))
     p.setBrush(Qt.NoBrush)
     p.drawPath(shine)
-    rim = QPainterPath(a + QPointF(-4, 4) * SCALE)
-    rim.cubicTo(a + QPointF(20, -8) * SCALE, b + QPointF(-20, -10) * SCALE, b + QPointF(4, 2) * SCALE)
-    p.setPen(QPen(W.OCHRE, 19 * SCALE, Qt.SolidLine, Qt.RoundCap))
-    p.drawPath(rim)
-    p.setPen(QPen(FUR, 15 * SCALE, Qt.SolidLine, Qt.RoundCap))
-    p.drawPath(rim)
-    p.setPen(QPen(QColor(200, 214, 230), 4, Qt.SolidLine, Qt.RoundCap))   # тень в мехе снизу
-    p.drawPath(rim.translated(0, 4))
+    rim = QPainterPath(point(364, 36))                      # опушка - дугой по голове, через ухо
+    rim.cubicTo(point(382, 14), point(428, 10), point(452, 30))
+    for width, color in ((17, W.OCHRE), (13, FUR)):
+        p.setPen(QPen(color, width * scale, Qt.SolidLine, Qt.RoundCap))
+        p.drawPath(rim)
+    p.setPen(QPen(QColor(196, 210, 228), 3.4, Qt.SolidLine, Qt.RoundCap))   # тень в мехе снизу
+    p.drawPath(rim.translated(0, 3.2 * scale))
+    for k in range(7):                                       # ворс опушки
+        t = (k + 0.5) / 7
+        spot = rim.pointAtPercent(t)
+        p.setPen(QPen(QColor(205, 218, 234), 1.6, Qt.SolidLine, Qt.RoundCap))
+        p.drawLine(spot + QPointF(-2, -3), spot + QPointF(1, 1))
+    tip = point(344, 30 + flap)
     p.setPen(QPen(W.OCHRE, W.LINE))
     p.setBrush(FUR)
-    p.drawEllipse(tip, 13 * SCALE, 13 * SCALE)
+    p.drawEllipse(tip, 11 * scale, 11 * scale)
     p.setPen(Qt.NoPen)
     p.setBrush(QColor(200, 214, 230))
-    p.drawEllipse(tip + QPointF(3, 4) * SCALE, 7 * SCALE, 6 * SCALE)
+    p.drawEllipse(tip + QPointF(3, 4) * scale, 6 * scale, 5 * scale)
     p.setBrush(FUR)
-    p.drawEllipse(tip + QPointF(-2, -2) * SCALE, 8 * SCALE, 8 * SCALE)
+    p.drawEllipse(tip + QPointF(-2, -2) * scale, 7 * scale, 7 * scale)
 
 
 def bent(bend):
@@ -83,23 +102,30 @@ def main(art):
         for old in folder.glob("*.png"):
             old.unlink()
 
-    def save(pair, path):
+    def save(pair, path, drop=0):
+        """Кадр после чистки каймы + слой шапки; drop - опустить всё на столько точек (прыжок пониже)."""
         frame, layer = pair
         frame.save(str(path))
         clean = polish(Image.open(path), 2 / 3)
         layer.save(str(path))
-        Image.alpha_composite(clean, Image.open(path).convert("RGBA")).save(path, optimize=True)
+        done = Image.alpha_composite(clean, Image.open(path).convert("RGBA"))
+        if drop:
+            moved = Image.new("RGBA", done.size, (0, 0, 0, 0))
+            moved.paste(done, (0, drop))
+            done = moved
+        done.save(path, optimize=True)
 
     def run_hat(p, bend, i):                                    # на бегу помпон подпрыгивает
-        hat(p, bent(bend), 7 * math.sin(2 * math.pi * i / W.RUN_FRAMES))
+        hat(p, bent(bend), 6 * math.sin(2 * math.pi * i / W.RUN_FRAMES))
 
-    def cheer_hat(p, bend, i):                                  # в прыжке шапку сдувает назад и вниз
+    def cheer_hat(p, bend, i):                                  # в прыжке помпон отстаёт и потом догоняет
         t = i / (W.CHEER_FRAMES - 1)
-        hat(p, bent(bend), 10 * math.sin(math.pi * t))
+        hat(p, bent(bend), 9 * math.sin(math.pi * t))
     for i, pair in enumerate(W.run_frames(body, run_hat)):
         save(pair, run_dir / f"weasel-run_{i:02d}.png")
-    for i, pair in enumerate(W.cheer_frames(body, cheer_hat)):
-        save(pair, cheer_dir / f"weasel-cheer_{i:02d}.png")
+    for i, pair in enumerate(W.cheer_frames(body, cheer_hat)):          # на пике голова у края кадра - чуть ниже
+        drop = round(16 * math.sin(math.pi * i / (W.CHEER_FRAMES - 1)))
+        save(pair, cheer_dir / f"weasel-cheer_{i:02d}.png", drop)
     # стоит - сам рисунок, шапка по тем же точкам рисунка
     stand = W.stand_frame(sprite)
     layer = QImage(W.W * W.SS, W.H * W.SS, QImage.Format_ARGB32_Premultiplied)
