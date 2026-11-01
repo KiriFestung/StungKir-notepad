@@ -220,6 +220,7 @@ class PanelsMixin:
         goals.addAction(tr("Цель этой главы") + (tr(" (сейчас {chapter})").format(chapter=chapter) if chapter else "") + "…",
                         self.set_chapter_goal)
         goals.addAction(tr("Дедлайн книги…"), self.show_deadline)
+        goals.addAction(tr("Спринты…"), self.show_sprints)
         from .widgets import STREAK_VOICES
         voice = self.settings.value("streak_voice", "cheer")
         talk = self._submenu(goals, tr("Огонёк серии: {n}").format(n=STREAK_VOICES.get(voice, 'подбадривает').lower()))
