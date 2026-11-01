@@ -13,8 +13,8 @@ import time
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QEvent, QPoint, QPointF, QRect, QRectF, QSize, Qt, QTimer
-from PySide6.QtGui import (QColor, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QRadialGradient,
-                           QRegion, QTransform)
+from PySide6.QtGui import (QColor, QFont, QImage, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap,
+                           QRadialGradient, QRegion, QTransform)
 from PySide6.QtWidgets import QWidget
 
 from ..core import config as C
@@ -39,23 +39,32 @@ class Art:
         folder = ART / name
         self.spec = json.loads((folder / "scene.json").read_text(encoding="utf-8"))
         self.renderers = {p.stem: QSvgRenderer(str(p)) for p in folder.glob("*.svg")}
+        self.images = {p.stem: QImage(str(p)) for p in folder.glob("*.png")}      # ласка - рисунок автора
         self._cache = {}
 
     def width_for(self, name, height):
-        w, h = self.spec[name]["size"]
+        if name in self.images:
+            image = self.images[name]
+            return height * image.width() / max(1, image.height())
+        w, h = self.spec["window" if name.startswith("window") else name]["size"]   # обе половины окна - одна рамка
         return height * w / h
 
-    def pixmap(self, name, height, ratio=1.0, mirror=False):
-        key = (name, int(height), ratio, mirror)
+    def pixmap(self, name, height, ratio=1.0, mirror=False, width=None):
+        key = (name, int(height), ratio, mirror, None if width is None else int(width))
         if key not in self._cache:
-            size = QSize(max(1, round(self.width_for(name, height) * ratio)), max(1, round(height * ratio)))
+            width = self.width_for(name, height) if width is None else width
+            size = QSize(max(1, round(width * ratio)), max(1, round(height * ratio)))
             pix = QPixmap(size)
             pix.fill(Qt.transparent)
             painter = QPainter(pix)
             painter.setRenderHint(QPainter.Antialiasing)
+            painter.setRenderHint(QPainter.SmoothPixmapTransform)
             if mirror:
                 painter.setTransform(QTransform(-1, 0, 0, 1, size.width(), 0))
-            self.renderers[name].render(painter, QRectF(0, 0, size.width(), size.height()))
+            if name in self.images:
+                painter.drawImage(QRectF(0, 0, size.width(), size.height()), self.images[name])
+            else:
+                self.renderers[name].render(painter, QRectF(0, 0, size.width(), size.height()))
             painter.end()
             pix.setDevicePixelRatio(ratio)
             if len(self._cache) > 40:
@@ -165,6 +174,7 @@ class Room:
         self.items = {}
         self.static = None
         self.snow = Snow(42, (0.9, 2.2), (22, 46), 11) if seasons.option(config, "season_snow_under") else None
+        self.outside = Snow(18, (0.7, 1.7), (14, 30), 31)          # снег за окном - идёт всегда
         self.sparks = []
         self.rng = random.Random(5)
         self.t = 0.0
@@ -187,24 +197,29 @@ class Room:
         ph = th * 0.24
         items["presents"] = QRectF(tree.left() + tree.width() * 0.06, floor_top + floor_h * 0.55 - ph,
                                    self.art.width_for("presents", ph), ph)
-        sh = th * 0.64
-        items["snowman"] = QRectF(tree.right() - tree.width() * 0.3, floor_top + floor_h * 0.5 - sh,
-                                  self.art.width_for("snowman", sh), sh)
-        lh = max(170, min(470, h * 0.52))
-        lw = self.art.width_for("lantern", lh)
-        items["lantern"] = QRectF(w - lw - 16, floor_top + floor_h * 0.4 - lh, lw, lh)
+        wh = max(180, min(380, h * 0.42))                     # окно на стене справа, за ним - улица
+        ww = self.art.width_for("window-back", wh)
+        items["window"] = QRectF(w - ww - 6, max(40.0, floor_top - h * 0.14 - wh), ww, wh)
+        sleep_h = th * 0.36                                   # ласка спит на коврике у ёлки
+        sleep_w = self.art.width_for("weasel-sleep", sleep_h)
+        rug_w = sleep_w * 1.4
+        rug_h = min(rug_w * 92 / 320, floor_h * 1.1)
+        center = tree.right() + rug_w * 0.12
+        items["rug"] = QRectF(center - rug_w / 2, h - rug_h - floor_h * 0.06, rug_w, rug_h)
+        items["weasel"] = QRectF(center - sleep_w / 2, items["rug"].center().y() + rug_h * 0.18 - sleep_h,
+                                 sleep_w, sleep_h)
         ch = fh * 0.6
         cw = self.art.width_for("chair", ch)
         fire = items["fireplace"]
         # кресла стоят перед камином, чуть заходя на его края
         left = QRectF(fire.left() - cw * 0.62, floor_top + floor_h * 0.45 - ch, cw, ch)
         right = QRectF(fire.right() - cw * 0.38, left.top(), cw, ch)
-        if left.left() > items["snowman"].right() - 25:      # чуть заходит за снеговика - не страшно
+        if left.left() > tree.right() - tree.width() * 0.2:
             items["chair_left"] = left
-        if right.right() < items["lantern"].left() - 4:
+        if right.right() < items["window"].center().x():
             items["chair_right"] = right
         if w < 700:                              # узкое окно: только ёлка и камин
-            for key in ("snowman", "lantern", "chair_left", "chair_right"):
+            for key in ("window", "rug", "weasel", "chair_left", "chair_right"):
                 items.pop(key, None)
         return items
 
@@ -216,6 +231,8 @@ class Room:
         self._lights = None
         if self.snow:
             self.snow.resize(size)
+        if "window" in self.items:
+            self.outside.resize(self.glass().size().toSize())
         self.static = self._render_static()
 
     # ---- неподвижное: один раз в картинку ----
@@ -238,15 +255,47 @@ class Room:
         glow.setColorAt(1, QColor(255, 140, 50, 0))
         p.fillRect(QRectF(0, 0, w, h), glow)
         self._paint_floor(p, w, h, floor_top)
+        if "window" in items:
+            self._paint_window(p)
         p.setOpacity(self.FIRE_OPACITY)
         p.drawPixmap(fire.topLeft(), self.art.pixmap("fireplace", fire.height(), self.ratio))
         p.setOpacity(1.0)
-        for name in ("tree", "presents", "snowman", "lantern"):
-            if name in items:
-                rect = items[name]
-                p.drawPixmap(rect.topLeft(), self.art.pixmap(name, rect.height(), self.ratio))
+        for name in ("tree", "presents"):
+            rect = items[name]
+            p.drawPixmap(rect.topLeft(), self.art.pixmap(name, rect.height(), self.ratio))
+        if "rug" in items:
+            rect = items["rug"]
+            p.drawPixmap(rect.topLeft(), self.art.pixmap("rug", rect.height(), self.ratio, width=rect.width()))
         p.end()
         return pix
+
+    def _window_k(self):
+        return self.items["window"].height() / self.art.spec["window"]["size"][1]
+
+    def glass(self):
+        """Стекло окна в координатах комнаты."""
+        win, k = self.items["window"], self._window_k()
+        x0, y0, x1, y1 = self.art.spec["window"]["glass"]
+        return QRectF(win.left() + x0 * k, win.top() + y0 * k, (x1 - x0) * k, (y1 - y0) * k)
+
+    def _outside(self, name):
+        """Где за окном стоят снеговик и фонарь: прямоугольник в координатах комнаты."""
+        win, k = self.items["window"], self._window_k()
+        x, bottom, height = self.art.spec["window"][name]
+        h = height * k
+        w = self.art.width_for(name, h)
+        return QRectF(win.left() + x * k - w / 2, win.top() + bottom * k - h, w, h)
+
+    def _paint_window(self, p):
+        win = self.items["window"]
+        p.drawPixmap(win.topLeft(), self.art.pixmap("window-back", win.height(), self.ratio))
+        p.save()
+        p.setClipRect(self.glass())
+        for name in ("snowman", "lantern"):
+            rect = self._outside(name)
+            p.drawPixmap(rect.topLeft(), self.art.pixmap(name, rect.height(), self.ratio))
+        p.restore()
+        p.drawPixmap(win.topLeft(), self.art.pixmap("window-front", win.height(), self.ratio))
 
     def _paint_floor(self, p, w, h, top):
         rng = random.Random(9)
@@ -317,12 +366,38 @@ class Room:
         return self._lights
 
     def lantern_glass(self):
-        rect = self.items.get("lantern")
-        if rect is None:
+        """Стекло фонаря за окном и радиус его ореола."""
+        if "window" not in self.items:
             return None, 0
+        rect = self._outside("lantern")
         k = rect.height() / self.art.spec["lantern"]["size"][1]
         gx, gy = self.art.spec["lantern"]["glass"]
         return QPointF(rect.left() + gx * k, rect.top() + gy * k), 70 * k
+
+    def weasel_rect(self):
+        rect = self.items["weasel"]
+        return rect.adjusted(-4, -rect.height() * 0.7, rect.width() * 0.15, 4)     # с местом для «Zzz»
+
+    def _paint_weasel(self, painter, t):
+        rect = self.items["weasel"]
+        breath = 1 + 0.025 * math.sin(t * 2 * math.pi / 3.4)              # дышит: бока чуть поднимаются
+        painter.save()
+        painter.translate(rect.center().x(), rect.bottom())
+        painter.scale(1.0, breath)
+        painter.translate(-rect.center().x(), -rect.bottom())
+        painter.drawPixmap(rect.topLeft(), self.art.pixmap("weasel-sleep", rect.height(), self.ratio))
+        painter.restore()
+        head = QPointF(rect.left() + rect.width() * 0.86, rect.top() + rect.height() * 0.12)
+        font = QFont(C.FONT_FAMILY)
+        font.setBold(True)
+        for k in range(3):                                              # «Z z z» всплывают и тают
+            phase = (t / 2.6 + k / 3) % 1.0
+            font.setPixelSize(int(9 + 9 * phase))
+            painter.setFont(font)
+            color = QColor("#e8eef8")
+            color.setAlphaF(math.sin(math.pi * phase) * 0.85)
+            painter.setPen(color)
+            painter.drawText(head + QPointF(phase * 22, -phase * rect.height() * 0.6), "z")
 
     def tick(self, t, dt, colors, mode, lights=True):
         """Сдвинуть время. Возвращает кусочки окна, которые надо перерисовать. lights=False - огоньки
@@ -334,6 +409,8 @@ class Room:
             for name in ("chair_left", "chair_right"):
                 if name in self.items:
                     dirty.append(self.items[name].adjusted(-14, -14, 14, 6).toAlignedRect())
+            if "weasel" in self.items:
+                dirty.append(self.weasel_rect().toAlignedRect())
         for i, (point, radius) in enumerate(self.light_points() if lights else []):
             level = seasons.bulb_level(mode, i, 99, t)
             if abs(level - self.levels.get(i, -1)) > 0.04:
@@ -354,6 +431,9 @@ class Room:
         self.sparks = [s for s in self.sparks if s[4] > 0]
         if self.snow:
             dirty += self.snow.step(dt, t)
+        if "window" in self.items:
+            corner = self.glass().topLeft().toPoint()
+            dirty += [rect.translated(corner) for rect in self.outside.step(dt, t)]
         return dirty
 
     def paint(self, painter, widget, canvas, colors, mode, region=None):
@@ -390,15 +470,23 @@ class Room:
         for i, (point, radius) in enumerate(self.light_points()):
             if hit(QRectF(point.x() - radius * 3.5, point.y() - radius * 3.5, radius * 7, radius * 7)):
                 paint_bulb(painter, point, colors[i % len(colors)], seasons.bulb_level(mode, i, 99, t), radius)
-        center, radius = self.lantern_glass()
-        if center is not None and hit(QRectF(center.x() - radius, center.y() - radius, 2 * radius, 2 * radius)):
+        if "weasel" in self.items and hit(self.weasel_rect()):
+            self._paint_weasel(painter, self.chair_t)
+        if "window" in self.items and hit(self.glass()):          # за окном: ореол фонаря и снег
+            glass = self.glass()
+            painter.save()
+            painter.setClipRect(glass, Qt.IntersectClip)
+            center, radius = self.lantern_glass()
             halo = QRadialGradient(center, radius)
-            a = 0.30 + 0.06 * _noise(t, 4.0)
+            a = 0.34 + 0.07 * _noise(t, 4.0)
             halo.setColorAt(0, QColor(255, 180, 80, int(255 * a)))
             halo.setColorAt(1, QColor(255, 180, 80, 0))
             painter.setPen(Qt.NoPen)
             painter.setBrush(halo)
             painter.drawEllipse(center, radius, radius)
+            painter.translate(glass.topLeft())
+            self.outside.paint(painter, 0.9)
+            painter.restore()
         if self.snow:
             self.snow.paint(painter, 0.75, region)
         painter.restore()

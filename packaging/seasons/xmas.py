@@ -375,12 +375,111 @@ def wreath(rng):
     return svg(300, 310, defs, body)
 
 
+# ---------- окно: за стеклом ночь, снег, фонарь и снеговик ----------
+# одна система координат на обе половины: стекло 60..240 × 50..280, рама вокруг, шторы по бокам
+GLASS = (60, 50, 240, 280)
+
+
+def window_back(rng):
+    """Что за стеклом: ночное небо, звёзды, луна, дальний лес и сугробы. Фонарь, снеговик и падающий
+    снег программа кладёт сверху (между этим и рамой)."""
+    x0, y0, x1, y1 = GLASS
+    defs = lin("sky", [(0, "#081226", 1), (0.6, "#16284d", 1), (1, "#2c3f68", 1)])
+    defs += rad("moon-glow", [(0, "#fff6d8", 0.55), (0.5, "#cfe0ff", 0.12), (1, "#cfe0ff", 0)])
+    defs += lin("drift", [(0, "#eef4fb", 1), (1, "#a9bcd6", 1)])
+    defs += lin("far", [(0, "#c3d1e6", 1), (1, "#8fa3c2", 1)])
+    body = f'<rect x="{x0}" y="{y0}" width="{x1 - x0}" height="{y1 - y0}" fill="url(#sky)"/>'
+    for _ in range(26):
+        x, y = rng.uniform(x0 + 4, x1 - 4), rng.uniform(y0 + 4, y0 + 120)
+        body += f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{rng.uniform(0.5, 1.3):.1f}" fill="#fff" fill-opacity="{rng.uniform(0.4, 0.9):.2f}"/>'
+    body += '<circle cx="96" cy="88" r="34" fill="url(#moon-glow)"/><circle cx="96" cy="88" r="13" fill="#fdf3d2"/>'
+    body += '<circle cx="91" cy="84" r="3" fill="#e9dcb4" fill-opacity="0.6"/><circle cx="100" cy="93" r="2" fill="#e9dcb4" fill-opacity="0.6"/>'
+    body += f'<path d="M{x0},{y1 - 70} Q110,{y1 - 92} 160,{y1 - 78} Q205,{y1 - 66} {x1},{y1 - 84} L{x1},{y1} L{x0},{y1} Z" fill="url(#far)"/>'
+    for x, h in ((70, 34), (84, 26), (196, 30), (212, 40), (228, 28)):                # дальний ельник
+        base = y1 - 74
+        body += f'<path d="M{x},{base - h} L{x + h * 0.38:.1f},{base} L{x - h * 0.38:.1f},{base} Z" fill="#203553"/>'
+        body += f'<path d="M{x},{base - h} L{x + h * 0.2:.1f},{base - h * 0.45:.1f} L{x - h * 0.2:.1f},{base - h * 0.45:.1f} Z" fill="#dfe8f4" fill-opacity="0.7"/>'
+    body += '<rect x="166" y="196" width="26" height="18" fill="#2a3550"/><path d="M162,197 L179,184 L196,197 Z" fill="#dfe8f4"/>'
+    body += '<rect x="172" y="202" width="7" height="7" fill="#ffcf6b"/>'                       # дальний домик, окошко горит
+    body += f'<path d="M{x0},{y1 - 34} Q100,{y1 - 52} 150,{y1 - 38} Q200,{y1 - 26} {x1},{y1 - 44} L{x1},{y1} L{x0},{y1} Z" fill="url(#drift)"/>'
+    SCENE["window"] = {"size": [300, 360], "glass": list(GLASS),
+                       "snowman": [104, y1 - 30, 88], "lantern": [206, y1 - 30, 150]}
+    return svg(300, 360, defs, body)
+
+
+def window_front(rng):
+    """Рама, переплёт, снег в нижних углах стёкол, иней, подоконник и шторы - поверх того, что за окном."""
+    x0, y0, x1, y1 = GLASS
+    defs = lin("frame", [(0, "#f3ead8", 1), (1, "#cbbfa6", 1)], x2=1, y2=1)
+    defs += lin("frame-dark", [(0, "#a8987a", 1), (1, "#7f7059", 1)])
+    defs += lin("curtain", [(0, "#5a0f14", 1), (0.25, "#9e2027", 1), (0.5, "#6e141a", 1), (0.75, "#a8262d", 1),
+                            (1, "#4a0c10", 1)], x2=1, y2=0)
+    defs += lin("rod", [(0, "#f2cf73", 1), (1, "#a8740c", 1)])
+    defs += rad("frost", [(0, "#ffffff", 0.55), (1, "#ffffff", 0)])
+    defs += lin("snow", [(0, "#ffffff", 1), (1, "#d3e1f0", 1)])
+    body = ""
+    for cx, cy in ((x0 + 6, y0 + 6), (x1 - 6, y0 + 6), (x0 + 6, y1 - 6), (x1 - 6, y1 - 6)):   # иней по углам стекла
+        body += f'<circle cx="{cx}" cy="{cy}" r="24" fill="url(#frost)"/>'
+    mid = (x0 + x1) / 2
+    for left, right in ((x0, mid - 4), (mid + 4, x1)):                          # снег в нижних углах стёкол
+        body += (f'<path d="M{left},{y1} L{left},{y1 - 14} Q{left + 16},{y1 - 8} {left + 34},{y1 - 3} '
+                 f'L{right - 34},{y1 - 3} Q{right - 16},{y1 - 9} {right},{y1 - 16} L{right},{y1} Z" fill="url(#snow)"/>')
+    # рама: внешняя коробка, переплёт крестом
+    body += (f'<path d="M{x0 - 12},{y0 - 12} L{x1 + 12},{y0 - 12} L{x1 + 12},{y1 + 10} L{x0 - 12},{y1 + 10} Z '
+             f'M{x0},{y0} L{x0},{y1} L{x1},{y1} L{x1},{y0} Z" fill="url(#frame)" fill-rule="evenodd"/>')
+    body += f'<rect x="{mid - 4}" y="{y0}" width="8" height="{y1 - y0}" fill="url(#frame)"/>'
+    body += f'<rect x="{x0}" y="{(y0 + y1) / 2 - 4}" width="{x1 - x0}" height="8" fill="url(#frame)"/>'
+    body += f'<rect x="{x0}" y="{y0}" width="{x1 - x0}" height="3" fill="#000" fill-opacity="0.25"/>'
+    body += f'<rect x="{x0}" y="{y0}" width="3" height="{y1 - y0}" fill="#000" fill-opacity="0.2"/>'
+    body += f'<rect x="{x0 - 26}" y="{y1 + 8}" width="{x1 - x0 + 52}" height="14" rx="3" fill="url(#frame)"/>'   # подоконник
+    body += f'<rect x="{x0 - 26}" y="{y1 + 20}" width="{x1 - x0 + 52}" height="5" fill="url(#frame-dark)"/>'
+    # шторы с подхватами
+    for side in (-1, 1):
+        edge = 4 if side < 0 else 296
+        inner = x0 + 6 if side < 0 else x1 - 6               # шторы подвязаны: стекло почти всё видно
+        d = (f"M{edge},18 L{inner},18 Q{inner + side * 18},110 {inner + side * 40},196 "
+             f"Q{inner + side * 36},260 {inner + side * 18},344 L{edge},344 Z")
+        body += f'<path d="{d}" fill="url(#curtain)"/>'
+        for k in range(1, 4):                                                   # складки
+            x = edge + (inner - edge) * k / 4
+            body += (f'<path d="M{x:.0f},20 Q{x + side * 10 * k / 4:.0f},120 {x + side * 36 * k / 4:.0f},198 '
+                     f'Q{x + side * 30 * k / 4:.0f},270 {x + side * 14 * k / 4:.0f},342" stroke="#000" '
+                     f'stroke-opacity="0.2" stroke-width="2" fill="none"/>')
+        tie = inner + side * 40
+        body += f'<ellipse cx="{(tie + edge) / 2:.0f}" cy="198" rx="{abs(tie - edge) / 2 + 4:.0f}" ry="6" fill="url(#rod)"/>'
+    body += '<rect x="0" y="10" width="300" height="9" rx="4.5" fill="url(#rod)"/>'
+    body += '<circle cx="5" cy="14.5" r="8" fill="url(#rod)"/><circle cx="295" cy="14.5" r="8" fill="url(#rod)"/>'
+    _ = rng
+    return svg(300, 360, defs, body)
+
+
+# ---------- коврик у камина ----------
+def rug(rng):
+    defs = rad("rug", [(0, "#a8333a", 1), (0.7, "#8a242b", 1), (1, "#5e161b", 1)], cy=0.4, r=0.6)
+    defs += rad("rug-in", [(0, "#2f6b45", 1), (1, "#1d4a2e", 1)], cy=0.4, r=0.6)
+    body = '<ellipse cx="160" cy="52" rx="158" ry="36" fill="#000" fill-opacity="0.3"/>'
+    for k in range(0, 360, 4):                                                  # бахрома
+        a = math.radians(k)
+        x, y = 160 + 150 * math.cos(a), 46 + 32 * math.sin(a)
+        body += (f'<path d="M{x:.1f},{y:.1f} l{6 * math.cos(a):.1f},{3 * math.sin(a):.1f}" stroke="#e8d3a6" '
+                 f'stroke-width="1.6" stroke-linecap="round"/>')
+    body += '<ellipse cx="160" cy="46" rx="150" ry="32" fill="url(#rug)"/>'
+    body += '<ellipse cx="160" cy="46" rx="128" ry="25" fill="none" stroke="#e8c169" stroke-width="3" stroke-dasharray="7 5"/>'
+    body += '<ellipse cx="160" cy="46" rx="104" ry="19" fill="url(#rug-in)"/>'
+    body += '<ellipse cx="160" cy="46" rx="80" ry="13" fill="none" stroke="#e8c169" stroke-width="2"/>'
+    body += '<ellipse cx="160" cy="40" rx="140" ry="22" fill="#fff" fill-opacity="0.05"/>'
+    _ = rng
+    SCENE["rug"] = {"size": [320, 92]}
+    return svg(320, 92, defs, body)
+
+
 def main():
     rng = random.Random(3)
     OUT.mkdir(parents=True, exist_ok=True)
     for name, text in (("tree", tree(rng)), ("presents", presents(rng)), ("snowman", snowman()),
                        ("lantern", lantern()), ("fireplace", fireplace(rng)), ("chair", chair(rng)),
-                       ("wreath", wreath(rng))):
+                       ("wreath", wreath(rng)), ("window-back", window_back(rng)),
+                       ("window-front", window_front(rng)), ("rug", rug(rng))):
         (OUT / f"{name}.svg").write_text(text, encoding="utf-8", newline="\n")
     (OUT / "scene.json").write_text(json.dumps(SCENE, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
 

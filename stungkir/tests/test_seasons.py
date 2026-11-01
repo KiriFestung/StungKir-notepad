@@ -60,8 +60,9 @@ class ArtTest(Sandbox):
         app()
         from stungkir.fun.season_scene import Art
         art = Art("xmas")
-        for name in ("tree", "presents", "snowman", "lantern", "fireplace", "chair", "wreath"):
-            self.assertTrue(art.renderers[name].isValid(), name)
+        for name in ("tree", "presents", "snowman", "lantern", "fireplace", "chair", "wreath", "window-back",
+                     "window-front", "rug", "weasel-sleep"):
+            self.assertTrue(name in art.images or art.renderers[name].isValid(), name)
             pix = art.pixmap(name, 120)
             self.assertFalse(pix.isNull(), name)
             image = pix.toImage()
@@ -73,18 +74,25 @@ class ArtTest(Sandbox):
 
     def test_room_layout_fits_window(self):
         app()
-        from PySide6.QtCore import QRectF, QSize
+        from PySide6.QtCore import QPointF, QRectF, QSize
         from stungkir.fun.season_scene import Art, Room
         room = Room(Art("xmas"), {})
         wide = room.layout(QSize(1600, 900))
-        for key in ("fireplace", "tree", "snowman", "lantern", "chair_left", "chair_right"):
+        for key in ("fireplace", "tree", "window", "rug", "weasel", "chair_left", "chair_right"):
             self.assertIn(key, wide)
-            self.assertTrue(QRectF(0, 0, 1600, 900).intersects(wide[key]), key)
+            self.assertTrue(QRectF(0, 0, 1600, 900).contains(wide[key]), key)
         self.assertLess(wide["tree"].right(), wide["fireplace"].left())
-        self.assertLess(wide["fireplace"].right(), wide["lantern"].left())
+        self.assertLess(wide["fireplace"].right(), wide["window"].left())
+        self.assertLess(wide["window"].bottom(), wide["floor_top"])        # окно на стене, не на полу
+        paws = QPointF(wide["weasel"].center().x(), wide["weasel"].bottom() - wide["weasel"].height() * 0.1)
+        self.assertTrue(wide["rug"].contains(paws))                        # ласка лежит на коврике
+        room.resize(QSize(1600, 900), 1.0)
+        glass = room.glass()
+        self.assertTrue(wide["window"].contains(glass))
+        self.assertTrue(glass.contains(room.lantern_glass()[0]))           # фонарь - за стеклом
         narrow = room.layout(QSize(600, 500))
         self.assertIn("fireplace", narrow)
-        self.assertNotIn("lantern", narrow)                  # в узком окне лишнее убирается
+        self.assertNotIn("window", narrow)                  # в узком окне лишнее убирается
 
 
 class WindowSeasonTest(WindowCase):
