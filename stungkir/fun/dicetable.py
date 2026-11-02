@@ -22,8 +22,8 @@ from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from ..core import config as C
 from .dice import (
-    COIN_EDGE, COIN_SIDES, IDENTITY, Die3D, _apply, _cross, _dot, _mul, _norm, _sub, axis_angle, d100_parts,
-    d100_value, form, labels, rotation, shape,
+    COIN_EDGE, COIN_SIDES, IDENTITY, Die3D, _apply, _cross, _dot, _mul, _norm, _sub, axis_angle, coin_colors,
+    d100_parts, d100_value, form, labels, rotation, shape,
 )
 
 # материал: (основа, тёмная, светлая, цвет чисел, звук удара, звук «докатился»)
@@ -33,6 +33,8 @@ MATERIALS = {
     "oak": ("Дуб", "#9c6a3a", "#4a2e14", "#c99560", "#24130a", "oak_hit", "oak_settle"),
     # смола цвета индиго с золотыми цифрами - как классические кости для настолок и как тема блокнота
     "resin": ("Индиго", "#2a2696", "#07073a", "#5652d8", "#e8a93a", "bone_hit", "bone_settle"),
+    # лёд (зимний): полупрозрачный - сквозь него видно сукно, внутри иней, пузырьки и трещинка
+    "ice": ("Лёд", "#7fc0e6", "#1d4f78", "#effaff", "#0f3a68", "ice_hit", "ice_settle"),
 }
 FELT, FELT_DARK, RIM = QColor("#23265a"), QColor("#13153a"), QColor("#6b4524")
 STEP = 1 / 60                        # шаг расчёта: один и тот же и в подборе броска, и на экране
@@ -479,7 +481,8 @@ class DiceTable(QWidget):
         light = _norm((-0.45, 0.6, 0.9))
         coin = body.kind == "coin"
         if coin:
-            base, dark, bright, ink = "#c8962e", "#5a3f10", "#f3d58a", "#2e2a6e"
+            base, dark, bright, rim, shine = coin_colors()
+            ink = "#2e2a6e"
         else:
             _title, base, dark, bright, ink, _hit, _settle = MATERIALS[body.material]
         dark, bright, base = QColor(dark), QColor(bright), QColor(base)
@@ -498,7 +501,7 @@ class DiceTable(QWidget):
             lit = max(0.0, _dot(normal, light))
             polygon = QPolygonF([project(world[j]) for j in face])
             if coin and i >= 2:                                    # ребро монетки - бронза с насечкой
-                color = C.mix("#3a2a10", "#a8791f", (0.15 + 0.75 * lit) * (1.0 if i % 2 else 0.72))
+                color = C.mix(rim, shine, (0.15 + 0.75 * lit) * (1.0 if i % 2 else 0.72))
                 p.setPen(QPen(QColor("#2a1d0a"), 0.8))
             else:
                 color = C.mix(C.mix(dark, base, min(1.0, 0.25 + lit)), bright, max(0.0, lit - 0.55) * 1.6)
@@ -506,6 +509,9 @@ class DiceTable(QWidget):
                     color = C.mix(color, "#ffffff", 0.45 * lit ** 30)
                 elif body.material == "resin":                     # смола блестит, как лак
                     color = C.mix(color, "#cfd2ff", 0.55 * lit ** 18)
+                elif body.material == "ice":                       # лёд: стеклянный блик и просвет
+                    color = C.mix(color, "#ffffff", 0.6 * lit ** 14)
+                    color.setAlpha(215)
                 p.setPen(QPen(C.mix(dark, "#000000", 0.35), 1.3, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
             p.setBrush(color)
             p.drawPolygon(polygon)
@@ -579,6 +585,25 @@ class DiceTable(QWidget):
             for _ in range(22):
                 p.setBrush(QColor(255, 225, 160, int(rnd.uniform(60, 150) * alpha)))
                 p.drawEllipse(QPointF(rnd.uniform(-100, 100), rnd.uniform(-100, 100)), 1.1, 1.1)
+        elif body.material == "ice":
+            # иней веточками от края, пузырьки и одна трещинка
+            corner = QPointF(rnd.choice((-1, 1)) * 110, rnd.choice((-1, 1)) * 100)
+            for _ in range(5):
+                end = QPointF(corner.x() * rnd.uniform(0.1, 0.5), corner.y() * rnd.uniform(0.1, 0.5))
+                p.setPen(QPen(QColor(255, 255, 255, int(110 * alpha)), rnd.uniform(1.0, 2.0), Qt.SolidLine, Qt.RoundCap))
+                p.drawLine(corner, end)
+                for t in (0.35, 0.6, 0.8):
+                    mid = corner + (end - corner) * t
+                    p.drawLine(mid, mid + QPointF(rnd.uniform(-14, 14), rnd.uniform(-14, 14)))
+            p.setPen(QPen(QColor(255, 255, 255, int(120 * alpha)), 1.2))
+            for _ in range(7):
+                r = rnd.uniform(2.5, 6)
+                p.drawEllipse(QPointF(rnd.uniform(-80, 80), rnd.uniform(-80, 80)), r, r)
+            crack = QPainterPath(QPointF(rnd.uniform(-90, -40), rnd.uniform(-70, 70)))
+            for _ in range(4):
+                crack.lineTo(crack.currentPosition() + QPointF(rnd.uniform(18, 36), rnd.uniform(-22, 22)))
+            p.setPen(QPen(QColor(230, 248, 255, int(140 * alpha)), 1.4))
+            p.drawPath(crack)
         else:
             for k in range(-30, 31):
                 p.setPen(QPen(QColor(255, 255, 255, int(rnd.uniform(8, 26) * alpha)), 0.8))

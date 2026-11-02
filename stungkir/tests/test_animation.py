@@ -13,17 +13,20 @@ from stungkir.tests.helpers import WindowCase, app, wait
 # имя анимации -> сколько кадров должно быть
 FRAMES = {
     "anim/weasel-run/weasel-run": 12, "anim/weasel-cheer/weasel-cheer": 12,
+    "anim/weasel-run-xmas/weasel-run": 12, "anim/weasel-cheer-xmas/weasel-cheer": 12,     # в шапке (Рождество)
     **{f"anim/flame/flame-{k}": 12 for k in range(6)},
     "anim/goal/goal-day": 24, "anim/goal/goal-chapter": 12,
     "anim/table/felt-dust": 8, "anim/table/crit-high": 16, "anim/table/crit-low": 16,
     "anim/coin/coin-edge-shine": 12, "anim/roulette/drum-glint": 8,
     **{f"anim/bubble-pop/bubble-{k}-pop": 6 for k in range(3)},
+    **{f"anim/ornament-pop/ornament-{k}-pop": 6 for k in range(3)},          # шарики (Рождество)
     "anim/ball/ball-dust": 8, "anim/lake/skip-splash": 8, "anim/lake/skip-plunk": 12,
     "anim/toggle/puzzle-solved": 12, "anim/bang/bang": 16, "anim/dust/dust": 8,
 }
 PICTURES = ("lake-shore", "skip-stone", "stone-1", "stone-2", "stone-3", "stone-4", "rake", "toggle-up",
             "toggle-down", "empty-search", "empty-trash", "empty-versions", "empty-notes", "eye-break",
-            "about-day", "drum-bone", "drum-metal", "drum-oak", "drum-indigo", "anim/weasel-run/weasel-stand")
+            "about-day", "drum-bone", "drum-metal", "drum-oak", "drum-indigo", "anim/weasel-run/weasel-stand",
+            "anim/weasel-run-xmas/weasel-stand")
 
 
 class Clock:

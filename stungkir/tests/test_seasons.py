@@ -72,6 +72,29 @@ class ArtTest(Sandbox):
         self.assertTrue(art.spec["tree"]["lights"])
         self.assertEqual(len(art.spec["fireplace"]["fire"]), 4)
 
+    def test_own_png_wins_and_broken_png_is_ignored(self):
+        app()
+        import shutil
+        import tempfile
+        from pathlib import Path
+        from PySide6.QtGui import QColor, QImage
+        from stungkir.fun import season_scene
+        folder = Path(tempfile.mkdtemp()) / "xmas"
+        shutil.copytree(season_scene.ART / "xmas", folder)
+        self.addCleanup(shutil.rmtree, folder.parent, ignore_errors=True)
+        own = QImage(648, 858, QImage.Format_ARGB32)                     # своя ёлка - вдвое крупнее
+        own.fill(QColor("#ff0000"))
+        own.save(str(folder / "tree.png"))
+        (folder / "rug.png").write_bytes(b"not a picture")                 # битый файл
+        self.addCleanup(setattr, season_scene, "ART", season_scene.ART)
+        season_scene.ART = folder.parent
+        art = season_scene.Art("xmas")
+        picture = art.pixmap("tree", 100).toImage()
+        self.assertEqual(picture.pixelColor(picture.width() // 2, 50).name(), "#ff0000")
+        self.assertAlmostEqual(art.width_for("tree", 858), 648, delta=1)
+        self.assertNotIn("rug", art.images)                                # битый - берётся старый SVG
+        self.assertFalse(art.pixmap("rug", 50).isNull())
+
     def test_room_layout_fits_window(self):
         app()
         from PySide6.QtCore import QPointF, QRectF, QSize
@@ -106,6 +129,8 @@ class WindowSeasonTest(WindowCase):
         super().setUp()
         self.addCleanup(setattr, C, "SEASON_ROOM", False)
         self.addCleanup(setattr, C, "SEASON", None)
+        from stungkir.fun.dice import use_season_coin
+        self.addCleanup(use_season_coin, False)                # монетка - снова ворон и ласка
 
     def test_room_turns_on_and_off(self):
         self.season(season="xmas")
@@ -166,6 +191,62 @@ class WindowSeasonTest(WindowCase):
         strip.items["day"]["anim"].stop()
         strip.items["day"].update(value=0.6, shown=True, done=True)
         self.assertFalse(strip.grab().isNull())
+
+    def test_ice_dice_by_default_at_christmas(self):
+        from stungkir.fun.dice import RandomDialog
+        from stungkir.fun.sounds import VARIANTS
+        self.season(season="xmas")
+        w = self.window()
+        w.update_palette()
+        dialog = RandomDialog(w, ["Кира"], [], w.settings, lambda *_: None)
+        self.assertEqual(dialog.material.currentData(), "ice")              # сам ничего не выбирал - лёд
+        dialog.close()
+        w.settings.setValue("dice_material", "oak")                         # выбрал сам - его выбор
+        dialog = RandomDialog(w, ["Кира"], [], w.settings, lambda *_: None)
+        self.assertEqual(dialog.material.currentData(), "oak")
+        dialog.close()
+        from pathlib import Path
+        sounds = Path(__file__).resolve().parents[1] / "sounds"
+        for name in VARIANTS["ice_hit"] + ["ice_settle"]:
+            self.assertTrue((sounds / f"{name}.wav").is_file(), name)
+
+    def test_gingerbread_coin_at_christmas(self):
+        from stungkir.fun.artwork import pixmap
+        from stungkir.fun.dice import COIN_SIDES, PLAIN_SIDES, XMAS_SIDES, RandomDialog, toss_coin
+        self.season(season="xmas")
+        w = self.window()
+        w.update_palette()
+        self.assertEqual(COIN_SIDES, XMAS_SIDES)
+        for picture in XMAS_SIDES.values():
+            self.assertFalse(pixmap(picture).isNull(), picture)
+        w.settings.setValue("coin_up", "Ворон")                 # лежала вороном до праздника
+        dialog = RandomDialog(w, ["Кира"], [], w.settings, lambda *_: None)
+        self.assertIn(dialog.coin_up, XMAS_SIDES)
+        self.assertIn(toss_coin(up=dialog.coin_up), list(XMAS_SIDES) + ["Ребро"])
+        dialog.close()
+        self.season(season="off")
+        w.update_palette()
+        self.assertEqual(COIN_SIDES, PLAIN_SIDES)
+
+    def test_ornament_bubble_wrap_at_christmas(self):
+        from stungkir.fun.antistress import BubbleWrap
+        from stungkir.fun.artwork import pixmap
+        self.season(season="xmas")
+        w = self.window()
+        w.update_palette()
+        names = BubbleWrap.pictures()
+        self.assertEqual(names, BubbleWrap.FESTIVE)
+        for k in range(3):
+            for key in ("whole", "popped"):
+                self.assertFalse(pixmap(names[key].format(k=k)).isNull())
+        wrap = BubbleWrap()
+        wrap.resize(400, 300)
+        wrap.show()
+        self.assertTrue(wrap.pop((0, 0)))
+        self.assertFalse(wrap.grab().isNull())                       # кадр «лопа» шарика рисуется
+        self.season(season="off")
+        w.update_palette()
+        self.assertEqual(BubbleWrap.pictures(), BubbleWrap.PLAIN)
 
     def test_settings_dialog(self):
         from stungkir.fun.season_settings import SeasonDialog

@@ -26,7 +26,7 @@ The interface comes in **English (US)**, **English (UK)** and **Russian** - pick
 
 | Where | What to download | |
 |---|---|---|
-| **Windows 10 and 11** | [StungKir-Setup-1.2.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.2.0.exe) | installer |
+| **Windows 10 and 11** | [StungKir-Setup-1.3.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.3.0.exe) | installer |
 | **Windows, from a USB stick** | [StungKir-Windows-portable.zip](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Windows-portable.zip) | no installation, no admin rights, texts stay on the stick |
 | **Linux** | [StungKir.flatpak](https://github.com/KiriFestung/StungKir-notepad/releases/download/linux-latest/StungKir.flatpak) | any distribution |
 | **Android** | [StungKir-Android.apk](https://github.com/KiriFestung/StungKir-notepad/releases/download/android-latest/StungKir-Android.apk) | writes to the same folder as the computer; the phone app is in Russian for now |
@@ -40,10 +40,14 @@ Builds update by themselves after every change and pass more than four hundred c
 - **Edit.** Versions of every chapter and comparison next to the text; find and replace across all chapters; your own clichés; sentence rhythm; who speaks in long dialogues; reading aloud.
 - **Not lose anything.** Restore points for the whole book, daily backups and a weekly copy to a USB stick, your own trash, a spare file of what you typed, a password for all texts.
 - **Build the book.** PDF, Word, EPUB, FB2 and plain text from templates; a cover; «How the reader will see it» on an A5 page, a phone and an e-reader.
-- **Take a useful break.** Dice d4-d100 on a table (bone, metal, oak, indigo), a coin, a roulette of writing challenges, a timer with a weasel in a wheel, anti-stress: bubble wrap, a sand garden, a key puzzle, skipping stones.
+- **Take a useful break.** Dice d4-d100 on a table (bone, metal, oak, indigo, ice), a coin, a roulette of writing challenges, a timer with a weasel in a wheel, anti-stress: bubble wrap, a sand garden, a key puzzle, skipping stones.
 - **Look your way.** Ten themes, your own picture under the text, Literata and PT Serif fonts, your own hotkeys.
+- **Celebrate.** From 15 December to 14 January it's Christmas: a cosy room under the text with a tree, a fireplace, rocking chairs and a sleeping weasel; snow outside the window and a snowman that grows with your daily goal (and at 300% somebody knocks it over); fairy lights and a wreath on the clock; ice dice, a gingerbread coin, bubble wrap made of baubles. Can be turned off or kept on all year.
+- **See your progress.** Sprints (the weasel timer records how much you wrote and how fast) and a «Growth» chart: how much you have written and where your pace will take you.
 
 <p align="center"><img src="docs/screenshots/en/dice.gif" alt="Dice on the table: metal, oak, indigo, bone" width="640"></p>
+
+<p align="center"><img src="docs/screenshots/en/xmas.png" alt="Christmas: a cosy room under the text, a fireplace, snow and a snowman outside the window" width="640"></p>
 
 | | |
 |---|---|
@@ -56,7 +60,7 @@ Builds update by themselves after every change and pass more than four hundred c
 
 ### Windows 10 and 11
 
-Download [StungKir-Setup-1.2.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.2.0.exe) and run it. The installer asks for a language and passes your choice to the program. Dictionaries and fonts are inside. Windows may warn about an «unknown publisher» - the program is not signed with a paid certificate. Click «More info → Run anyway».
+Download [StungKir-Setup-1.3.0.exe](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Setup-1.3.0.exe) and run it. The installer asks for a language and passes your choice to the program. Dictionaries and fonts are inside. Windows may warn about an «unknown publisher» - the program is not signed with a paid certificate. Click «More info → Run anyway».
 
 **From a USB stick, without installation or admin rights:** [StungKir-Windows-portable.zip](https://github.com/KiriFestung/StungKir-notepad/releases/download/windows-latest/StungKir-Windows-portable.zip) - unpack it on the stick and run `StungKir.exe`. Texts, backups and settings stay on the stick; nothing is left on someone else's computer.
 

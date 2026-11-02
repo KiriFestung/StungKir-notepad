@@ -227,6 +227,26 @@ def rattle(hit, gaps=((0.0, 1.0), (0.05, 0.5), (0.085, 0.28))):
     return finish(track, 0.5)
 
 
+def ice_hit(f0, length=0.3):
+    """Ледяной кубик о стол: звонкий стеклянный «цок» - высокие неровные призвуки гаснут быстро,
+    под ними - лёгкий хруст и тихий стук о сукно."""
+    ring = metal(length, f0, [1.0, 2.32, 3.86, 5.41], [1.0, 0.55, 0.32, 0.18], [0.07, 0.05, 0.035, 0.025])
+    t = t_axis(length)
+    crunch = highpass(rng.standard_normal(len(t)), 4500) * np.exp(-t / 0.004) * (0.6 + 0.4 * rng.random(len(t)))
+    return finish(0.35 * wood(length, 0.6) + 0.5 * ring + 0.3 * crunch, 0.6)
+
+
+def ornament_pop():
+    """Лопнул ёлочный шарик: тонкий стеклянный «дзынь» и россыпь звона осколков."""
+    track = np.zeros(int(0.45 * RATE))
+    place(track, 0.9 * metal(0.3, 4200, [1.0, 1.47, 2.13, 2.9], [1.0, 0.7, 0.45, 0.3], [0.05, 0.04, 0.03, 0.02]), 0.0)
+    for _ in range(9):                                           # осколки звенят вразнобой
+        at = rng.uniform(0.03, 0.3)
+        f0 = rng.uniform(5200, 8200)
+        place(track, rng.uniform(0.15, 0.35) * metal(0.08, f0, [1.0, 1.6], [1.0, 0.5], [0.015, 0.01]), at)
+    return finish(track, 0.5)
+
+
 def round_in():
     """Патрон входит в гнездо барабана: короткий металлический щелчок с притиром."""
     t = t_axis(0.09)
@@ -328,4 +348,8 @@ if __name__ == "__main__":
         save(f"water_skip_{i}.wav", water_skip(f0))
     save("water_plunk.wav", water_plunk())
     save("page_turn.wav", page_turn())
+    for i, f0 in enumerate((2600, 2900, 3250), 1):          # лёд - последним: старые звуки не меняются
+        save(f"ice_hit_{i}.wav", ice_hit(f0))
+    save("ice_settle.wav", rattle(lambda: ice_hit(3100, 0.16)))
+    save("ornament_pop.wav", ornament_pop())                 # пупырка из ёлочных шариков
     print("готово:", ", ".join(sorted(p.name for p in OUT.glob("*.wav"))))

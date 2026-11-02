@@ -43,6 +43,15 @@ class BubbleWrap(QWidget):
         self.refill()
 
     POP_FPS = 30
+    # рисунки пузырьков; в Рождество - ёлочные шарики (packaging/seasons/ornaments.py)
+    PLAIN = {"whole": "bubble-{k}", "popped": "bubble-popped-{k}", "pop": "anim/bubble-pop/bubble-{k}-pop_{frame:02d}",
+             "sound": "pop"}
+    FESTIVE = {"whole": "seasons/xmas/ornament-{k}", "popped": "seasons/xmas/ornament-popped-{k}",
+               "pop": "anim/ornament-pop/ornament-{k}-pop_{frame:02d}", "sound": "ornament_pop"}
+
+    @classmethod
+    def pictures(cls):
+        return cls.FESTIVE if C.SEASON == "xmas" else cls.PLAIN
 
     def refill(self):
         self.popped = set()
@@ -121,8 +130,9 @@ class BubbleWrap(QWidget):
         p.drawRoundedRect(sheet, 10, 10)
         from .artwork import scaled
         ratio = self.devicePixelRatioF()
-        whole = [scaled(f"bubble-{k}", size * 0.86, ratio) for k in range(3)]
-        popped = [scaled(f"bubble-popped-{k}", size * 0.86, ratio) for k in range(3)]
+        names = self.pictures()
+        whole = [scaled(names["whole"].format(k=k), size * 0.86, ratio) for k in range(3)]
+        popped = [scaled(names["popped"].format(k=k), size * 0.86, ratio) for k in range(3)]
         if not any(picture.isNull() for picture in whole + popped):
             p.setRenderHint(QPainter.SmoothPixmapTransform)
             for col in range(COLUMNS):
@@ -132,12 +142,13 @@ class BubbleWrap(QWidget):
                     picture = popped[k] if (col, row) in self.popped else whole[k]
                     frame = self.pop_frame((col, row))
                     if frame is not None:                          # лопается прямо сейчас
-                        moving = scaled(f"anim/bubble-pop/bubble-{k}-pop_{frame:02d}", size * 0.86, ratio)
+                        moving = scaled(names["pop"].format(k=k, frame=frame), size * 0.86, ratio)
                         picture = picture if moving.isNull() else moving
                     side = size * (0.86 + self.wobble[(col, row)] * 0.4)
                     p.save()
                     p.translate(center)
-                    p.rotate(self.wobble[(col, row)] * 900)       # пузырьки чуть по-разному повёрнуты
+                    tilt = 250 if names is self.FESTIVE else 900    # шарики висят ровнее, пузырьки - вразнобой
+                    p.rotate(self.wobble[(col, row)] * tilt)       # пузырьки чуть по-разному повёрнуты
                     p.drawPixmap(QRectF(-side / 2, -side / 2, side, side), picture, QRectF(picture.rect()))
                     p.restore()
             p.end()
@@ -1822,6 +1833,7 @@ HINTS = {
     4: "Щёлк. А красный - под крышкой: откинь и попробуй",
     5: "Зажми мышь, оттяни вниз и отпусти. Колесо - угол: чем площе, тем больше блинчиков",
     6: "← → двигать, ↑ повернуть, ↓ быстрее, пробел - сразу вниз, P - пауза",
+    7: "Пиши - и снеговик лепится сам: от дневной цели, а на 300% его кто-нибудь снесёт",
 }
 
 
@@ -1858,6 +1870,19 @@ class StressDialog(Sheet):
             self.pages.addWidget(page)
             if index == 0:
                 button.setChecked(True)
+        if C.SEASON == "xmas":                           # Рождество: «Слепи снеговика» (fun/snowman.py)
+            from .snowman import SnowmanView
+            self.snowman = SnowmanView(parent)
+            button = QPushButton(tr("Снеговик"))
+            button.setCheckable(True)
+            button.setAutoDefault(False)
+            button.setProperty("noIcon", True)
+            button.setStyleSheet(f"QPushButton:checked {{ background: {C.IMPORTANT}; "
+                                 f"color: {C.on_color(C.IMPORTANT)}; }}")
+            button.clicked.connect(lambda _c=False, i=len(PAGES): self._show_page(i))
+            self.group.addButton(button)
+            tabs.addWidget(button)
+            self.pages.addWidget(self.snowman)
         tabs.addStretch()
         self.content.addLayout(tabs)
         self.content.addWidget(self.pages, 1)
@@ -1954,6 +1979,8 @@ class StressDialog(Sheet):
 
     def _show_page(self, index):
         self.pages.setCurrentIndex(index)
+        if getattr(self, "snowman", None) is self.pages.widget(index):
+            self.snowman.refresh()                        # слова могли прибавиться, пока была другая вкладка
         if self.pages.widget(index) is self.blocks:
             self.blocks.setFocus()
         self.group.buttons()[index].setChecked(True)
@@ -1962,7 +1989,7 @@ class StressDialog(Sheet):
         self._update_count()
 
     def _popped(self):
-        self._play("pop")
+        self._play(self.wrap.pictures()["sound"])                 # в Рождество - стеклянный «дзынь»
         self._update_count()
         if self.wrap.all_popped():
             QTimer.singleShot(700, self, self._refill)          # лист кончился - новый сам

@@ -19,6 +19,7 @@ datas = [
     (str(ROOT / "stungkir" / "art" / "dice" / "metal" / "*.png"), "stungkir/art/dice/metal"),
     (str(ROOT / "stungkir" / "art" / "dice" / "oak" / "*.png"), "stungkir/art/dice/oak"),
     (str(ROOT / "stungkir" / "art" / "dice" / "resin" / "*.png"), "stungkir/art/dice/resin"),
+    (str(ROOT / "stungkir" / "art" / "dice" / "ice" / "*.png"), "stungkir/art/dice/ice"),        # лёд (зимний)
     (str(PACKAGING / "dictionaries" / "ru_RU.dic"), "stungkir/dictionaries"),
     (str(PACKAGING / "dictionaries" / "ru_RU.aff"), "stungkir/dictionaries"),
     (str(PACKAGING / "dictionaries" / "LICENSE-ru_RU.txt"), "stungkir/dictionaries"),
