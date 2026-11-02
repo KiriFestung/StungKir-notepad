@@ -855,9 +855,9 @@ def streak_line(count, voice):
     if voice not in STREAK_LINES:
         return ""
     if count and count % 10 == 0:
-        return STREAK_MILESTONE[voice]
+        return tr(STREAK_MILESTONE[voice])
     lines = STREAK_LINES[voice]
-    return lines[(count * 7 + 3) % len(lines)]
+    return tr(lines[(count * 7 + 3) % len(lines)])
 
 
 class PicturePop(QWidget):

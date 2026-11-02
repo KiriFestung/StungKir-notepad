@@ -144,7 +144,8 @@ class ProgressMixin:
         self._streak_seen = streak
         if seen is None or streak <= seen or getattr(self, "zen", False) or not self.screen_shown("streak"):
             return
-        label = "День засчитан!" if streak == 1 else f"{streak} {plural(streak, 'день', 'дня', 'дней')} подряд!"
+        label = (tr("День засчитан!") if streak == 1 else
+                 tr("{n} подряд!").format(n=f"{streak} {plural(streak, 'день', 'дня', 'дней')}"))
         if hasattr(self, "streak_pop"):
             from .widgets import streak_line
             self.place_overlays()
